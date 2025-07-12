@@ -140,7 +140,7 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
-      child: Text(text, style: const TextStyle(color: Colors.white)),
+      child: Text(text, style: const TextStyle(color: Color.fromARGB(255, 252, 235, 235))),
     );
   }
 
