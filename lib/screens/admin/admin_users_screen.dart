@@ -211,7 +211,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: isActive ? Colors.green : Colors.red,
+        color: isActive ? const Color.fromARGB(255, 69, 171, 72) : Colors.red,
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
