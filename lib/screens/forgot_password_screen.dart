@@ -38,7 +38,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       if (_timerDuration.inSeconds == 0) {
         timer.cancel();
         setState(() {
-          _error = 'OTP expired. Please request a new one.';
+          _error = 'OTP expired.  Please request a new one.';
           _otpVisible = false;
         });
       } else {
