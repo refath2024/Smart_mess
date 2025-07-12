@@ -41,7 +41,7 @@ class _AdminShoppingHistoryScreenState
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(6),
-            borderSide: const BorderSide(color: Color(0xFF0052CC)),
+            borderSide: const BorderSide(color: Color.fromARGB(255, 5, 97, 235)),
           ),
         ),
       ),

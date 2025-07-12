@@ -7,5 +7,12 @@
       "type": "dart",
       "deviceId": "chrome"
     }
+    {
+  "name": "Flutter Web (Edge)",
+  "request": "launch",
+  "type": "dart",
+  "deviceId": "edge"
+}
+
   ]
 }
