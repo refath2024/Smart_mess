@@ -98,7 +98,7 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
         selectedTileColor: Colors.blue.shade100,
         leading: Icon(
           icon,
-          color: color ?? (selected ? Colors.blue : Colors.black),
+          color: color ?? (selected ? const Color.fromARGB(255, 40, 150, 240) : Colors.black),
         ),
         title: Text(title, style: TextStyle(color: color ?? Colors.black)),
       ),

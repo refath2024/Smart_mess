@@ -61,7 +61,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               style: const TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: Color.fromARGB(255, 213, 178, 178),
               ),
             ),
             const SizedBox(height: 6),
