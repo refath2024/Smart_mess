@@ -1,4 +1,8 @@
+import 'dart:math';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 class AdminAddShoppingScreen extends StatefulWidget {
   const AdminAddShoppingScreen({super.key});
@@ -10,53 +14,47 @@ class AdminAddShoppingScreen extends StatefulWidget {
 class _AdminAddShoppingScreenState extends State<AdminAddShoppingScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  final TextEditingController _productController = TextEditingController();
-  final TextEditingController _unitPriceController = TextEditingController();
-  final TextEditingController _amountController = TextEditingController();
-  final TextEditingController _totalPriceController = TextEditingController();
-  final TextEditingController _dateController = TextEditingController();
   final TextEditingController _buyerController = TextEditingController();
+  final TextEditingController _dateController = TextEditingController();
   final TextEditingController _voucherIdController = TextEditingController();
+
+  List<XFile> _images = [];
 
   @override
   void initState() {
     super.initState();
-    _unitPriceController.addListener(_calculateTotal);
-    _amountController.addListener(_calculateTotal);
+    _voucherIdController.text = _generateVoucherId();
   }
 
-  void _calculateTotal() {
-    final unit = double.tryParse(_unitPriceController.text) ?? 0;
-    final amount = double.tryParse(_amountController.text) ?? 0;
-    final total = unit * amount;
-    _totalPriceController.text = total.toStringAsFixed(2);
+  String _generateVoucherId() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final rnd = Random();
+    return 'VCH-${List.generate(6, (index) => chars[rnd.nextInt(chars.length)]).join()}';
+  }
+
+  Future<void> _pickImages() async {
+    final picker = ImagePicker();
+    final List<XFile> pickedImages = await picker.pickMultiImage();
+
+    if (pickedImages.isNotEmpty) {
+      setState(() {
+        _images = pickedImages;
+      });
+    }
   }
 
   void _save() {
     if (_formKey.currentState!.validate()) {
-      final name = _productController.text;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text("$name added successfully.")));
+      ).showSnackBar(SnackBar(content: Text("Voucher added successfully.")));
 
-      Navigator.pop(context); // Go back to history page
+      Navigator.pop(context);
     }
   }
 
   void _cancel() {
     Navigator.pop(context);
-  }
-
-  @override
-  void dispose() {
-    _unitPriceController.dispose();
-    _amountController.dispose();
-    _productController.dispose();
-    _totalPriceController.dispose();
-    _dateController.dispose();
-    _buyerController.dispose();
-    _voucherIdController.dispose();
-    super.dispose();
   }
 
   Widget _buildTextField(
@@ -97,7 +95,7 @@ class _AdminAddShoppingScreenState extends State<AdminAddShoppingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Add Shopping Entry"),
+        title: const Text("Add Shopping Voucher"),
         backgroundColor: const Color(0xFF002B5B),
         foregroundColor: Colors.white,
       ),
@@ -108,23 +106,7 @@ class _AdminAddShoppingScreenState extends State<AdminAddShoppingScreen> {
             key: _formKey,
             child: Column(
               children: [
-                _buildTextField("Product Name", _productController),
-                _buildTextField(
-                  "Unit Price (kg/qty)",
-                  _unitPriceController,
-                  type: TextInputType.number,
-                ),
-                _buildTextField(
-                  "Amount (kg/qty)",
-                  _amountController,
-                  type: TextInputType.number,
-                ),
-                _buildTextField(
-                  "Total Price",
-                  _totalPriceController,
-                  type: TextInputType.number,
-                  readOnly: true,
-                ),
+                _buildTextField("Buyer Name", _buyerController),
                 _buildTextField(
                   "Date",
                   _dateController,
@@ -142,15 +124,11 @@ class _AdminAddShoppingScreenState extends State<AdminAddShoppingScreen> {
                             colorScheme: const ColorScheme.light(
                               primary: Color(0xFF002B5B),
                             ),
-                            buttonTheme: const ButtonThemeData(
-                              textTheme: ButtonTextTheme.primary,
-                            ),
                           ),
                           child: child!,
                         );
                       },
                     );
-
                     if (picked != null) {
                       setState(() {
                         _dateController.text =
@@ -159,9 +137,55 @@ class _AdminAddShoppingScreenState extends State<AdminAddShoppingScreen> {
                     }
                   },
                 ),
+                _buildTextField(
+                  "Voucher ID",
+                  _voucherIdController,
+                  readOnly: true,
+                ),
 
-                _buildTextField("Buyer", _buyerController),
-                _buildTextField("Voucher ID", _voucherIdController),
+                // Image picker section
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    "Upload Images",
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    for (var img in _images)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.file(
+                          File(img.path),
+                          width: 80,
+                          height: 80,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    GestureDetector(
+                      onTap: _pickImages,
+                      child: Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.add_a_photo),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // Save/Cancel buttons
                 Row(
                   children: [
                     Expanded(

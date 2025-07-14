@@ -16,7 +16,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   String _division = "MIST";
-  bool _obscurePassword = true; // To togglle visibility
+  bool _obscurePassword = true; // To toggle visibility
 
   @override
   void initState() {

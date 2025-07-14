@@ -4,6 +4,8 @@ import 'admin_home_screen.dart';
 import 'admin_pending_ids_screen.dart';
 import 'admin_shopping_history.dart';
 import 'admin_voucher_screen.dart';
+import 'admin_inventory_screen.dart';
+import 'admin_messing_screen.dart';
 
 class AdminUsersScreen extends StatefulWidget {
   const AdminUsersScreen({super.key});
@@ -497,20 +499,30 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                         );
                       },
                     ),
-                    _buildSidebarTile(
-                      icon: Icons.inventory,
-                      title: "Inventory State",
-                      onTap: () {},
-                    ),
+
                     _buildSidebarTile(
                       icon: Icons.storage,
                       title: "Inventory",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AdminInventoryScreen(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.food_bank,
                       title: "Messing",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AdminMessingScreen(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.menu_book,

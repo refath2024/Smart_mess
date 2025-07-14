@@ -5,6 +5,8 @@ import 'admin_users_screen.dart';
 import 'admin_pending_ids_screen.dart';
 import 'admin_add_shopping.dart';
 import 'admin_voucher_screen.dart';
+import 'admin_inventory_screen.dart';
+import 'admin_messing_screen.dart';
 
 class AdminShoppingHistoryScreen extends StatefulWidget {
   const AdminShoppingHistoryScreen({super.key});
@@ -41,7 +43,9 @@ class _AdminShoppingHistoryScreenState
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(6),
-            borderSide: const BorderSide(color: Color.fromARGB(255, 5, 97, 235)),
+            borderSide: const BorderSide(
+              color: Color.fromARGB(255, 5, 97, 235),
+            ),
           ),
         ),
       ),
@@ -295,20 +299,30 @@ class _AdminShoppingHistoryScreenState
                         );
                       },
                     ),
-                    _buildSidebarTile(
-                      icon: Icons.inventory,
-                      title: "Inventory State",
-                      onTap: () {},
-                    ),
+
                     _buildSidebarTile(
                       icon: Icons.storage,
                       title: "Inventory",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AdminInventoryScreen(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.food_bank,
                       title: "Messing",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AdminMessingScreen(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.menu_book,

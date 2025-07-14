@@ -1,48 +1,74 @@
-// admin_voucher_screen.dart
 import 'package:flutter/material.dart';
 import '../login_screen.dart';
 import 'admin_home_screen.dart';
 import 'admin_users_screen.dart';
 import 'admin_pending_ids_screen.dart';
 import 'admin_shopping_history.dart';
-import 'admin_add_voucher.dart';
-import 'admin_inventory_screen.dart';
+import 'admin_voucher_screen.dart';
+import 'add_inventory_screen.dart';
 import 'admin_messing_screen.dart';
 
-class AdminVoucherScreen extends StatefulWidget {
-  const AdminVoucherScreen({super.key});
+class AdminInventoryScreen extends StatefulWidget {
+  const AdminInventoryScreen({super.key});
 
   @override
-  State<AdminVoucherScreen> createState() => _AdminVoucherScreenState();
+  State<AdminInventoryScreen> createState() => _AdminInventoryScreenState();
 }
 
-class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
+class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
+  void _logout() {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      (route) => false,
+    );
   }
 
-  final TextEditingController _searchController = TextEditingController();
+  Widget _buildSidebarTile({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    bool selected = false,
+    Color? color,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      splashColor: Colors.blue.shade100,
+      child: ListTile(
+        selected: selected,
+        selectedTileColor: Colors.blue.shade100,
+        leading: Icon(
+          icon,
+          color: color ?? (selected ? Colors.blue : Colors.black),
+        ),
+        title: Text(title, style: TextStyle(color: color ?? Colors.black)),
+      ),
+    );
+  }
 
-  List<Map<String, dynamic>> voucherData = [
+  // Simplified inventory data
+  List<Map<String, dynamic>> inventoryData = [
     {
-      'id': 'V001',
-      'date': '2025-07-01',
-      'buyer': 'Lt Sami',
-      'unitPrice': 100,
-      'amount': 2,
-      'totalPrice': 200,
+      'id': 'I001',
+      'productName': 'Cable Wire',
+      'quantityHeld': 100,
+      'type': 'utensils',
       'isEditing': false,
       'original': {},
     },
     {
-      'id': 'V002',
-      'date': '2025-07-02',
-      'buyer': 'Capt Maruf',
-      'unitPrice': 120,
-      'amount': 1.5,
-      'totalPrice': 180,
+      'id': 'I002',
+      'productName': 'Rice',
+      'quantityHeld': 500,
+      'type': 'ration',
+      'isEditing': false,
+      'original': {},
+    },
+    {
+      'id': 'I003',
+      'productName': 'Fresh Milk',
+      'quantityHeld': 200,
+      'type': 'fresh',
       'isEditing': false,
       'original': {},
     },
@@ -50,10 +76,20 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
 
   List<Map<String, dynamic>> filteredData = [];
 
+  final TextEditingController _searchController = TextEditingController();
+
+  final List<String> _types = ['fresh', 'utensils', 'ration'];
+
   @override
   void initState() {
     super.initState();
-    filteredData = List.from(voucherData);
+    filteredData = List.from(inventoryData);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _startEdit(int index) {
@@ -76,29 +112,30 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
 
   void _saveEdit(int index) {
     setState(() {
-      final entry = filteredData[index];
-      entry['totalPrice'] = (entry['unitPrice'] * entry['amount']);
-      entry['isEditing'] = false;
+      filteredData[index]['isEditing'] = false;
 
-      int origIndex = voucherData.indexWhere((e) => e['id'] == entry['id']);
-      if (origIndex != -1) voucherData[origIndex] = Map.from(entry);
+      int origIndex = inventoryData.indexWhere(
+        (e) => e['id'] == filteredData[index]['id'],
+      );
+      if (origIndex != -1)
+        inventoryData[origIndex] = Map.from(filteredData[index]);
     });
 
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Voucher updated')));
+    ).showSnackBar(const SnackBar(content: Text('Inventory updated')));
   }
 
   void _deleteRow(int index) {
     setState(() {
       final id = filteredData[index]['id'];
       filteredData.removeAt(index);
-      voucherData.removeWhere((e) => e['id'] == id);
+      inventoryData.removeWhere((e) => e['id'] == id);
     });
 
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Voucher deleted')));
+    ).showSnackBar(const SnackBar(content: Text('Inventory item deleted')));
   }
 
   Widget _editableTextField({
@@ -107,7 +144,7 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
     TextInputType keyboardType = TextInputType.text,
   }) {
     return SizedBox(
-      width: 100,
+      width: 140,
       child: TextFormField(
         initialValue: initialValue,
         onChanged: onChanged,
@@ -149,33 +186,6 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
     );
   }
 
-  Widget _buildSidebarTile({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-    bool selected = false,
-    Color? color,
-  }) {
-    return ListTile(
-      selected: selected,
-      selectedTileColor: Colors.blue.shade100,
-      leading: Icon(
-        icon,
-        color: color ?? (selected ? Colors.blue : Colors.black),
-      ),
-      title: Text(title, style: TextStyle(color: color ?? Colors.black)),
-      onTap: onTap,
-    );
-  }
-
-  void _logout() {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
-      (route) => false,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -183,14 +193,16 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              const DrawerHeader(
-                decoration: BoxDecoration(
+              DrawerHeader(
+                decoration: const BoxDecoration(
                   gradient: LinearGradient(
                     colors: [Color(0xFF002B5B), Color(0xFF1A4D8F)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
                 ),
                 child: Row(
-                  children: [
+                  children: const [
                     CircleAvatar(
                       backgroundImage: AssetImage('assets/me.png'),
                       radius: 30,
@@ -199,7 +211,11 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                     Flexible(
                       child: Text(
                         "Shoaib Ahmed Sami",
-                        style: TextStyle(color: Colors.white, fontSize: 16),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ],
@@ -215,7 +231,7 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const AdminHomeScreen(),
+                            builder: (_) => const AdminHomeScreen(),
                           ),
                         );
                       },
@@ -227,7 +243,7 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const AdminUsersScreen(),
+                            builder: (_) => const AdminUsersScreen(),
                           ),
                         );
                       },
@@ -239,7 +255,7 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const AdminPendingIdsScreen(),
+                            builder: (_) => const AdminPendingIdsScreen(),
                           ),
                         );
                       },
@@ -251,8 +267,7 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (context) =>
-                                const AdminShoppingHistoryScreen(),
+                            builder: (_) => const AdminShoppingHistoryScreen(),
                           ),
                         );
                       },
@@ -260,20 +275,20 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                     _buildSidebarTile(
                       icon: Icons.receipt,
                       title: "Voucher List",
-                      onTap: () => Navigator.pop(context),
-                      selected: true,
-                    ),
-                    _buildSidebarTile(
-                      icon: Icons.storage,
-                      title: "Inventory",
                       onTap: () {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const AdminInventoryScreen(),
+                            builder: (_) => const AdminVoucherScreen(),
                           ),
                         );
                       },
+                    ),
+                    _buildSidebarTile(
+                      icon: Icons.storage,
+                      title: "Inventory",
+                      onTap: () => Navigator.pop(context),
+                      selected: true,
                     ),
                     _buildSidebarTile(
                       icon: Icons.food_bank,
@@ -327,6 +342,7 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                       title: "Cook State",
                       onTap: () {},
                     ),
+                    // Other sidebar tiles ...
                   ],
                 ),
               ),
@@ -337,63 +353,63 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                 child: _buildSidebarTile(
                   icon: Icons.logout,
                   title: "Logout",
-                  color: Colors.red,
                   onTap: _logout,
+                  color: Colors.red,
                 ),
               ),
             ],
           ),
         ),
       ),
+
       appBar: AppBar(
         backgroundColor: const Color(0xFF002B5B),
         iconTheme: const IconThemeData(color: Colors.white),
+        centerTitle: true,
         title: const Text(
-          "Voucher List",
-          style: TextStyle(color: Colors.white),
+          "Inventory",
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+          ),
         ),
       ),
+
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ✅ Add Voucher Button First
-            Align(
-              alignment: Alignment.centerRight,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const AdminAddShoppingScreen(),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.add),
-                label: const Text("Add Voucher"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0052CC),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AddInventoryScreen()),
+                );
+              },
+              icon: const Icon(Icons.add),
+              label: const Text("Add Inventory Entry"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF0052CC),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
             ),
-
             const SizedBox(height: 16),
 
-            // ✅ Search Bar
+            // Search bar
             TextFormField(
               controller: _searchController,
               onChanged: (value) {
                 setState(() {
-                  filteredData = voucherData.where((entry) {
+                  filteredData = inventoryData.where((entry) {
                     return entry.values.any(
                       (v) => v.toString().toLowerCase().contains(
                         value.toLowerCase(),
@@ -404,7 +420,7 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
               },
               decoration: InputDecoration(
                 labelText: 'Search',
-                hintText: 'Search by ID, Buyer, Date...',
+                hintText: 'Search by ID, Product Name, Type...',
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -418,7 +434,7 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
 
             const SizedBox(height: 16),
 
-            // ✅ Voucher Table
+            // Inventory table
             Expanded(
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -431,12 +447,10 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                   columns: const [
-                    DataColumn(label: Text("Voucher ID")),
-                    DataColumn(label: Text("Date")),
-                    DataColumn(label: Text("Buyer")),
-                    DataColumn(label: Text("Unit Price")),
-                    DataColumn(label: Text("Amount")),
-                    DataColumn(label: Text("Total Price")),
+                    DataColumn(label: Text("ID")),
+                    DataColumn(label: Text("Product Name")),
+                    DataColumn(label: Text("Quantity Held")),
+                    DataColumn(label: Text("Type")),
                     DataColumn(label: Text("Action")),
                   ],
                   rows: List.generate(filteredData.length, (index) {
@@ -456,50 +470,53 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                         DataCell(
                           isEditing
                               ? _editableTextField(
-                                  initialValue: entry['date'],
-                                  onChanged: (val) => entry['date'] = val,
+                                  initialValue: entry['productName'],
+                                  onChanged: (val) =>
+                                      entry['productName'] = val,
                                 )
-                              : Text(entry['date']),
+                              : Text(entry['productName']),
                         ),
                         DataCell(
                           isEditing
                               ? _editableTextField(
-                                  initialValue: entry['buyer'],
-                                  onChanged: (val) => entry['buyer'] = val,
-                                )
-                              : Text(entry['buyer']),
-                        ),
-                        DataCell(
-                          isEditing
-                              ? _editableTextField(
-                                  initialValue: entry['unitPrice'].toString(),
+                                  initialValue: entry['quantityHeld']
+                                      .toString(),
+                                  keyboardType: TextInputType.number,
                                   onChanged: (val) {
-                                    entry['unitPrice'] =
-                                        double.tryParse(val) ?? 0;
-                                    entry['totalPrice'] =
-                                        entry['unitPrice'] * entry['amount'];
+                                    entry['quantityHeld'] =
+                                        int.tryParse(val) ?? 0;
                                     setState(() {});
                                   },
-                                  keyboardType: TextInputType.number,
                                 )
-                              : Text('${entry['unitPrice']}'),
+                              : Text('${entry['quantityHeld']}'),
                         ),
                         DataCell(
                           isEditing
-                              ? _editableTextField(
-                                  initialValue: entry['amount'].toString(),
+                              ? DropdownButton<String>(
+                                  value: entry['type'],
                                   onChanged: (val) {
-                                    entry['amount'] = double.tryParse(val) ?? 0;
-                                    entry['totalPrice'] =
-                                        entry['unitPrice'] * entry['amount'];
-                                    setState(() {});
+                                    if (val != null) {
+                                      setState(() {
+                                        entry['type'] = val;
+                                      });
+                                    }
                                   },
-                                  keyboardType: TextInputType.number,
+                                  items: _types
+                                      .map(
+                                        (type) => DropdownMenuItem(
+                                          value: type,
+                                          child: Text(
+                                            type[0].toUpperCase() +
+                                                type.substring(1),
+                                          ),
+                                        ),
+                                      )
+                                      .toList(),
                                 )
-                              : Text('${entry['amount']}'),
-                        ),
-                        DataCell(
-                          Text('${entry['totalPrice'].toStringAsFixed(2)}'),
+                              : Text(
+                                  entry['type'][0].toUpperCase() +
+                                      entry['type'].substring(1),
+                                ),
                         ),
                         DataCell(
                           Row(
