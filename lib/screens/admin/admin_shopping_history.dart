@@ -359,11 +359,7 @@ class _AdminShoppingHistoryScreenState
                       title: "Staff State",
                       onTap: () {},
                     ),
-                    _buildSidebarTile(
-                      icon: Icons.restaurant,
-                      title: "Cook State",
-                      onTap: () {},
-                    ),
+
                     // Add other tiles as needed
                   ],
                 ),
@@ -494,9 +490,8 @@ class _AdminShoppingHistoryScreenState
                       final isEditing = entry['isEditing'] as bool;
 
                       // Zebra striping
-                      final rowColor = index % 2 == 0
-                          ? Colors.grey[100]
-                          : Colors.white;
+                      final rowColor =
+                          index % 2 == 0 ? Colors.grey[100] : Colors.white;
 
                       return DataRow(
                         color: WidgetStateProperty.all(rowColor),

@@ -100,8 +100,7 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
         selectedTileColor: Colors.blue.shade100,
         leading: Icon(
           icon,
-          color:
-              color ??
+          color: color ??
               (selected
                   ? const Color.fromARGB(255, 40, 150, 240)
                   : Colors.black),
@@ -271,11 +270,7 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
                       title: "Staff State",
                       onTap: () {},
                     ),
-                    _buildSidebarTile(
-                      icon: Icons.restaurant,
-                      title: "Cook State",
-                      onTap: () {},
-                    ),
+
                     // ... add remaining menu items as needed
                   ],
                 ),

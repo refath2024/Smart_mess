@@ -229,11 +229,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                       title: "Staff State",
                       onTap: () {},
                     ),
-                    _buildSidebarTile(
-                      icon: Icons.restaurant,
-                      title: "Cook State",
-                      onTap: () {},
-                    ),
                   ],
                 ),
               ),
@@ -252,7 +247,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           ),
         ),
       ),
-
       appBar: AppBar(
         backgroundColor: const Color(0xFF002B5B),
         iconTheme: const IconThemeData(color: Colors.white),
@@ -266,7 +260,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           ),
         ),
       ),
-
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),

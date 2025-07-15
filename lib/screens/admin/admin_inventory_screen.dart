@@ -338,11 +338,7 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                       title: "Staff State",
                       onTap: () {},
                     ),
-                    _buildSidebarTile(
-                      icon: Icons.restaurant,
-                      title: "Cook State",
-                      onTap: () {},
-                    ),
+
                     // Other sidebar tiles ...
                   ],
                 ),
@@ -362,7 +358,6 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
           ),
         ),
       ),
-
       appBar: AppBar(
         backgroundColor: const Color(0xFF002B5B),
         iconTheme: const IconThemeData(color: Colors.white),
@@ -376,7 +371,6 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
           ),
         ),
       ),
-
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -413,8 +407,8 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                   filteredData = inventoryData.where((entry) {
                     return entry.values.any(
                       (v) => v.toString().toLowerCase().contains(
-                        value.toLowerCase(),
-                      ),
+                            value.toLowerCase(),
+                          ),
                     );
                   }).toList();
                 });
@@ -480,8 +474,8 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                         DataCell(
                           isEditing
                               ? _editableTextField(
-                                  initialValue: entry['quantityHeld']
-                                      .toString(),
+                                  initialValue:
+                                      entry['quantityHeld'].toString(),
                                   keyboardType: TextInputType.number,
                                   onChanged: (val) {
                                     entry['quantityHeld'] =

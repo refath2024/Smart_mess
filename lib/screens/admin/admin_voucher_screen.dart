@@ -322,11 +322,6 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                       title: "Staff State",
                       onTap: () {},
                     ),
-                    _buildSidebarTile(
-                      icon: Icons.restaurant,
-                      title: "Cook State",
-                      onTap: () {},
-                    ),
                   ],
                 ),
               ),
@@ -396,8 +391,8 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                   filteredData = voucherData.where((entry) {
                     return entry.values.any(
                       (v) => v.toString().toLowerCase().contains(
-                        value.toLowerCase(),
-                      ),
+                            value.toLowerCase(),
+                          ),
                     );
                   }).toList();
                 });

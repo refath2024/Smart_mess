@@ -329,12 +329,10 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
 
   Widget _buildStats() {
     final totalMembers = users.length;
-    final activeMembers = users
-        .where((u) => u['status']!.toLowerCase() == 'active')
-        .length;
-    final diningMembers = users
-        .where((u) => u['role']!.toLowerCase() == 'dining member')
-        .length;
+    final activeMembers =
+        users.where((u) => u['status']!.toLowerCase() == 'active').length;
+    final diningMembers =
+        users.where((u) => u['role']!.toLowerCase() == 'dining member').length;
     final activeDining = users
         .where(
           (u) =>
@@ -499,7 +497,6 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                         );
                       },
                     ),
-
                     _buildSidebarTile(
                       icon: Icons.storage,
                       title: "Inventory",
@@ -559,11 +556,6 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                       title: "Staff State",
                       onTap: () {},
                     ),
-                    _buildSidebarTile(
-                      icon: Icons.restaurant,
-                      title: "Cook State",
-                      onTap: () {},
-                    ),
                   ],
                 ),
               ),
@@ -587,7 +579,6 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
         iconTheme: const IconThemeData(color: Colors.white),
         title: const Text("Users", style: TextStyle(color: Colors.white)),
       ),
-
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),

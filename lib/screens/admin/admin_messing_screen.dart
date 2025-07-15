@@ -308,16 +308,16 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
       breakfastEntries[index]['ingredient_name'] = breakfastControllers[0].text;
       breakfastEntries[index]['amount'] =
           int.tryParse(breakfastControllers[1].text) ??
-          breakfastEntries[index]['amount'];
+              breakfastEntries[index]['amount'];
       breakfastEntries[index]['total_prices'] =
           int.tryParse(breakfastControllers[2].text) ??
-          breakfastEntries[index]['total_prices'];
+              breakfastEntries[index]['total_prices'];
       breakfastEntries[index]['members'] =
           int.tryParse(breakfastControllers[3].text) ??
-          breakfastEntries[index]['members'];
+              breakfastEntries[index]['members'];
       breakfastEntries[index]['ingredient_price'] =
           int.tryParse(breakfastControllers[4].text) ??
-          breakfastEntries[index]['ingredient_price'];
+              breakfastEntries[index]['ingredient_price'];
       editingBreakfastIndex = null;
     });
   }
@@ -325,18 +325,16 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
   void _saveLunch(int index) {
     setState(() {
       lunchEntries[index]['ingredient_name'] = lunchControllers[0].text;
-      lunchEntries[index]['amount'] =
-          int.tryParse(lunchControllers[1].text) ??
+      lunchEntries[index]['amount'] = int.tryParse(lunchControllers[1].text) ??
           lunchEntries[index]['amount'];
       lunchEntries[index]['total_prices'] =
           int.tryParse(lunchControllers[2].text) ??
-          lunchEntries[index]['total_prices'];
-      lunchEntries[index]['members'] =
-          int.tryParse(lunchControllers[3].text) ??
+              lunchEntries[index]['total_prices'];
+      lunchEntries[index]['members'] = int.tryParse(lunchControllers[3].text) ??
           lunchEntries[index]['members'];
       lunchEntries[index]['ingredient_price'] =
           int.tryParse(lunchControllers[4].text) ??
-          lunchEntries[index]['ingredient_price'];
+              lunchEntries[index]['ingredient_price'];
       editingLunchIndex = null;
     });
   }
@@ -346,16 +344,16 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
       dinnerEntries[index]['ingredient_name'] = dinnerControllers[0].text;
       dinnerEntries[index]['amount'] =
           int.tryParse(dinnerControllers[1].text) ??
-          dinnerEntries[index]['amount'];
+              dinnerEntries[index]['amount'];
       dinnerEntries[index]['total_prices'] =
           int.tryParse(dinnerControllers[2].text) ??
-          dinnerEntries[index]['total_prices'];
+              dinnerEntries[index]['total_prices'];
       dinnerEntries[index]['members'] =
           int.tryParse(dinnerControllers[3].text) ??
-          dinnerEntries[index]['members'];
+              dinnerEntries[index]['members'];
       dinnerEntries[index]['ingredient_price'] =
           int.tryParse(dinnerControllers[4].text) ??
-          dinnerEntries[index]['ingredient_price'];
+              dinnerEntries[index]['ingredient_price'];
       editingDinnerIndex = null;
     });
   }
@@ -552,11 +550,6 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                     _buildSidebarTile(
                       icon: Icons.manage_accounts,
                       title: "Staff State",
-                      onTap: () {},
-                    ),
-                    _buildSidebarTile(
-                      icon: Icons.restaurant,
-                      title: "Cook State",
                       onTap: () {},
                     ),
                   ],
