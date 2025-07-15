@@ -509,6 +509,8 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                                   onPressed: () => _cancelEdit(index),
                                 ),
                               ],
+
+                              
                               const SizedBox(width: 6),
                               _actionButton(
                                 text: "Delete",
