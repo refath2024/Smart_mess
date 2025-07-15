@@ -6,6 +6,9 @@ import 'admin_shopping_history.dart';
 import 'admin_voucher_screen.dart';
 import 'admin_inventory_screen.dart';
 import 'admin_messing_screen.dart';
+import 'admin_staff_state_screen.dart' as staff_screen; // Import the new screen
+import 'cook_state.dart';
+import 'admin_payment_history.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -217,7 +220,14 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     _buildSidebarTile(
                       icon: Icons.payment,
                       title: "Payments",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const PaymentsDashboard(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.people_alt,
@@ -227,7 +237,26 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     _buildSidebarTile(
                       icon: Icons.manage_accounts,
                       title: "Staff State",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const staff_screen.AdminStaffStateScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildSidebarTile(
+                      icon: Icons.restaurant_menu,
+                      title: "Cook State",
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const CookStatePage(),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),

@@ -7,6 +7,9 @@ import 'admin_shopping_history.dart';
 import 'admin_voucher_screen.dart';
 import 'add_inventory_screen.dart';
 import 'admin_messing_screen.dart';
+import 'admin_staff_state_screen.dart' as staff_screen;
+import 'cook_state.dart';
+import 'admin_payment_history.dart';
 
 class AdminInventoryScreen extends StatefulWidget {
   const AdminInventoryScreen({super.key});
@@ -326,7 +329,14 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                     _buildSidebarTile(
                       icon: Icons.payment,
                       title: "Payments",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const PaymentsDashboard(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.people_alt,
@@ -336,7 +346,26 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                     _buildSidebarTile(
                       icon: Icons.manage_accounts,
                       title: "Staff State",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const staff_screen.AdminStaffStateScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildSidebarTile(
+                      icon: Icons.restaurant_menu,
+                      title: "Cook State",
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const CookStatePage(),
+                          ),
+                        );
+                      },
                     ),
 
                     // Other sidebar tiles ...

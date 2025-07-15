@@ -6,6 +6,7 @@ import 'admin_shopping_history.dart';
 import 'admin_voucher_screen.dart';
 import 'admin_inventory_screen.dart';
 import 'admin_messing_screen.dart';
+import 'admin_staff_state_screen.dart' as staff_screen;
 
 class AdminPendingIdsScreen extends StatefulWidget {
   const AdminPendingIdsScreen({super.key});
@@ -268,7 +269,14 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
                     _buildSidebarTile(
                       icon: Icons.manage_accounts,
                       title: "Staff State",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const staff_screen.AdminStaffStateScreen(),
+                          ),
+                        );
+                      },
                     ),
 
                     // ... add remaining menu items as needed

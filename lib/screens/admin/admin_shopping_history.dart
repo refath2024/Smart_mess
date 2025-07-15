@@ -7,6 +7,7 @@ import 'admin_add_shopping.dart';
 import 'admin_voucher_screen.dart';
 import 'admin_inventory_screen.dart';
 import 'admin_messing_screen.dart';
+import 'admin_staff_state_screen.dart' as staff_screen;
 
 class AdminShoppingHistoryScreen extends StatefulWidget {
   const AdminShoppingHistoryScreen({super.key});
@@ -359,7 +360,14 @@ class _AdminShoppingHistoryScreenState
                     _buildSidebarTile(
                       icon: Icons.manage_accounts,
                       title: "Staff State",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const staff_screen.AdminStaffStateScreen(),
+                          ),
+                        );
+                      },
                     ),
 
                     // Add other tiles as needed
