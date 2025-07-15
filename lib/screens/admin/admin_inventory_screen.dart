@@ -117,8 +117,9 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
       int origIndex = inventoryData.indexWhere(
         (e) => e['id'] == filteredData[index]['id'],
       );
-      if (origIndex != -1)
+      if (origIndex != -1) {
         inventoryData[origIndex] = Map.from(filteredData[index]);
+      }
     });
 
     ScaffoldMessenger.of(
@@ -439,7 +440,7 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: DataTable(
-                  headingRowColor: MaterialStateProperty.all(
+                  headingRowColor: WidgetStateProperty.all(
                     const Color(0xFF134074),
                   ),
                   headingTextStyle: const TextStyle(

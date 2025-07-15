@@ -423,7 +423,7 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: DataTable(
-                  headingRowColor: MaterialStateProperty.all(
+                  headingRowColor: WidgetStateProperty.all(
                     const Color(0xFF134074),
                   ),
                   headingTextStyle: const TextStyle(

@@ -273,7 +273,7 @@ class _MessingScreenState extends State<MessingScreen> {
         child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: DataTable(
-            headingRowColor: MaterialStateProperty.all(Colors.blue.shade100),
+            headingRowColor: WidgetStateProperty.all(Colors.blue.shade100),
             columns: const [
               DataColumn(
                 label: Text(
@@ -336,7 +336,7 @@ class _MessingScreenState extends State<MessingScreen> {
               }),
               // Total row (always added)
               DataRow(
-                color: MaterialStateProperty.all(Colors.blue.shade100),
+                color: WidgetStateProperty.all(Colors.blue.shade100),
                 cells: [
                   const DataCell(
                     Text(

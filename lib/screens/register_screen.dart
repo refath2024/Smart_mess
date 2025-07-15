@@ -149,11 +149,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       _emailController,
                       type: TextInputType.emailAddress,
                       validator: (val) {
-                        if (val == null || val.isEmpty)
+                        if (val == null || val.isEmpty) {
                           return 'Please enter your email';
+                        }
                         final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
-                        if (!emailRegex.hasMatch(val))
+                        if (!emailRegex.hasMatch(val)) {
                           return 'Enter a valid email';
+                        }
                         return null;
                       },
                     ),
@@ -177,10 +179,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         });
                       },
                       validator: (val) {
-                        if (val == null || val.isEmpty)
+                        if (val == null || val.isEmpty) {
                           return 'Please enter a password';
-                        if (val.length < 6)
+                        }
+                        if (val.length < 6) {
                           return 'Password must be at least 6 characters';
+                        }
                         return null;
                       },
                     ),
@@ -195,10 +199,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         });
                       },
                       validator: (val) {
-                        if (val == null || val.isEmpty)
+                        if (val == null || val.isEmpty) {
                           return 'Please confirm your password';
-                        if (val != _passwordController.text)
+                        }
+                        if (val != _passwordController.text) {
                           return 'Passwords do not match';
+                        }
                         return null;
                       },
                     ),

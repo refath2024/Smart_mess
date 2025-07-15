@@ -336,7 +336,7 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
                     columnSpacing: 20,
                     headingRowHeight: 50,
                     dataRowHeight: 60,
-                    headingRowColor: MaterialStateProperty.all(
+                    headingRowColor: WidgetStateProperty.all(
                       const Color(0xFF1A4D8F),
                     ), // Dark navy
                     headingTextStyle: const TextStyle(
@@ -364,8 +364,8 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
                     ],
                     rows: filteredUsers.map((user) {
                       return DataRow(
-                        color: MaterialStateProperty.resolveWith<Color?>((
-                          Set<MaterialState> states,
+                        color: WidgetStateProperty.resolveWith<Color?>((
+                          Set<WidgetState> states,
                         ) {
                           return Colors.grey.shade100;
                         }),

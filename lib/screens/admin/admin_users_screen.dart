@@ -629,7 +629,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                       children: [
                         _buildTableHeader(),
                         const Divider(),
-                        ...filteredUsers.map(_buildUserRow).toList(),
+                        ...filteredUsers.map(_buildUserRow),
                       ],
                     ),
                   ),

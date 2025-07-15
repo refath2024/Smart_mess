@@ -457,7 +457,7 @@ class _AdminShoppingHistoryScreenState
                     headingRowHeight: 56,
                     dataRowHeight: 64,
                     horizontalMargin: 12,
-                    headingRowColor: MaterialStateProperty.all(
+                    headingRowColor: WidgetStateProperty.all(
                       const Color(0xFF134074),
                     ),
                     headingTextStyle: const TextStyle(
@@ -471,10 +471,10 @@ class _AdminShoppingHistoryScreenState
                       fontSize: 14,
                       letterSpacing: 0.5,
                     ),
-                    dataRowColor: MaterialStateProperty.resolveWith<Color?>((
-                      Set<MaterialState> states,
+                    dataRowColor: WidgetStateProperty.resolveWith<Color?>((
+                      Set<WidgetState> states,
                     ) {
-                      if (states.contains(MaterialState.selected)) {
+                      if (states.contains(WidgetState.selected)) {
                         return Colors.blue.shade100.withOpacity(0.4);
                       }
                       return null;
@@ -499,7 +499,7 @@ class _AdminShoppingHistoryScreenState
                           : Colors.white;
 
                       return DataRow(
-                        color: MaterialStateProperty.all(rowColor),
+                        color: WidgetStateProperty.all(rowColor),
                         cells: [
                           DataCell(Text('${entry['id']}')),
                           DataCell(
