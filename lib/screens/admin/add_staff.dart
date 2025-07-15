@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'admin_staff_state_screen.dart' as staff_screen;
+import 'admin_staff_state_screen.dart';
 
 class AddNewUserForm extends StatefulWidget {
   const AddNewUserForm({super.key});
@@ -26,10 +26,15 @@ class _AddNewUserFormState extends State<AddNewUserForm> {
         context: context,
         builder: (_) => AlertDialog(
           title: const Text('Confirm Submission'),
-          content: Text('Are you sure you want to add ${_nameController.text}?'),
+          content:
+              Text('Are you sure you want to add ${_nameController.text}?'),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-            ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Confirm')),
+            TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel')),
+            ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Confirm')),
           ],
         ),
       );
@@ -56,7 +61,8 @@ class _AddNewUserFormState extends State<AddNewUserForm> {
         );
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const staff_screen.AdminStaffStateScreen()),
+          MaterialPageRoute(
+              builder: (context) => const AdminStaffStateScreen()),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -106,7 +112,10 @@ class _AddNewUserFormState extends State<AddNewUserForm> {
                 children: [
                   const Text(
                     'Add New User',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
+                    style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87),
                   ),
                   const SizedBox(height: 24),
                   buildInputField(_baNoController, 'BA No'),
@@ -114,8 +123,10 @@ class _AddNewUserFormState extends State<AddNewUserForm> {
                   buildInputField(_nameController, 'Name'),
                   buildInputField(_unitController, 'Unit'),
                   buildInputField(_mobileController, 'Mobile No'),
-                  buildInputField(_emailController, 'E-Mail', inputType: TextInputType.emailAddress),
-                  buildInputField(_passwordController, 'Password', obscure: true),
+                  buildInputField(_emailController, 'E-Mail',
+                      inputType: TextInputType.emailAddress),
+                  buildInputField(_passwordController, 'Password',
+                      obscure: true),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(
@@ -124,10 +135,12 @@ class _AddNewUserFormState extends State<AddNewUserForm> {
                     ),
                     value: _selectedRole,
                     items: const [
-                      DropdownMenuItem(value: 'user', child: Text('Dining Member')),
+                      DropdownMenuItem(
+                          value: 'user', child: Text('Dining Member')),
                     ],
                     onChanged: (value) => setState(() => _selectedRole = value),
-                    validator: (value) => value == null ? 'Please select a role' : null,
+                    validator: (value) =>
+                        value == null ? 'Please select a role' : null,
                   ),
                   const SizedBox(height: 32),
                   Row(
@@ -135,17 +148,21 @@ class _AddNewUserFormState extends State<AddNewUserForm> {
                     children: [
                       ElevatedButton(
                         onPressed: _submitForm,
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue),
                         child: const Text('Submit'),
                       ),
                       ElevatedButton(
                         onPressed: () {
                           Navigator.pushReplacement(
                             context,
-                            MaterialPageRoute(builder: (context) => const staff_screen.AdminStaffStateScreen()),
+                            MaterialPageRoute(
+                                builder: (context) =>
+                                    const AdminStaffStateScreen()),
                           );
                         },
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red),
                         child: const Text('Cancel'),
                       ),
                     ],
@@ -171,7 +188,8 @@ class _AddNewUserFormState extends State<AddNewUserForm> {
           labelText: label,
           border: OutlineInputBorder(),
         ),
-        validator: (value) => (value == null || value.isEmpty) ? 'Please enter $label' : null,
+        validator: (value) =>
+            (value == null || value.isEmpty) ? 'Please enter $label' : null,
       ),
     );
   }

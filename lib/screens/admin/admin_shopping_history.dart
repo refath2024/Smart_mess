@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 import '../login_screen.dart';
 import 'admin_home_screen.dart';
+import 'admin_payment_history.dart';
+import 'admin_dining_member_state.dart';
 import 'admin_users_screen.dart';
 import 'admin_pending_ids_screen.dart';
 import 'admin_add_shopping.dart';
 import 'admin_voucher_screen.dart';
 import 'admin_inventory_screen.dart';
 import 'admin_messing_screen.dart';
-import 'admin_staff_state_screen.dart' as staff_screen;
+import 'admin_staff_state_screen.dart';
 
 class AdminShoppingHistoryScreen extends StatefulWidget {
   const AdminShoppingHistoryScreen({super.key});
-
 
 //jjjj
   @override
@@ -350,12 +351,26 @@ class _AdminShoppingHistoryScreenState
                     _buildSidebarTile(
                       icon: Icons.payment,
                       title: "Payments",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const PaymentsDashboard(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.people_alt,
                       title: "Dining Member State",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const DiningMemberStatePage(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.manage_accounts,
@@ -364,7 +379,7 @@ class _AdminShoppingHistoryScreenState
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const staff_screen.AdminStaffStateScreen(),
+                            builder: (context) => const AdminStaffStateScreen(),
                           ),
                         );
                       },

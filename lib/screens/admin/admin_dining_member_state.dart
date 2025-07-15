@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../login_screen.dart';
+import 'admin_home_screen.dart';
 import 'admin_users_screen.dart';
 import 'admin_pending_ids_screen.dart';
 import 'admin_shopping_history.dart';
@@ -7,17 +8,69 @@ import 'admin_voucher_screen.dart';
 import 'admin_inventory_screen.dart';
 import 'admin_messing_screen.dart';
 import 'admin_staff_state_screen.dart';
-import 'admin_dining_member_state.dart';
 import 'admin_payment_history.dart';
 
-class AdminHomeScreen extends StatefulWidget {
-  const AdminHomeScreen({super.key});
+class DiningMemberData {
+  final String name;
+  final String rank;
+  final String membershipStatus;
+  final String lastMealTaken;
+  final int totalMeals;
+  final double monthlyBill;
 
-  @override
-  State<AdminHomeScreen> createState() => _AdminHomeScreenState();
+  DiningMemberData({
+    required this.name,
+    required this.rank,
+    required this.membershipStatus,
+    required this.lastMealTaken,
+    required this.totalMeals,
+    required this.monthlyBill,
+  });
 }
 
-class _AdminHomeScreenState extends State<AdminHomeScreen> {
+class DiningMemberStatePage extends StatefulWidget {
+  const DiningMemberStatePage({super.key});
+
+  @override
+  State<DiningMemberStatePage> createState() => _DiningMemberStatePageState();
+}
+
+class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
+  final List<DiningMemberData> members = [
+    DiningMemberData(
+      name: "Maj John Smith",
+      rank: "Major",
+      membershipStatus: "Active",
+      lastMealTaken: "Today, Lunch",
+      totalMeals: 45,
+      monthlyBill: 3500.00,
+    ),
+    DiningMemberData(
+      name: "Capt Sarah Johnson",
+      rank: "Captain",
+      membershipStatus: "Active",
+      lastMealTaken: "Today, Breakfast",
+      totalMeals: 38,
+      monthlyBill: 2950.00,
+    ),
+    DiningMemberData(
+      name: "Lt David Miller",
+      rank: "Lieutenant",
+      membershipStatus: "On Leave",
+      lastMealTaken: "3 days ago, Dinner",
+      totalMeals: 28,
+      monthlyBill: 2100.00,
+    ),
+    DiningMemberData(
+      name: "WO James Wilson",
+      rank: "Warrant Officer",
+      membershipStatus: "Active",
+      lastMealTaken: "Today, Dinner",
+      totalMeals: 42,
+      monthlyBill: 3200.00,
+    ),
+  ];
+
   void _logout() {
     Navigator.pushAndRemoveUntil(
       context,
@@ -44,38 +97,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           color: color ?? (selected ? Colors.blue : Colors.black),
         ),
         title: Text(title, style: TextStyle(color: color ?? Colors.black)),
-      ),
-    );
-  }
-
-  Widget _buildDemoBox(String title, String value, Color color) {
-    return Expanded(
-      child: Container(
-        margin: const EdgeInsets.all(6),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(15),
-          boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-                color: Color.fromARGB(255, 213, 178, 178),
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              title,
-              style: const TextStyle(fontSize: 14, color: Colors.white),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -121,17 +142,23 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     _buildSidebarTile(
                       icon: Icons.dashboard,
                       title: "Home",
-                      onTap: () => Navigator.pop(context),
-                      selected: true,
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const AdminHomeScreen(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.people,
                       title: "Users",
                       onTap: () {
-                        Navigator.push(
+                        Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const AdminUsersScreen(),
+                            builder: (_) => const AdminUsersScreen(),
                           ),
                         );
                       },
@@ -143,7 +170,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const AdminPendingIdsScreen(),
+                            builder: (_) => const AdminPendingIdsScreen(),
                           ),
                         );
                       },
@@ -155,8 +182,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (context) =>
-                                const AdminShoppingHistoryScreen(),
+                            builder: (_) => const AdminShoppingHistoryScreen(),
                           ),
                         );
                       },
@@ -168,7 +194,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const AdminVoucherScreen(),
+                            builder: (_) => const AdminVoucherScreen(),
                           ),
                         );
                       },
@@ -180,7 +206,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const AdminInventoryScreen(),
+                            builder: (_) => const AdminInventoryScreen(),
                           ),
                         );
                       },
@@ -224,7 +250,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const PaymentsDashboard(),
+                            builder: (_) => const PaymentsDashboard(),
                           ),
                         );
                       },
@@ -232,14 +258,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     _buildSidebarTile(
                       icon: Icons.people_alt,
                       title: "Dining Member State",
-                      onTap: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const DiningMemberStatePage(),
-                          ),
-                        );
-                      },
+                      onTap: () => Navigator.pop(context),
+                      selected: true,
                     ),
                     _buildSidebarTile(
                       icon: Icons.manage_accounts,
@@ -248,7 +268,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const AdminStaffStateScreen(),
+                            builder: (_) => const AdminStaffStateScreen(),
                           ),
                         );
                       },
@@ -273,48 +293,119 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       ),
       appBar: AppBar(
         backgroundColor: const Color(0xFF002B5B),
-        iconTheme: const IconThemeData(color: Colors.white),
-        centerTitle: true,
         title: const Text(
-          "Admin Dashboard",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
+          "Dining Member State",
+          style: TextStyle(color: Colors.white),
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: const Color(0xFF002B5B).withOpacity(0.1),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildStatCard("Total Members", "42", Colors.blue),
+                _buildStatCard("Active Today", "38", Colors.green),
+                _buildStatCard("On Leave", "4", Colors.orange),
+              ],
+            ),
           ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: members.length,
+              itemBuilder: (context, index) {
+                final member = members[index];
+                return Card(
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: ExpansionTile(
+                    title: Text(
+                      member.name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    subtitle: Text(member.rank),
+                    leading: CircleAvatar(
+                      backgroundColor: member.membershipStatus == "Active"
+                          ? Colors.green
+                          : Colors.orange,
+                      child: Text(
+                        member.name.substring(0, 1),
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ),
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          children: [
+                            _buildDetailRow("Status", member.membershipStatus),
+                            _buildDetailRow("Last Meal", member.lastMealTaken),
+                            _buildDetailRow(
+                                "Total Meals", member.totalMeals.toString()),
+                            _buildDetailRow("Monthly Bill",
+                                "৳${member.monthlyBill.toStringAsFixed(2)}"),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard(String title, String value, Color color) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+            Text(title),
+          ],
         ),
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                "Overview",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  _buildDemoBox("Total Users", "120", Colors.blue),
-                  _buildDemoBox("Pending Requests", "8", Colors.orange),
-                  _buildDemoBox("Feedbacks", "23", Colors.green),
-                ],
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                "Welcome back, Admin!",
-                style: TextStyle(fontSize: 16),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                "Monitor user activity, update menus, and manage system settings from here.",
-                style: TextStyle(color: Colors.grey),
-              ),
-            ],
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 14,
+            ),
           ),
-        ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontWeight: FontWeight.w500,
+              fontSize: 14,
+            ),
+          ),
+        ],
       ),
     );
   }

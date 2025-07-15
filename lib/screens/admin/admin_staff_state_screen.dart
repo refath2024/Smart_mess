@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'add_staff.dart';
 import 'admin_home_screen.dart';
-import 'admin_inventory_screen.dart';
-import 'admin_messing_screen.dart';
-import 'admin_payment_history.dart';
+import 'admin_users_screen.dart';
 import 'admin_pending_ids_screen.dart';
 import 'admin_shopping_history.dart';
-import 'admin_users_screen.dart';
 import 'admin_voucher_screen.dart';
-import 'cook_state.dart';
+import 'admin_inventory_screen.dart';
+import 'admin_messing_screen.dart';
+import 'admin_dining_member_state.dart';
+import 'admin_payment_history.dart';
+import '../login_screen.dart';
 
 class AdminStaffStateScreen extends StatefulWidget {
   const AdminStaffStateScreen({super.key});
@@ -50,12 +51,33 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
     );
   }
 
-
+  Widget _buildSidebarTile({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    bool selected = false,
+    Color? color,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      splashColor: Colors.blue.shade100,
+      child: ListTile(
+        selected: selected,
+        selectedTileColor: Colors.blue.shade100,
+        leading: Icon(
+          icon,
+          color: color ?? (selected ? Colors.blue : Colors.black),
+        ),
+        title: Text(title, style: TextStyle(color: color ?? Colors.black)),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final filteredData = staffData.where((row) {
-      return row.values.any((value) => value.toLowerCase().contains(searchTerm));
+      return row.values
+          .any((value) => value.toLowerCase().contains(searchTerm));
     }).toList();
 
     return Scaffold(
@@ -107,9 +129,9 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
               Expanded(
                 child: ListView(
                   children: [
-                    ListTile(
-                      leading: const Icon(Icons.dashboard),
-                      title: const Text("Home"),
+                    _buildSidebarTile(
+                      icon: Icons.dashboard,
+                      title: "Home",
                       onTap: () {
                         Navigator.pushReplacement(
                           context,
@@ -119,9 +141,9 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                         );
                       },
                     ),
-                    ListTile(
-                      leading: const Icon(Icons.people),
-                      title: const Text("Users"),
+                    _buildSidebarTile(
+                      icon: Icons.people,
+                      title: "Users",
                       onTap: () {
                         Navigator.pushReplacement(
                           context,
@@ -131,9 +153,9 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                         );
                       },
                     ),
-                    ListTile(
-                      leading: const Icon(Icons.pending),
-                      title: const Text("Pending IDs"),
+                    _buildSidebarTile(
+                      icon: Icons.pending,
+                      title: "Pending IDs",
                       onTap: () {
                         Navigator.pushReplacement(
                           context,
@@ -143,21 +165,22 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                         );
                       },
                     ),
-                    ListTile(
-                      leading: const Icon(Icons.history),
-                      title: const Text("Shopping History"),
+                    _buildSidebarTile(
+                      icon: Icons.history,
+                      title: "Shopping History",
                       onTap: () {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const AdminShoppingHistoryScreen(),
+                            builder: (context) =>
+                                const AdminShoppingHistoryScreen(),
                           ),
                         );
                       },
                     ),
-                    ListTile(
-                      leading: const Icon(Icons.receipt),
-                      title: const Text("Voucher List"),
+                    _buildSidebarTile(
+                      icon: Icons.receipt,
+                      title: "Voucher List",
                       onTap: () {
                         Navigator.pushReplacement(
                           context,
@@ -167,9 +190,9 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                         );
                       },
                     ),
-                    ListTile(
-                      leading: const Icon(Icons.storage),
-                      title: const Text("Inventory"),
+                    _buildSidebarTile(
+                      icon: Icons.storage,
+                      title: "Inventory",
                       onTap: () {
                         Navigator.pushReplacement(
                           context,
@@ -179,9 +202,9 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                         );
                       },
                     ),
-                    ListTile(
-                      leading: const Icon(Icons.food_bank),
-                      title: const Text("Messing"),
+                    _buildSidebarTile(
+                      icon: Icons.food_bank,
+                      title: "Messing",
                       onTap: () {
                         Navigator.pushReplacement(
                           context,
@@ -191,29 +214,29 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                         );
                       },
                     ),
-                    ListTile(
-                      leading: const Icon(Icons.menu_book),
-                      title: const Text("Monthly Menu"),
+                    _buildSidebarTile(
+                      icon: Icons.menu_book,
+                      title: "Monthly Menu",
                       onTap: () {},
                     ),
-                    ListTile(
-                      leading: const Icon(Icons.analytics),
-                      title: const Text("Meal State"),
+                    _buildSidebarTile(
+                      icon: Icons.analytics,
+                      title: "Meal State",
                       onTap: () {},
                     ),
-                    ListTile(
-                      leading: const Icon(Icons.thumb_up),
-                      title: const Text("Menu Vote"),
+                    _buildSidebarTile(
+                      icon: Icons.thumb_up,
+                      title: "Menu Vote",
                       onTap: () {},
                     ),
-                    ListTile(
-                      leading: const Icon(Icons.receipt_long),
-                      title: const Text("Bills"),
+                    _buildSidebarTile(
+                      icon: Icons.receipt_long,
+                      title: "Bills",
                       onTap: () {},
                     ),
-                    ListTile(
-                      leading: const Icon(Icons.payment),
-                      title: const Text("Payments"),
+                    _buildSidebarTile(
+                      icon: Icons.payment,
+                      title: "Payments",
                       onTap: () {
                         Navigator.pushReplacement(
                           context,
@@ -223,30 +246,43 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                         );
                       },
                     ),
-                    ListTile(
-                      leading: const Icon(Icons.people_alt),
-                      title: const Text("Dining Member State"),
-                      onTap: () {},
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.manage_accounts),
-                      title: const Text("Staff State"),
-                      selected: true,
-                      onTap: () => Navigator.pop(context),
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.restaurant_menu),
-                      title: const Text("Cook State"),
+                    _buildSidebarTile(
+                      icon: Icons.people_alt,
+                      title: "Dining Member State",
                       onTap: () {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const CookStatePage(),
+                            builder: (context) => const DiningMemberStatePage(),
                           ),
                         );
                       },
                     ),
+                    _buildSidebarTile(
+                      icon: Icons.manage_accounts,
+                      title: "Staff State",
+                      selected: true,
+                      onTap: () => Navigator.pop(context),
+                    ),
                   ],
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).padding.bottom + 8,
+                ),
+                child: _buildSidebarTile(
+                  icon: Icons.logout,
+                  title: "Logout",
+                  onTap: () {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const LoginScreen()),
+                      (route) => false,
+                    );
+                  },
+                  color: Colors.red,
                 ),
               ),
             ],
@@ -277,7 +313,8 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                   const SizedBox(width: 16),
                   ElevatedButton(
                     onPressed: _navigateToAddStaff,
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                    style:
+                        ElevatedButton.styleFrom(backgroundColor: Colors.green),
                     child: const Text('Add Staffs/Admin'),
                   ),
                 ],
@@ -328,21 +365,25 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                             Row(
                               children: [
                                 IconButton(
-                                  icon: const Icon(Icons.edit, color: Colors.grey),
+                                  icon: const Icon(Icons.edit,
+                                      color: Colors.grey),
                                   onPressed: () {
                                     // Implement edit logic
                                   },
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.save, color: Colors.blue),
+                                  icon: const Icon(Icons.save,
+                                      color: Colors.blue),
                                   onPressed: () {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Saved changes')),
+                                      const SnackBar(
+                                          content: Text('Saved changes')),
                                     );
                                   },
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  icon: const Icon(Icons.delete,
+                                      color: Colors.red),
                                   onPressed: () {
                                     setState(() {
                                       staffData.remove(row);

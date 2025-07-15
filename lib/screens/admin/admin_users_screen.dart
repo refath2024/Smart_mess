@@ -7,7 +7,7 @@ import 'admin_voucher_screen.dart';
 import 'admin_inventory_screen.dart';
 import 'admin_messing_screen.dart';
 import 'admin_staff_state_screen.dart';
-import 'cook_state.dart';
+import 'admin_dining_member_state.dart';
 import 'admin_payment_history.dart';
 
 class AdminUsersScreen extends StatefulWidget {
@@ -28,7 +28,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       'name': 'Sami',
       'unit': '10 Sig',
       'mobile': '01700000001',
-      'email': 'sami@army.mil.bd',                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+      'email': 'sami@army.mil.bd',
       'role': 'Admin',
       'status': 'Active',
     },
@@ -212,7 +212,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     setState(() {
       filteredUsers = users.where((user) {
         return user.values.any(
-          (value) => value.toString().toLowerCase().contains(query.toLowerCase()),
+          (value) =>
+              value.toString().toLowerCase().contains(query.toLowerCase()),
         );
       }).toList();
     });
@@ -475,7 +476,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                     _buildSidebarTile(
                       icon: Icons.dashboard,
                       title: "Home",
-                      onTap: () => _navigateToScreen(context, const AdminHomeScreen()),
+                      onTap: () =>
+                          _navigateToScreen(context, const AdminHomeScreen()),
                     ),
                     _buildSidebarTile(
                       icon: Icons.people,
@@ -486,27 +488,32 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                     _buildSidebarTile(
                       icon: Icons.pending,
                       title: "Pending IDs",
-                      onTap: () => _navigateToScreen(context, const AdminPendingIdsScreen()),
+                      onTap: () => _navigateToScreen(
+                          context, const AdminPendingIdsScreen()),
                     ),
                     _buildSidebarTile(
                       icon: Icons.history,
                       title: "Shopping History",
-                      onTap: () => _navigateToScreen(context, const AdminShoppingHistoryScreen()),
+                      onTap: () => _navigateToScreen(
+                          context, const AdminShoppingHistoryScreen()),
                     ),
                     _buildSidebarTile(
                       icon: Icons.receipt,
                       title: "Voucher List",
-                      onTap: () => _navigateToScreen(context, const AdminVoucherScreen()),
+                      onTap: () => _navigateToScreen(
+                          context, const AdminVoucherScreen()),
                     ),
                     _buildSidebarTile(
                       icon: Icons.storage,
                       title: "Inventory",
-                      onTap: () => _navigateToScreen(context, const AdminInventoryScreen()),
+                      onTap: () => _navigateToScreen(
+                          context, const AdminInventoryScreen()),
                     ),
                     _buildSidebarTile(
                       icon: Icons.food_bank,
                       title: "Messing",
-                      onTap: () => _navigateToScreen(context, const AdminMessingScreen()),
+                      onTap: () => _navigateToScreen(
+                          context, const AdminMessingScreen()),
                     ),
                     _buildSidebarTile(
                       icon: Icons.menu_book,
@@ -543,7 +550,14 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                     _buildSidebarTile(
                       icon: Icons.people_alt,
                       title: "Dining Member State",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const DiningMemberStatePage(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.manage_accounts,
@@ -553,18 +567,6 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                           context,
                           MaterialPageRoute(
                             builder: (context) => const AdminStaffStateScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                    _buildSidebarTile(
-                      icon: Icons.restaurant_menu,
-                      title: "Cook State",
-                      onTap: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const CookStatePage(),
                           ),
                         );
                       },

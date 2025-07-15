@@ -7,8 +7,8 @@ import 'admin_shopping_history.dart';
 import 'admin_voucher_screen.dart';
 import 'add_inventory_screen.dart';
 import 'admin_messing_screen.dart';
-import 'admin_staff_state_screen.dart' as staff_screen;
-import 'cook_state.dart';
+import 'admin_staff_state_screen.dart';
+import 'admin_dining_member_state.dart';
 import 'admin_payment_history.dart';
 
 class AdminInventoryScreen extends StatefulWidget {
@@ -341,7 +341,14 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                     _buildSidebarTile(
                       icon: Icons.people_alt,
                       title: "Dining Member State",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const DiningMemberStatePage(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.manage_accounts,
@@ -350,19 +357,7 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const staff_screen.AdminStaffStateScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                    _buildSidebarTile(
-                      icon: Icons.restaurant_menu,
-                      title: "Cook State",
-                      onTap: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const CookStatePage(),
+                            builder: (_) => const AdminStaffStateScreen(),
                           ),
                         );
                       },

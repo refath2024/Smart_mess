@@ -6,9 +6,11 @@ import 'admin_users_screen.dart';
 import 'admin_pending_ids_screen.dart';
 import 'admin_shopping_history.dart';
 import 'admin_add_voucher.dart';
-import 'admin_staff_state_screen.dart' as staff_screen;
-import 'cook_state.dart';
+import 'admin_staff_state_screen.dart';
+import 'admin_dining_member_state.dart';
 import 'admin_payment_history.dart';
+import 'admin_inventory_screen.dart';
+import 'admin_messing_screen.dart';
 
 class AdminVoucherScreen extends StatefulWidget {
   const AdminVoucherScreen({super.key});
@@ -143,7 +145,8 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
-      child: Text(text, style: const TextStyle(color: Color.fromARGB(255, 252, 235, 235))),
+      child: Text(text,
+          style: const TextStyle(color: Color.fromARGB(255, 252, 235, 235))),
     );
   }
 
@@ -262,19 +265,28 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                       selected: true,
                     ),
                     _buildSidebarTile(
-                      icon: Icons.inventory,
-                      title: "Inventory State",
-                      onTap: () {},
-                    ),
-                    _buildSidebarTile(
                       icon: Icons.storage,
                       title: "Inventory",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AdminInventoryScreen(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.food_bank,
                       title: "Messing",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AdminMessingScreen(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.menu_book,
@@ -311,7 +323,14 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                     _buildSidebarTile(
                       icon: Icons.people_alt,
                       title: "Dining Member State",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const DiningMemberStatePage(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.manage_accounts,
@@ -320,19 +339,7 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const staff_screen.AdminStaffStateScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                    _buildSidebarTile(
-                      icon: Icons.restaurant_menu,
-                      title: "Cook State",
-                      onTap: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const CookStatePage(),
+                            builder: (context) => const AdminStaffStateScreen(),
                           ),
                         );
                       },
@@ -533,8 +540,6 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                                   onPressed: () => _cancelEdit(index),
                                 ),
                               ],
-
-                              
                               const SizedBox(width: 6),
                               _actionButton(
                                 text: "Delete",

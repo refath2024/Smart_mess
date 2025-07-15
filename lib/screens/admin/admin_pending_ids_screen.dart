@@ -6,7 +6,9 @@ import 'admin_shopping_history.dart';
 import 'admin_voucher_screen.dart';
 import 'admin_inventory_screen.dart';
 import 'admin_messing_screen.dart';
-import 'admin_staff_state_screen.dart' as staff_screen;
+import 'admin_staff_state_screen.dart';
+import 'admin_dining_member_state.dart';
+import 'admin_payment_history.dart';
 
 class AdminPendingIdsScreen extends StatefulWidget {
   const AdminPendingIdsScreen({super.key});
@@ -259,12 +261,26 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
                     _buildSidebarTile(
                       icon: Icons.payment,
                       title: "Payments",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const PaymentsDashboard(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.people_alt,
                       title: "Dining Member State",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const DiningMemberStatePage(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.manage_accounts,
@@ -273,7 +289,7 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const staff_screen.AdminStaffStateScreen(),
+                            builder: (context) => const AdminStaffStateScreen(),
                           ),
                         );
                       },
