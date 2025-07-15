@@ -35,7 +35,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       debugPrint("Mobile: ${_mobileController.text}");
       debugPrint("Password: ${_passwordController.text}");
 
-      // TODO: Replace with your backend or Firebase logic
+      // TODO: Replace withh your backend or Firebase logic
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Registration submitted successfully!')),

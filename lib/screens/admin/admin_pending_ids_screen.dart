@@ -4,6 +4,8 @@ import 'admin_home_screen.dart';
 import 'admin_users_screen.dart';
 import 'admin_shopping_history.dart';
 import 'admin_voucher_screen.dart';
+import 'admin_inventory_screen.dart';
+import 'admin_messing_screen.dart';
 
 class AdminPendingIdsScreen extends StatefulWidget {
   const AdminPendingIdsScreen({super.key});
@@ -98,7 +100,11 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
         selectedTileColor: Colors.blue.shade100,
         leading: Icon(
           icon,
-          color: color ?? (selected ? Colors.blue : Colors.black),
+          color:
+              color ??
+              (selected
+                  ? const Color.fromARGB(255, 40, 150, 240)
+                  : Colors.black),
         ),
         title: Text(title, style: TextStyle(color: color ?? Colors.black)),
       ),
@@ -207,19 +213,28 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
                       },
                     ),
                     _buildSidebarTile(
-                      icon: Icons.inventory,
-                      title: "Inventory State",
-                      onTap: () {},
-                    ),
-                    _buildSidebarTile(
                       icon: Icons.storage,
                       title: "Inventory",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AdminInventoryScreen(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.food_bank,
                       title: "Messing",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AdminMessingScreen(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.menu_book,
