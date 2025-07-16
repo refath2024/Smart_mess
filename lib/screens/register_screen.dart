@@ -113,60 +113,63 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(height: 24),
 
                     _buildTextField(
-                      "No",
+                      "No *",
                       _noController,
-                      validator: (val) => val == null || val.isEmpty
-                          ? 'Please enter your ID number'
-                          : null,
+                      validator: (val) =>
+                          val == null || val.trim().isEmpty ? 'Please enter your ID number' : null,
                     ),
 
                     _buildTextField(
                       "Rank",
                       _rankController,
-                      validator: (val) => val == null || val.isEmpty
-                          ? 'Please enter your rank'
-                          : null,
+                      validator: (val) => null, // Not required
                     ),
 
                     _buildTextField(
-                      "Name",
+                      "Name *",
                       _nameController,
-                      validator: (val) => val == null || val.isEmpty
-                          ? 'Please enter your name'
-                          : null,
+                      validator: (val) =>
+                          val == null || val.trim().isEmpty ? 'Please enter your name' : null,
                     ),
 
                     _buildTextField(
                       "Unit",
                       _unitController,
-                      validator: (val) => val == null || val.isEmpty
-                          ? 'Please enter your unit'
-                          : null,
+                      validator: (val) => null, // Not required
                     ),
 
                     _buildTextField(
-                      "Email",
+                      "Email *",
                       _emailController,
                       type: TextInputType.emailAddress,
                       validator: (val) {
                         if (val == null || val.isEmpty) {
                           return 'Please enter your email';
                         }
-                        final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
+                        final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
                         if (!emailRegex.hasMatch(val)) {
-                          return 'Enter a valid email';
+                          return 'Enter a valid email address';
                         }
                         return null;
                       },
                     ),
 
                     _buildTextField(
-                      "Mobile No",
+                      "Mobile No * (at least 11 digits)",
                       _mobileController,
                       type: TextInputType.phone,
-                      validator: (val) => val == null || val.isEmpty
-                          ? 'Please enter your mobile number'
-                          : null,
+                      validator: (val) {
+                        if (val == null || val.isEmpty) {
+                          return 'Please enter your mobile number';
+                        }
+                        if (!RegExp(r'^\d+$').hasMatch(val)) {
+                          return 'Mobile number must contain only digits';
+                        }
+                        if (val.length < 11) {
+                          return 'Mobile number must be at least 11 digits';
+                        }
+                        return null;
+                      },
                     ),
 
                     _buildPasswordField(
