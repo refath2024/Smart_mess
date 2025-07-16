@@ -11,6 +11,7 @@ import 'admin_dining_member_state.dart';
 import 'admin_payment_history.dart';
 import 'meal_state_screen.dart';
 import 'admin_bill_screen.dart';
+import 'monthly_menu_screen.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -202,7 +203,14 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     _buildSidebarTile(
                       icon: Icons.menu_book,
                       title: "Monthly Menu",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const EditMenuScreen(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.analytics,
