@@ -207,7 +207,14 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     _buildSidebarTile(
                       icon: Icons.analytics,
                       title: "Meal State",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const MealStateScreen(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.thumb_up,
@@ -217,7 +224,14 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     _buildSidebarTile(
                       icon: Icons.receipt_long,
                       title: "Bills",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const BillScreen(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.payment,
