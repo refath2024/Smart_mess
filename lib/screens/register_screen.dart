@@ -360,6 +360,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 12,
                 vertical: 14,
+                
               ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
