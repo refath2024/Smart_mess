@@ -5,7 +5,7 @@ import 'admin_home_screen.dart';
 import 'admin_users_screen.dart';
 import 'admin_pending_ids_screen.dart';
 import 'admin_shopping_history.dart';
-import 'admin_add_voucher.dart';
+import 'add_voucher.dart';
 import 'admin_staff_state_screen.dart';
 import 'admin_dining_member_state.dart';
 import 'admin_payment_history.dart';
