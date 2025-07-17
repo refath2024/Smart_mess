@@ -30,22 +30,18 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
 
   List<Map<String, dynamic>> voucherData = [
     {
-      'id': 'V001',
-      'date': '2025-07-01',
+      'id': 'VCH-A7B2C9',
       'buyer': 'Lt Sami',
-      'unitPrice': 100,
-      'amount': 2,
-      'totalPrice': 200,
+      'date': '2025-07-01',
+      'images': [],
       'isEditing': false,
       'original': {},
     },
     {
-      'id': 'V002',
-      'date': '2025-07-02',
+      'id': 'VCH-X8Y4Z1',
       'buyer': 'Capt Maruf',
-      'unitPrice': 120,
-      'amount': 1.5,
-      'totalPrice': 180,
+      'date': '2025-07-02',
+      'images': [],
       'isEditing': false,
       'original': {},
     },
@@ -449,11 +445,9 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                   ),
                   columns: const [
                     DataColumn(label: Text("Voucher ID")),
+                    DataColumn(label: Text("Buyer Name")),
                     DataColumn(label: Text("Date")),
-                    DataColumn(label: Text("Buyer")),
-                    DataColumn(label: Text("Unit Price")),
-                    DataColumn(label: Text("Amount")),
-                    DataColumn(label: Text("Total Price")),
+                    DataColumn(label: Text("Images")),
                     DataColumn(label: Text("Action")),
                   ],
                   rows: List.generate(filteredData.length, (index) {
@@ -473,14 +467,6 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                         DataCell(
                           isEditing
                               ? _editableTextField(
-                                  initialValue: entry['date'],
-                                  onChanged: (val) => entry['date'] = val,
-                                )
-                              : Text(entry['date']),
-                        ),
-                        DataCell(
-                          isEditing
-                              ? _editableTextField(
                                   initialValue: entry['buyer'],
                                   onChanged: (val) => entry['buyer'] = val,
                                 )
@@ -489,34 +475,26 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                         DataCell(
                           isEditing
                               ? _editableTextField(
-                                  initialValue: entry['unitPrice'].toString(),
-                                  onChanged: (val) {
-                                    entry['unitPrice'] =
-                                        double.tryParse(val) ?? 0;
-                                    entry['totalPrice'] =
-                                        entry['unitPrice'] * entry['amount'];
-                                    setState(() {});
-                                  },
-                                  keyboardType: TextInputType.number,
+                                  initialValue: entry['date'],
+                                  onChanged: (val) => entry['date'] = val,
                                 )
-                              : Text('${entry['unitPrice']}'),
+                              : Text(entry['date']),
                         ),
                         DataCell(
-                          isEditing
-                              ? _editableTextField(
-                                  initialValue: entry['amount'].toString(),
-                                  onChanged: (val) {
-                                    entry['amount'] = double.tryParse(val) ?? 0;
-                                    entry['totalPrice'] =
-                                        entry['unitPrice'] * entry['amount'];
-                                    setState(() {});
-                                  },
-                                  keyboardType: TextInputType.number,
-                                )
-                              : Text('${entry['amount']}'),
-                        ),
-                        DataCell(
-                          Text('${entry['totalPrice'].toStringAsFixed(2)}'),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              // TODO: Implement image view dialog
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text("View Images")),
+                              );
+                            },
+                            icon: const Icon(Icons.image),
+                            label: const Text("View"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF0052CC),
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
                         ),
                         DataCell(
                           Row(
