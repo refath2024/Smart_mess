@@ -9,6 +9,10 @@ import 'admin_inventory_screen.dart';
 import 'admin_messing_screen.dart';
 import 'admin_staff_state_screen.dart';
 import 'admin_dining_member_state.dart';
+import 'admin_bill_screen.dart';
+import 'admin_monthly_menu_screen.dart';
+import 'admin_menu_vote_screen.dart';
+import 'admin_meal_state_screen.dart';
 
 class PaymentData {
   final double amount;
@@ -267,10 +271,10 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
                       icon: Icons.people,
                       title: "Users",
                       onTap: () {
-                        Navigator.pushReplacement(
+                        Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const AdminUsersScreen(),
+                            builder: (context) => const AdminUsersScreen(),
                           ),
                         );
                       },
@@ -282,7 +286,7 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const AdminPendingIdsScreen(),
+                            builder: (context) => const AdminPendingIdsScreen(),
                           ),
                         );
                       },
@@ -294,7 +298,8 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const AdminShoppingHistoryScreen(),
+                            builder: (context) =>
+                                const AdminShoppingHistoryScreen(),
                           ),
                         );
                       },
@@ -306,7 +311,7 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const AdminVoucherScreen(),
+                            builder: (context) => const AdminVoucherScreen(),
                           ),
                         );
                       },
@@ -318,7 +323,7 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const AdminInventoryScreen(),
+                            builder: (context) => const AdminInventoryScreen(),
                           ),
                         );
                       },
@@ -338,22 +343,50 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
                     _buildSidebarTile(
                       icon: Icons.menu_book,
                       title: "Monthly Menu",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const EditMenuScreen(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.analytics,
                       title: "Meal State",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AdminMealStateScreen(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.thumb_up,
                       title: "Menu Vote",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const MenuVoteScreen(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.receipt_long,
                       title: "Bills",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AdminBillScreen(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.payment,
@@ -368,7 +401,7 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const DiningMemberStatePage(),
+                            builder: (context) => const DiningMemberStatePage(),
                           ),
                         );
                       },
@@ -380,7 +413,7 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const AdminStaffStateScreen(),
+                            builder: (context) => const AdminStaffStateScreen(),
                           ),
                         );
                       },

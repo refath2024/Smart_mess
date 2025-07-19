@@ -121,8 +121,6 @@ class _BillingScreenState extends State<BillingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      
-
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),

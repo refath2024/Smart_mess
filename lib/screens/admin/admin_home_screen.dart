@@ -12,6 +12,7 @@ import 'admin_payment_history.dart';
 import 'admin_meal_state_screen.dart';
 import 'admin_bill_screen.dart';
 import 'admin_monthly_menu_screen.dart';
+import 'admin_menu_vote_screen.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -219,7 +220,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const MealStateScreen(),
+                            builder: (context) => const AdminMealStateScreen(),
                           ),
                         );
                       },
@@ -227,7 +228,14 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     _buildSidebarTile(
                       icon: Icons.thumb_up,
                       title: "Menu Vote",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const MenuVoteScreen(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.receipt_long,
@@ -236,7 +244,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const BillScreen(),
+                            builder: (context) => const AdminBillScreen(),
                           ),
                         );
                       },

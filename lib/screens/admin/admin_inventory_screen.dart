@@ -10,6 +10,10 @@ import 'admin_messing_screen.dart';
 import 'admin_staff_state_screen.dart';
 import 'admin_dining_member_state.dart';
 import 'admin_payment_history.dart';
+import 'admin_bill_screen.dart';
+import 'admin_monthly_menu_screen.dart';
+import 'admin_menu_vote_screen.dart';
+import 'admin_meal_state_screen.dart';
 
 class AdminInventoryScreen extends StatefulWidget {
   const AdminInventoryScreen({super.key});
@@ -309,22 +313,50 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                     _buildSidebarTile(
                       icon: Icons.menu_book,
                       title: "Monthly Menu",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const EditMenuScreen(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.analytics,
                       title: "Meal State",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AdminMealStateScreen(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.thumb_up,
                       title: "Menu Vote",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const MenuVoteScreen(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.receipt_long,
                       title: "Bills",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AdminBillScreen(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.payment,
@@ -333,7 +365,7 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const PaymentsDashboard(),
+                            builder: (context) => const PaymentsDashboard(),
                           ),
                         );
                       },
@@ -345,7 +377,7 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const DiningMemberStatePage(),
+                            builder: (context) => const DiningMemberStatePage(),
                           ),
                         );
                       },
@@ -357,7 +389,7 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const AdminStaffStateScreen(),
+                            builder: (context) => const AdminStaffStateScreen(),
                           ),
                         );
                       },

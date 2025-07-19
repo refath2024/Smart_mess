@@ -11,6 +11,10 @@ import 'admin_dining_member_state.dart';
 import 'admin_payment_history.dart';
 import 'admin_inventory_screen.dart';
 import 'admin_messing_screen.dart';
+import 'admin_meal_state_screen.dart';
+import 'admin_monthly_menu_screen.dart';
+import 'admin_menu_vote_screen.dart';
+import 'admin_bill_screen.dart';
 
 class AdminVoucherScreen extends StatefulWidget {
   const AdminVoucherScreen({super.key});
@@ -221,7 +225,7 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                       icon: Icons.people,
                       title: "Users",
                       onTap: () {
-                        Navigator.pushReplacement(
+                        Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => const AdminUsersScreen(),
@@ -287,22 +291,50 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                     _buildSidebarTile(
                       icon: Icons.menu_book,
                       title: "Monthly Menu",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const EditMenuScreen(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.analytics,
                       title: "Meal State",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AdminMealStateScreen(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.thumb_up,
                       title: "Menu Vote",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const MenuVoteScreen(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.receipt_long,
                       title: "Bills",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AdminBillScreen(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.payment,
@@ -361,9 +393,14 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF002B5B),
         iconTheme: const IconThemeData(color: Colors.white),
+        centerTitle: true,
         title: const Text(
           "Voucher List",
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+          ),
         ),
       ),
       body: Padding(

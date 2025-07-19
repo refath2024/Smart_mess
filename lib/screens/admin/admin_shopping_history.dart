@@ -10,6 +10,10 @@ import 'admin_voucher_screen.dart';
 import 'admin_inventory_screen.dart';
 import 'admin_messing_screen.dart';
 import 'admin_staff_state_screen.dart';
+import 'admin_meal_state_screen.dart';
+import 'admin_monthly_menu_screen.dart';
+import 'admin_menu_vote_screen.dart';
+import 'admin_bill_screen.dart';
 
 class AdminShoppingHistoryScreen extends StatefulWidget {
   const AdminShoppingHistoryScreen({super.key});
@@ -265,7 +269,7 @@ class _AdminShoppingHistoryScreenState
                       icon: Icons.people,
                       title: "Users",
                       onTap: () {
-                        Navigator.pushReplacement(
+                        Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => const AdminUsersScreen(),
@@ -303,7 +307,6 @@ class _AdminShoppingHistoryScreenState
                         );
                       },
                     ),
-
                     _buildSidebarTile(
                       icon: Icons.storage,
                       title: "Inventory",
@@ -331,22 +334,50 @@ class _AdminShoppingHistoryScreenState
                     _buildSidebarTile(
                       icon: Icons.menu_book,
                       title: "Monthly Menu",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const EditMenuScreen(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.analytics,
                       title: "Meal State",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AdminMealStateScreen(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.thumb_up,
                       title: "Menu Vote",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const MenuVoteScreen(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.receipt_long,
                       title: "Bills",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AdminBillScreen(),
+                          ),
+                        );
+                      },
                     ),
                     _buildSidebarTile(
                       icon: Icons.payment,
@@ -384,7 +415,6 @@ class _AdminShoppingHistoryScreenState
                         );
                       },
                     ),
-
                     // Add other tiles as needed
                   ],
                 ),
@@ -407,9 +437,14 @@ class _AdminShoppingHistoryScreenState
       appBar: AppBar(
         backgroundColor: const Color(0xFF002B5B),
         iconTheme: const IconThemeData(color: Colors.white),
+        centerTitle: true,
         title: const Text(
           "Shopping History",
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+          ),
         ),
       ),
       body: SafeArea(

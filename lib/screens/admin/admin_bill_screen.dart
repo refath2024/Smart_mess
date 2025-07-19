@@ -11,17 +11,38 @@ import 'admin_staff_state_screen.dart';
 import 'admin_dining_member_state.dart';
 import 'admin_payment_history.dart';
 import 'admin_meal_state_screen.dart';
+import 'admin_monthly_menu_screen.dart';
+import 'admin_menu_vote_screen.dart';
 
-class BillScreen extends StatefulWidget {
-  const BillScreen({Key? key}) : super(key: key);
+class AdminBillScreen extends StatefulWidget {
+  const AdminBillScreen({Key? key}) : super(key: key);
 
   @override
-  State<BillScreen> createState() => _BillScreenState();
+  State<AdminBillScreen> createState() => _AdminBillScreenState();
 }
 
-class _BillScreenState extends State<BillScreen> {
+class _AdminBillScreenState extends State<AdminBillScreen> {
   List<Map<String, dynamic>> bills = []; // will hold bill data
   String searchTerm = "";
+
+  Widget _buildSidebarTile({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    bool selected = false,
+    Color? color,
+  }) {
+    return ListTile(
+      selected: selected,
+      selectedTileColor: Colors.blue.shade100,
+      leading: Icon(
+        icon,
+        color: color ?? (selected ? Colors.blue : Colors.black),
+      ),
+      title: Text(title, style: TextStyle(color: color ?? Colors.black)),
+      onTap: onTap,
+    );
+  }
 
   @override
   void initState() {
@@ -65,9 +86,236 @@ class _BillScreenState extends State<BillScreen> {
     }).toList();
 
     return Scaffold(
+      drawer: Drawer(
+        child: SafeArea(
+          child: Column(
+            children: [
+              const DrawerHeader(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF002B5B), Color(0xFF1A4D8F)],
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundImage: AssetImage('assets/me.png'),
+                      radius: 30,
+                    ),
+                    SizedBox(width: 10),
+                    Flexible(
+                      child: Text(
+                        "Shoaib Ahmed Sami",
+                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: ListView(
+                  children: [
+                    _buildSidebarTile(
+                      icon: Icons.dashboard,
+                      title: "Home",
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AdminHomeScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildSidebarTile(
+                      icon: Icons.people,
+                      title: "Users",
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AdminUsersScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildSidebarTile(
+                      icon: Icons.pending,
+                      title: "Pending IDs",
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AdminPendingIdsScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildSidebarTile(
+                      icon: Icons.history,
+                      title: "Shopping History",
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const AdminShoppingHistoryScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildSidebarTile(
+                      icon: Icons.receipt,
+                      title: "Voucher List",
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AdminVoucherScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildSidebarTile(
+                      icon: Icons.storage,
+                      title: "Inventory",
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AdminInventoryScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildSidebarTile(
+                      icon: Icons.food_bank,
+                      title: "Messing",
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AdminMessingScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildSidebarTile(
+                      icon: Icons.menu_book,
+                      title: "Monthly Menu",
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const EditMenuScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildSidebarTile(
+                      icon: Icons.analytics,
+                      title: "Meal State",
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AdminMealStateScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildSidebarTile(
+                      icon: Icons.thumb_up,
+                      title: "Menu Vote",
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const MenuVoteScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildSidebarTile(
+                      icon: Icons.receipt_long,
+                      title: "Bills",
+                      selected: true,
+                      onTap: () => Navigator.pop(context),
+                    ),
+                    _buildSidebarTile(
+                      icon: Icons.payment,
+                      title: "Payments",
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const PaymentsDashboard(),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildSidebarTile(
+                      icon: Icons.people_alt,
+                      title: "Dining Member State",
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const DiningMemberStatePage(),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildSidebarTile(
+                      icon: Icons.manage_accounts,
+                      title: "Staff State",
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AdminStaffStateScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).padding.bottom + 8,
+                ),
+                child: _buildSidebarTile(
+                  icon: Icons.logout,
+                  title: "Logout",
+                  color: Colors.red,
+                  onTap: () {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const LoginScreen(),
+                      ),
+                      (route) => false,
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
       appBar: AppBar(
-        title: const Text('Bills'),
-        backgroundColor: Colors.blue.shade800,
+        backgroundColor: const Color(0xFF002B5B),
+        iconTheme: const IconThemeData(color: Colors.white),
+        centerTitle: true,
+        title: const Text(
+          "Bills",
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
