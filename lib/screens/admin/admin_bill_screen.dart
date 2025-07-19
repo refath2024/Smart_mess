@@ -10,7 +10,7 @@ import 'admin_messing_screen.dart';
 import 'admin_staff_state_screen.dart';
 import 'admin_dining_member_state.dart';
 import 'admin_payment_history.dart';
-import 'meal_state_screen.dart';
+import 'admin_meal_state_screen.dart';
 
 class BillScreen extends StatefulWidget {
   const BillScreen({Key? key}) : super(key: key);
@@ -59,7 +59,8 @@ class _BillScreenState extends State<BillScreen> {
   @override
   Widget build(BuildContext context) {
     final filteredBills = bills.where((bill) {
-      final combined = (bill['ba_no'] + bill['rank'] + bill['name']).toLowerCase();
+      final combined =
+          (bill['ba_no'] + bill['rank'] + bill['name']).toLowerCase();
       return combined.contains(searchTerm.toLowerCase());
     }).toList();
 
@@ -97,10 +98,12 @@ class _BillScreenState extends State<BillScreen> {
                   onPressed: () {
                     // Replace with PDF generation logic
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("PDF generation not implemented")),
+                      const SnackBar(
+                          content: Text("PDF generation not implemented")),
                     );
                   },
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                  style:
+                      ElevatedButton.styleFrom(backgroundColor: Colors.green),
                   child: const Text("Generate Bills"),
                 ),
               ],
@@ -136,7 +139,8 @@ class _BillScreenState extends State<BillScreen> {
                         final bill = filteredBills[index];
                         return Container(
                           margin: const EdgeInsets.symmetric(vertical: 4),
-                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 10, horizontal: 8),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             border: Border.all(color: Colors.grey.shade300),
@@ -159,14 +163,21 @@ class _BillScreenState extends State<BillScreen> {
                                 child: Text(
                                   bill['bill_status'],
                                   style: TextStyle(
-                                    color: bill['bill_status'] == "Paid" ? Colors.green : Colors.red,
+                                    color: bill['bill_status'] == "Paid"
+                                        ? Colors.green
+                                        : Colors.red,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
-                              Expanded(flex: 2, child: Text("${bill['previous_arrear']}")),
-                              Expanded(flex: 2, child: Text("${bill['current_bill']}")),
-                              Expanded(flex: 2, child: Text("${bill['total_due']}")),
+                              Expanded(
+                                  flex: 2,
+                                  child: Text("${bill['previous_arrear']}")),
+                              Expanded(
+                                  flex: 2,
+                                  child: Text("${bill['current_bill']}")),
+                              Expanded(
+                                  flex: 2, child: Text("${bill['total_due']}")),
                             ],
                           ),
                         );

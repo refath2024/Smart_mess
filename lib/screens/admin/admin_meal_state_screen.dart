@@ -60,7 +60,9 @@ class _MealStateScreenState extends State<MealStateScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            Text('Date: $date', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text('Date: $date',
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 16),
             Expanded(
               child: SingleChildScrollView(
@@ -79,7 +81,9 @@ class _MealStateScreenState extends State<MealStateScreen> {
                   ],
                   rows: records.isEmpty
                       ? [
-                          DataRow(cells: List.generate(9, (index) => const DataCell(Text('-')))),
+                          DataRow(
+                              cells: List.generate(
+                                  9, (index) => const DataCell(Text('-')))),
                         ]
                       : records.map((record) {
                           return DataRow(cells: [
@@ -103,15 +107,20 @@ class _MealStateScreenState extends State<MealStateScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            const Text('Total Breakfast Members: 0', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text('Total Breakfast Members: 0',
+                style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
-            const Text('Total Lunch Members: 0', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text('Total Lunch Members: 0',
+                style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
-            const Text('Total Dinner Members: 0', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text('Total Dinner Members: 0',
+                style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
-            const Text('Total Disposals: SIQ = 0, Leave = 0, Mess Out = 0', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text('Total Disposals: SIQ = 0, Leave = 0, Mess Out = 0',
+                style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
-            const Text('Remarks: 0', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text('Remarks: 0',
+                style: TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
       ),

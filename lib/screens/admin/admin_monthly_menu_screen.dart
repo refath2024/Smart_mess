@@ -9,9 +9,10 @@ import 'admin_messing_screen.dart';
 import 'admin_staff_state_screen.dart';
 import 'admin_dining_member_state.dart';
 import 'admin_payment_history.dart';
-import 'meal_state_screen.dart';
+import 'admin_meal_state_screen.dart';
 import 'admin_bill_screen.dart';
 import 'admin_home_screen.dart';
+
 class EditMenuScreen extends StatefulWidget {
   const EditMenuScreen({super.key});
 
@@ -52,7 +53,8 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
       context: context,
       builder: (context) {
         final item = menuData[index];
-        final breakfastController = TextEditingController(text: item['breakfast']);
+        final breakfastController =
+            TextEditingController(text: item['breakfast']);
         final lunchController = TextEditingController(text: item['lunch']);
         final dinnerController = TextEditingController(text: item['dinner']);
 
@@ -154,9 +156,12 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Breakfast: ${item['breakfast']} (৳${item['breakfastPrice']})'),
-                          Text('Lunch: ${item['lunch']} (৳${item['lunchPrice']})'),
-                          Text('Dinner: ${item['dinner']} (৳${item['dinnerPrice']})'),
+                          Text(
+                              'Breakfast: ${item['breakfast']} (৳${item['breakfastPrice']})'),
+                          Text(
+                              'Lunch: ${item['lunch']} (৳${item['lunchPrice']})'),
+                          Text(
+                              'Dinner: ${item['dinner']} (৳${item['dinnerPrice']})'),
                         ],
                       ),
                       trailing: Row(
