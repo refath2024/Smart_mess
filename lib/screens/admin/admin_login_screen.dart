@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../login_screen.dart';
 import 'admin_home_screen.dart';
+import '../forgot_password_screen.dart';
+import '../register_screen.dart';
 
 class AdminLoginScreen extends StatefulWidget {
   const AdminLoginScreen({super.key});
@@ -137,6 +139,17 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                 ),
                 const SizedBox(height: 16),
                 TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ForgotPasswordScreen(),
+                          ),
+                        );
+                      },
+                      child: const Text("Forgot Password?"),
+                    ),
+                TextButton(
                   onPressed: () {
                     Navigator.pushReplacement(
                       context,
@@ -145,8 +158,20 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                       ),
                     );
                   },
+                  
                   child: const Text("← Go to Officer Portal"),
                 ),
+                TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const RegisterScreen(),
+                          ),
+                        );
+                      },
+                      child: const Text("Don't have an account? Register here"),
+                    ),
               ],
             ),
           ),

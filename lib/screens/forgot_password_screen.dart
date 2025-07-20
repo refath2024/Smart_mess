@@ -123,6 +123,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                Align(
+  alignment: Alignment.centerLeft,
+  child: IconButton(
+    icon: const Icon(Icons.arrow_back, color: Colors.black),
+    onPressed: () => Navigator.pop(context),
+  ),
+),
+
+                
                 Image.asset('assets/army.png', height: 60),
                 const SizedBox(height: 12),
                 const Text(
