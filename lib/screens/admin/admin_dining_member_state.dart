@@ -21,6 +21,14 @@ class DiningMemberData {
   final String lastMealTaken;
   final int totalMeals;
   final double monthlyBill;
+  final String id;
+  final String unit;
+  final String phone;
+  final String email;
+  final String bloodGroup;
+  final String joiningDate;
+  final String emergencyContact;
+  final String address;
 
   DiningMemberData({
     required this.name,
@@ -29,6 +37,15 @@ class DiningMemberData {
     required this.lastMealTaken,
     required this.totalMeals,
     required this.monthlyBill,
+    required this.id,
+    required this.unit,
+    required this.phone,
+    required this.email,
+    required this.bloodGroup,
+    required this.joiningDate,
+    required this.emergencyContact,
+    required this.address,
+    
   });
 }
 
@@ -40,6 +57,33 @@ class DiningMemberStatePage extends StatefulWidget {
 }
 
 class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
+  List<DiningMemberData> filteredMembers = [];
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    filteredMembers = List.from(members);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _searchMembers(String query) {
+    setState(() {
+      filteredMembers = members.where((member) {
+        final searchLower = query.toLowerCase();
+        return member.name.toLowerCase().contains(searchLower) ||
+            member.rank.toLowerCase().contains(searchLower) ||
+            member.membershipStatus.toLowerCase().contains(searchLower) ||
+            member.lastMealTaken.toLowerCase().contains(searchLower);
+      }).toList();
+    });
+  }
+  
   final List<DiningMemberData> members = [
     DiningMemberData(
       name: "Maj John Smith",
@@ -48,6 +92,14 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
       lastMealTaken: "Today, Lunch",
       totalMeals: 45,
       monthlyBill: 3500.00,
+      id: "BA-1234",
+      unit: "10 Signal Battalion",
+      phone: "+880 1700-000001",
+      email: "john.smith@army.mil.bd",
+      bloodGroup: "A+",
+      joiningDate: "2023-01-15",
+      emergencyContact: "+880 1700-000002 (Mrs. Smith)",
+      address: "Officers Quarters, Dhaka Cantonment",
     ),
     DiningMemberData(
       name: "Capt Sarah Johnson",
@@ -56,6 +108,15 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
       lastMealTaken: "Today, Breakfast",
       totalMeals: 38,
       monthlyBill: 2950.00,
+      id: "BA-1235",
+      unit: "Engineering Corps",
+      phone: "+880 1700-000003",
+      email: "sarah.j@army.mil.bd",
+      bloodGroup: "B+",
+      joiningDate: "2023-03-20",
+      emergencyContact: "+880 1700-000004 (Mr. Johnson)",
+      address: "Block D, Military Housing",
+      
     ),
     DiningMemberData(
       name: "Lt David Miller",
@@ -64,6 +125,15 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
       lastMealTaken: "3 days ago, Dinner",
       totalMeals: 28,
       monthlyBill: 2100.00,
+      id: "BA-1236",
+      unit: "Artillery Regiment",
+      phone: "+880 1700-000005",
+      email: "david.m@army.mil.bd",
+      bloodGroup: "O+",
+      joiningDate: "2024-01-10",
+      emergencyContact: "+880 1700-000006 (Mrs. Miller)",
+      address: "Officers Mess, Cantonment",
+      
     ),
     DiningMemberData(
       name: "WO James Wilson",
@@ -72,6 +142,15 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
       lastMealTaken: "Today, Dinner",
       totalMeals: 42,
       monthlyBill: 3200.00,
+      id: "BA-1237",
+      unit: "Medical Corps",
+      phone: "+880 1700-000007",
+      email: "james.w@army.mil.bd",
+      bloodGroup: "AB+",
+      joiningDate: "2023-06-05",
+      emergencyContact: "+880 1700-000008 (Mrs. Wilson)",
+      address: "Block B, Military Housing",
+  
     ),
   ];
 
@@ -351,11 +430,33 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
               ],
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: "Search Members",
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Color(0xFF002B5B)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Color(0xFF002B5B)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Color(0xFF002B5B), width: 2),
+                ),
+              ),
+              onChanged: (value) => _searchMembers(value),
+            ),
+          ),
           Expanded(
             child: ListView.builder(
-              itemCount: members.length,
+              itemCount: filteredMembers.length,
               itemBuilder: (context, index) {
-                final member = members[index];
+                final member = filteredMembers[index];
                 return Card(
                   margin:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -378,16 +479,46 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                       ),
                     ),
                     children: [
-                      Padding(
+                      Container(
                         padding: const EdgeInsets.all(16),
                         child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            const Text(
+                              "Personal Information",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF002B5B),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            _buildDetailRow("Number", member.id),
+                            _buildDetailRow("Rank", member.rank),
+                            _buildDetailRow("Name", member.name),
+                            _buildDetailRow("Unit", member.unit),
+                            _buildDetailRow("Mobile No", member.phone),
+                            _buildDetailRow("Email", member.email),
+                            _buildDetailRow("Blood Group", member.bloodGroup),
+                            _buildDetailRow("Joining Date", member.joiningDate),
+                            _buildDetailRow("Emergency Contact", member.emergencyContact),
+                            _buildDetailRow("Address", member.address),
+                            
+                            const SizedBox(height: 16),
+                            const Text(
+                              "Dining Information",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF002B5B),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
                             _buildDetailRow("Status", member.membershipStatus),
                             _buildDetailRow("Last Meal", member.lastMealTaken),
-                            _buildDetailRow(
-                                "Total Meals", member.totalMeals.toString()),
-                            _buildDetailRow("Monthly Bill",
-                                "৳${member.monthlyBill.toStringAsFixed(2)}"),
+                            _buildDetailRow("Total Meals", member.totalMeals.toString()),
+                            _buildDetailRow("Monthly Bill", "৳${member.monthlyBill.toStringAsFixed(2)}"),
+                            
                           ],
                         ),
                       ),
