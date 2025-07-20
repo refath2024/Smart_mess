@@ -134,16 +134,41 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
     ).showSnackBar(const SnackBar(content: Text('Inventory updated')));
   }
 
-  void _deleteRow(int index) {
-    setState(() {
-      final id = filteredData[index]['id'];
-      filteredData.removeAt(index);
-      inventoryData.removeWhere((e) => e['id'] == id);
-    });
+  Future<void> _deleteRow(int index) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirm Delete'),
+          content: Text('Are you sure you want to delete "${filteredData[index]['productName']}"?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Inventory item deleted')));
+    if (confirm == true) {
+      setState(() {
+        final id = filteredData[index]['id'];
+        filteredData.removeAt(index);
+        inventoryData.removeWhere((e) => e['id'] == id);
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Inventory item deleted')),
+        );
+      }
+    }
   }
 
   Widget _editableTextField({

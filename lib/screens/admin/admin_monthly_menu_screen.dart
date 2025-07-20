@@ -33,79 +33,213 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
   void fetchMenu() async {
     // Simulated fetch. Replace with actual HTTP GET from your API.
     setState(() {
-      menuData = [
-        {
-          'id': '1',
-          'date': '2025-07-16',
+      menuData = List.generate(7, (index) {
+        final date = DateTime.now().add(Duration(days: index));
+        return {
+          'id': (index + 1).toString(),
+          'date':
+              '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}',
           'breakfast': 'Paratha',
-          'breakfastPrice': '30',
+          'breakfastPrice': '30.00',
           'lunch': 'Rice & Chicken',
-          'lunchPrice': '70',
+          'lunchPrice': '70.00',
           'dinner': 'Khichuri',
-          'dinnerPrice': '50',
-        },
-        // Add more items here
-      ];
+          'dinnerPrice': '50.00',
+        };
+      });
     });
   }
 
-  void editRow(int index) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        final item = menuData[index];
-        final breakfastController =
-            TextEditingController(text: item['breakfast']);
-        final lunchController = TextEditingController(text: item['lunch']);
-        final dinnerController = TextEditingController(text: item['dinner']);
+  void editRow(int index) async {
+    final item = menuData[index];
+    final breakfastController = TextEditingController(text: item['breakfast']);
+    final breakfastPriceController =
+        TextEditingController(text: item['breakfastPrice']);
+    final lunchController = TextEditingController(text: item['lunch']);
+    final lunchPriceController =
+        TextEditingController(text: item['lunchPrice']);
+    final dinnerController = TextEditingController(text: item['dinner']);
+    final dinnerPriceController =
+        TextEditingController(text: item['dinnerPrice']);
 
-        return AlertDialog(
-          title: const Text('Edit Menu'),
-          content: Column(
+    final bool? shouldSave = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Edit Menu for ${item['date']}',
+          style: const TextStyle(
+            color: Color(0xFF002B5B),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(
-                controller: breakfastController,
-                decoration: const InputDecoration(labelText: 'Breakfast'),
-              ),
-              TextField(
-                controller: lunchController,
-                decoration: const InputDecoration(labelText: 'Lunch'),
-              ),
-              TextField(
-                controller: dinnerController,
-                decoration: const InputDecoration(labelText: 'Dinner'),
-              ),
+              buildEditField(
+                  'Breakfast', breakfastController, breakfastPriceController),
+              const SizedBox(height: 16),
+              buildEditField('Lunch', lunchController, lunchPriceController),
+              const SizedBox(height: 16),
+              buildEditField('Dinner', dinnerController, dinnerPriceController),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Cancel'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              final bool? confirm = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Confirm Cancel'),
+                  content:
+                      const Text('Are you sure you want to discard changes?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      child: const Text('No'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      style: TextButton.styleFrom(foregroundColor: Colors.red),
+                      child: const Text('Yes'),
+                    ),
+                  ],
+                ),
+              );
+              if (confirm == true) {
+                Navigator.of(context).pop(false);
+              }
+            },
+            style: TextButton.styleFrom(
+              backgroundColor: Colors.grey,
+              foregroundColor: Colors.white,
             ),
-            ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  menuData[index]['breakfast'] = breakfastController.text;
-                  menuData[index]['lunch'] = lunchController.text;
-                  menuData[index]['dinner'] = dinnerController.text;
-                });
-                Navigator.of(context).pop();
-              },
-              child: const Text('Save'),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final bool? confirm = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Confirm Save'),
+                  content: const Text('Are you sure you want to save changes?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      child: const Text('No'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      style:
+                          TextButton.styleFrom(foregroundColor: Colors.green),
+                      child: const Text('Yes'),
+                    ),
+                  ],
+                ),
+              );
+              if (confirm == true) {
+                Navigator.of(context).pop(true);
+              }
+            },
+            style: TextButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
             ),
-          ],
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldSave == true) {
+      setState(() {
+        menuData[index]['breakfast'] = breakfastController.text;
+        menuData[index]['breakfastPrice'] = breakfastPriceController.text;
+        menuData[index]['lunch'] = lunchController.text;
+        menuData[index]['lunchPrice'] = lunchPriceController.text;
+        menuData[index]['dinner'] = dinnerController.text;
+        menuData[index]['dinnerPrice'] = dinnerPriceController.text;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Menu updated successfully!')),
         );
-      },
+      }
+    }
+  }
+
+  Widget buildEditField(String title, TextEditingController nameController,
+      TextEditingController priceController) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: nameController,
+          decoration: InputDecoration(
+            labelText: 'Item Name',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: priceController,
+          decoration: InputDecoration(
+            labelText: 'Price',
+            prefixText: '৳',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          keyboardType: TextInputType.number,
+        ),
+      ],
     );
   }
 
-  void deleteRow(int index) {
-    setState(() {
-      menuData.removeAt(index);
-    });
+  void deleteRow(int index) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Delete'),
+        content: const Text('Are you sure you want to delete this menu item?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+              textStyle: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      setState(() {
+        menuData.removeAt(index);
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Menu item deleted successfully')),
+        );
+      }
+    }
   }
 
   Widget _buildSidebarTile({
@@ -364,16 +498,39 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const Text(
+              'Menu',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF002B5B),
+              ),
+            ),
+            const SizedBox(height: 16),
             Row(
               children: [
                 Expanded(
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Search...',
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: TextField(
+                      decoration: InputDecoration(
+                        hintText: 'Search...',
+                        prefixIcon: const Icon(Icons.search),
+                        border: InputBorder.none,
+                        hintStyle: TextStyle(color: Colors.grey[400]),
                       ),
                     ),
                   ),
@@ -381,52 +538,141 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                 const SizedBox(width: 8),
                 ElevatedButton(
                   onPressed: () {},
-                  child: const Text('Go'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1A4D8F),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child:
+                      const Text('Go', style: TextStyle(color: Colors.white)),
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton(
                   onPressed: () {},
-                  child: const Text('Create'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1A4D8F),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text('Create',
+                      style: TextStyle(color: Colors.white)),
                 ),
               ],
             ),
             const SizedBox(height: 16),
             Expanded(
-              child: ListView.builder(
-                itemCount: menuData.length,
-                itemBuilder: (context, index) {
-                  final item = menuData[index];
-                  return Card(
-                    margin: const EdgeInsets.symmetric(vertical: 8),
-                    child: ListTile(
-                      title: Text('Date: ${item['date']}'),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                              'Breakfast: ${item['breakfast']} (৳${item['breakfastPrice']})'),
-                          Text(
-                              'Lunch: ${item['lunch']} (৳${item['lunchPrice']})'),
-                          Text(
-                              'Dinner: ${item['dinner']} (৳${item['dinnerPrice']})'),
-                        ],
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.edit, color: Colors.blue),
-                            onPressed: () => editRow(index),
+              child: Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+                child: Scrollbar(
+                  thumbVisibility: true,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.vertical,
+                    child: Scrollbar(
+                      thumbVisibility: true,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minWidth: MediaQuery.of(context).size.width - 32,
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () => deleteRow(index),
+                          child: DataTable(
+                            columnSpacing: 24,
+                            columns: const [
+                              DataColumn(label: Text('Date')),
+                              DataColumn(label: Text('Breakfast')),
+                              DataColumn(label: Text('Lunch')),
+                              DataColumn(label: Text('Dinner')),
+                              DataColumn(label: Text('Actions')),
+                            ],
+                            rows: menuData.map((item) {
+                              return DataRow(
+                                cells: [
+                                  DataCell(Text(item['date'])),
+                                  DataCell(
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(item['breakfast']),
+                                        Text('৳${item['breakfastPrice']}',
+                                            style: TextStyle(
+                                                color: Colors.grey[600])),
+                                      ],
+                                    ),
+                                  ),
+                                  DataCell(
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(item['lunch']),
+                                        Text('৳${item['lunchPrice']}',
+                                            style: TextStyle(
+                                                color: Colors.grey[600])),
+                                      ],
+                                    ),
+                                  ),
+                                  DataCell(
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(item['dinner']),
+                                        Text('৳${item['dinnerPrice']}',
+                                            style: TextStyle(
+                                                color: Colors.grey[600])),
+                                      ],
+                                    ),
+                                  ),
+                                  DataCell(
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        ElevatedButton(
+                                          onPressed: () =>
+                                              editRow(menuData.indexOf(item)),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.blue,
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 16, vertical: 8),
+                                          ),
+                                          child: const Text('Edit',
+                                              style: TextStyle(
+                                                  color: Colors.white)),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        ElevatedButton(
+                                          onPressed: () =>
+                                              deleteRow(menuData.indexOf(item)),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.red,
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 16, vertical: 8),
+                                          ),
+                                          child: const Text('Delete',
+                                              style: TextStyle(
+                                                  color: Colors.white)),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }).toList(),
                           ),
-                        ],
+                        ),
                       ),
                     ),
-                  );
-                },
+                  ),
+                ),
               ),
             ),
           ],
