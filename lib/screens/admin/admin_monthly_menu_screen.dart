@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../login_screen.dart';
+import 'add_menu_list.dart';
 import 'admin_users_screen.dart';
 import 'admin_pending_ids_screen.dart';
 import 'admin_shopping_history.dart';
@@ -551,7 +552,14 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AddMenuListScreen(),
+                      ),
+                    );
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1A4D8F),
                     padding: const EdgeInsets.symmetric(
@@ -569,28 +577,72 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
             Expanded(
               child: Card(
                 elevation: 4,
+                margin: EdgeInsets.zero,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
-                child: Scrollbar(
-                  thumbVisibility: true,
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.vertical,
-                    child: Scrollbar(
-                      thumbVisibility: true,
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            minWidth: MediaQuery.of(context).size.width - 32,
-                          ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: RawScrollbar(
+                    thumbVisibility: false,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: RawScrollbar(
+                        thumbVisibility: false,
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.vertical,
                           child: DataTable(
-                            columnSpacing: 24,
+                            headingRowColor:
+                                MaterialStateProperty.all(Colors.grey[50]),
+                            dataRowMaxHeight: 80,
+                            columnSpacing: 40,
+                            horizontalMargin: 24,
                             columns: const [
-                              DataColumn(label: Text('Date')),
-                              DataColumn(label: Text('Breakfast')),
-                              DataColumn(label: Text('Lunch')),
-                              DataColumn(label: Text('Dinner')),
-                              DataColumn(label: Text('Actions')),
+                              DataColumn(
+                                label: Text(
+                                  'Date',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF002B5B),
+                                  ),
+                                ),
+                              ),
+                              DataColumn(
+                                label: Text(
+                                  'Breakfast',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF002B5B),
+                                  ),
+                                ),
+                              ),
+                              DataColumn(
+                                label: Text(
+                                  'Lunch',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF002B5B),
+                                  ),
+                                ),
+                              ),
+                              DataColumn(
+                                label: Text(
+                                  'Dinner',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF002B5B),
+                                  ),
+                                ),
+                              ),
+                              DataColumn(
+                                label: Text(
+                                  'Actions',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF002B5B),
+                                  ),
+                                ),
+                              ),
                             ],
                             rows: menuData.map((item) {
                               return DataRow(

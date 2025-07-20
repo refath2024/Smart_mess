@@ -313,101 +313,371 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
     });
   }
 
-  void _saveBreakfast(int index) {
-    setState(() {
-      breakfastEntries[index]['ingredient_name'] = breakfastControllers[0].text;
-      breakfastEntries[index]['amount'] =
-          int.tryParse(breakfastControllers[1].text) ??
-              breakfastEntries[index]['amount'];
-      breakfastEntries[index]['total_prices'] =
-          int.tryParse(breakfastControllers[2].text) ??
-              breakfastEntries[index]['total_prices'];
-      breakfastEntries[index]['members'] =
-          int.tryParse(breakfastControllers[3].text) ??
-              breakfastEntries[index]['members'];
-      breakfastEntries[index]['ingredient_price'] =
-          int.tryParse(breakfastControllers[4].text) ??
-              breakfastEntries[index]['ingredient_price'];
-      editingBreakfastIndex = null;
-    });
+  Future<void> _saveBreakfast(int index) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Save'),
+        content: const Text('Are you sure you want to save these changes?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.green,
+              textStyle: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      setState(() {
+        breakfastEntries[index]['ingredient_name'] =
+            breakfastControllers[0].text;
+        breakfastEntries[index]['amount'] =
+            int.tryParse(breakfastControllers[1].text) ??
+                breakfastEntries[index]['amount'];
+        breakfastEntries[index]['total_prices'] =
+            int.tryParse(breakfastControllers[2].text) ??
+                breakfastEntries[index]['total_prices'];
+        breakfastEntries[index]['members'] =
+            int.tryParse(breakfastControllers[3].text) ??
+                breakfastEntries[index]['members'];
+        breakfastEntries[index]['ingredient_price'] =
+            int.tryParse(breakfastControllers[4].text) ??
+                breakfastEntries[index]['ingredient_price'];
+        editingBreakfastIndex = null;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Breakfast entry updated successfully')),
+        );
+      }
+    }
   }
 
-  void _saveLunch(int index) {
-    setState(() {
-      lunchEntries[index]['ingredient_name'] = lunchControllers[0].text;
-      lunchEntries[index]['amount'] = int.tryParse(lunchControllers[1].text) ??
-          lunchEntries[index]['amount'];
-      lunchEntries[index]['total_prices'] =
-          int.tryParse(lunchControllers[2].text) ??
-              lunchEntries[index]['total_prices'];
-      lunchEntries[index]['members'] = int.tryParse(lunchControllers[3].text) ??
-          lunchEntries[index]['members'];
-      lunchEntries[index]['ingredient_price'] =
-          int.tryParse(lunchControllers[4].text) ??
-              lunchEntries[index]['ingredient_price'];
-      editingLunchIndex = null;
-    });
+  Future<void> _saveLunch(int index) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Save'),
+        content: const Text('Are you sure you want to save these changes?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.green,
+              textStyle: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      setState(() {
+        lunchEntries[index]['ingredient_name'] = lunchControllers[0].text;
+        lunchEntries[index]['amount'] =
+            int.tryParse(lunchControllers[1].text) ??
+                lunchEntries[index]['amount'];
+        lunchEntries[index]['total_prices'] =
+            int.tryParse(lunchControllers[2].text) ??
+                lunchEntries[index]['total_prices'];
+        lunchEntries[index]['members'] =
+            int.tryParse(lunchControllers[3].text) ??
+                lunchEntries[index]['members'];
+        lunchEntries[index]['ingredient_price'] =
+            int.tryParse(lunchControllers[4].text) ??
+                lunchEntries[index]['ingredient_price'];
+        editingLunchIndex = null;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Lunch entry updated successfully')),
+        );
+      }
+    }
   }
 
-  void _saveDinner(int index) {
-    setState(() {
-      dinnerEntries[index]['ingredient_name'] = dinnerControllers[0].text;
-      dinnerEntries[index]['amount'] =
-          int.tryParse(dinnerControllers[1].text) ??
-              dinnerEntries[index]['amount'];
-      dinnerEntries[index]['total_prices'] =
-          int.tryParse(dinnerControllers[2].text) ??
-              dinnerEntries[index]['total_prices'];
-      dinnerEntries[index]['members'] =
-          int.tryParse(dinnerControllers[3].text) ??
-              dinnerEntries[index]['members'];
-      dinnerEntries[index]['ingredient_price'] =
-          int.tryParse(dinnerControllers[4].text) ??
-              dinnerEntries[index]['ingredient_price'];
-      editingDinnerIndex = null;
-    });
+  Future<void> _saveDinner(int index) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Save'),
+        content: const Text('Are you sure you want to save these changes?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.green,
+              textStyle: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      setState(() {
+        dinnerEntries[index]['ingredient_name'] = dinnerControllers[0].text;
+        dinnerEntries[index]['amount'] =
+            int.tryParse(dinnerControllers[1].text) ??
+                dinnerEntries[index]['amount'];
+        dinnerEntries[index]['total_prices'] =
+            int.tryParse(dinnerControllers[2].text) ??
+                dinnerEntries[index]['total_prices'];
+        dinnerEntries[index]['members'] =
+            int.tryParse(dinnerControllers[3].text) ??
+                dinnerEntries[index]['members'];
+        dinnerEntries[index]['ingredient_price'] =
+            int.tryParse(dinnerControllers[4].text) ??
+                dinnerEntries[index]['ingredient_price'];
+        editingDinnerIndex = null;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Dinner entry updated successfully')),
+        );
+      }
+    }
   }
 
-  void _cancelBreakfast(int index) {
-    setState(() {
-      editingBreakfastIndex = null;
-    });
+  Future<void> _cancelBreakfast(int index) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Cancel'),
+        content: const Text(
+            'Are you sure you want to cancel editing? Any unsaved changes will be lost.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+              textStyle: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      setState(() {
+        editingBreakfastIndex = null;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Editing cancelled')),
+        );
+      }
+    }
   }
 
-  void _cancelLunch(int index) {
-    setState(() {
-      editingLunchIndex = null;
-    });
+  Future<void> _cancelLunch(int index) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Cancel'),
+        content: const Text(
+            'Are you sure you want to cancel editing? Any unsaved changes will be lost.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+              textStyle: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      setState(() {
+        editingLunchIndex = null;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Editing cancelled')),
+        );
+      }
+    }
   }
 
-  void _cancelDinner(int index) {
-    setState(() {
-      editingDinnerIndex = null;
-    });
+  Future<void> _cancelDinner(int index) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Cancel'),
+        content: const Text(
+            'Are you sure you want to cancel editing? Any unsaved changes will be lost.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+              textStyle: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      setState(() {
+        editingDinnerIndex = null;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Editing cancelled')),
+        );
+      }
+    }
   }
 
-  void _deleteBreakfast(int index) {
-    setState(() {
-      breakfastEntries.removeAt(index);
-      editingBreakfastIndex = null;
-      _initControllers();
-    });
+  Future<void> _deleteBreakfast(int index) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Delete'),
+        content:
+            const Text('Are you sure you want to delete this breakfast entry?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+              textStyle: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      setState(() {
+        breakfastEntries.removeAt(index);
+        editingBreakfastIndex = null;
+        _initControllers();
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Breakfast entry deleted')),
+        );
+      }
+    }
   }
 
-  void _deleteLunch(int index) {
-    setState(() {
-      lunchEntries.removeAt(index);
-      editingLunchIndex = null;
-      _initControllers();
-    });
+  Future<void> _deleteLunch(int index) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Delete'),
+        content:
+            const Text('Are you sure you want to delete this lunch entry?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+              textStyle: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      setState(() {
+        lunchEntries.removeAt(index);
+        editingLunchIndex = null;
+        _initControllers();
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Lunch entry deleted')),
+        );
+      }
+    }
   }
 
-  void _deleteDinner(int index) {
-    setState(() {
-      dinnerEntries.removeAt(index);
-      editingDinnerIndex = null;
-      _initControllers();
-    });
+  Future<void> _deleteDinner(int index) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Delete'),
+        content:
+            const Text('Are you sure you want to delete this dinner entry?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+              textStyle: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      setState(() {
+        dinnerEntries.removeAt(index);
+        editingDinnerIndex = null;
+        _initControllers();
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Dinner entry deleted')),
+        );
+      }
+    }
   }
 
   @override
