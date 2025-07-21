@@ -15,11 +15,11 @@ class _MyProfilePageState extends State<MyProfilePage> {
   String name = "Lt John Snow";
   String email = "johnsnow@gmail.com";
   String phone = "0123456789";
-  String room = "A-101";
+  
   String baNo = "BA123456";
   String rank = "Lieutenant";
   String unit = "Alpha Company";
-  String maritalStatus = "Single";
+  
   File? _imageFile;
 
   Future<void> _pickImage() async {
@@ -146,18 +146,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
                 onChanged: (val) => unit = val,
                 validator: (val) => val == null || val.isEmpty ? "Enter your unit" : null,
               ),
-              const SizedBox(height: 20),
-              TextFormField(
-                enabled: _isEditing,
-                initialValue: maritalStatus,
-                decoration: const InputDecoration(
-                  labelText: "Marital Status",
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.family_restroom),
-                ),
-                onChanged: (val) => maritalStatus = val,
-                validator: (val) => val == null || val.isEmpty ? "Enter your marital status" : null,
-              ),
+              
               const SizedBox(height: 20),
               TextFormField(
                 enabled: _isEditing,
@@ -183,18 +172,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
                 onChanged: (val) => phone = val,
                 validator: (val) => val == null || val.isEmpty ? "Enter your phone" : null,
               ),
-              const SizedBox(height: 20),
-              TextFormField(
-                enabled: _isEditing,
-                initialValue: room,
-                decoration: const InputDecoration(
-                  labelText: "Room",
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.meeting_room),
-                ),
-                onChanged: (val) => room = val,
-                validator: (val) => val == null || val.isEmpty ? "Enter your room" : null,
-              ),
+              
             ],
           ),
         ),

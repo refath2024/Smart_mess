@@ -8,6 +8,7 @@ import 'billing_screen.dart';
 import 'menu_set_screen.dart';
 import 'notification_page.dart';
 import 'my_pro.dart';
+import 'help_screen.dart';
 
 class UserHomeScreen extends StatefulWidget {
   const UserHomeScreen({super.key});
@@ -133,7 +134,13 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                   ListTile(
                     leading: const Icon(Icons.help_outline),
                     title: const Text('Help & Support'),
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const HelpScreen()),
+                      );
+                    },
                   ),
                   const Divider(),
                   const Padding(
