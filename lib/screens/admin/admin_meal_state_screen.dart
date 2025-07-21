@@ -13,6 +13,7 @@ import 'admin_payment_history.dart';
 import 'admin_bill_screen.dart';
 import 'admin_monthly_menu_screen.dart';
 import 'admin_menu_vote_screen.dart';
+import 'meal_state_record_screen.dart';
 
 class AdminMealStateScreen extends StatefulWidget {
   const AdminMealStateScreen({Key? key}) : super(key: key);
@@ -474,7 +475,14 @@ class _AdminMealStateScreenState extends State<AdminMealStateScreen> {
                 ),
                 const SizedBox(width: 12),
                 ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const MealStateRecordScreen(),
+                      ),
+                    );
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1A4D8F),
                     padding: const EdgeInsets.symmetric(
@@ -508,16 +516,91 @@ class _AdminMealStateScreenState extends State<AdminMealStateScreen> {
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: DataTable(
+                  headingRowColor: MaterialStateProperty.all(
+                    const Color(0xFF1A4D8F),
+                  ),
                   columns: const [
-                    DataColumn(label: Text('BA No')),
-                    DataColumn(label: Text('Rk')),
-                    DataColumn(label: Text('Name')),
-                    DataColumn(label: Text('Breakfast')),
-                    DataColumn(label: Text('Lunch')),
-                    DataColumn(label: Text('Dinner')),
-                    DataColumn(label: Text('Disposals')),
-                    DataColumn(label: Text('Remarks')),
-                    DataColumn(label: Text('Action')),
+                    DataColumn(
+                      label: Text(
+                        'BA No',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    DataColumn(
+                      label: Text(
+                        'Rk',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    DataColumn(
+                      label: Text(
+                        'Name',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    DataColumn(
+                      label: Text(
+                        'Breakfast',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    DataColumn(
+                      label: Text(
+                        'Lunch',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    DataColumn(
+                      label: Text(
+                        'Dinner',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    DataColumn(
+                      label: Text(
+                        'Disposals',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    DataColumn(
+                      label: Text(
+                        'Remarks',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    DataColumn(
+                      label: Text(
+                        'Action',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                   ],
                   rows: filteredRecords.isEmpty
                       ? [
