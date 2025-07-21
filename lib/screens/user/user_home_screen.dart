@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../theme_provider.dart';
 import '../login_screen.dart';
 import 'meal_in_out_screen.dart';
 import 'messing.dart';
@@ -16,7 +18,6 @@ class UserHomeScreen extends StatefulWidget {
 
 class _UserHomeScreenState extends State<UserHomeScreen> {
   int _selectedIndex = 0;
-
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   void _onItemTapped(int index) {
@@ -49,6 +50,8 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final themeNotifier = Provider.of<ThemeNotifier>(context);
+
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
@@ -80,10 +83,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
         actions: _selectedIndex == 0
             ? [
                 IconButton(
-                  icon: const Icon(
-                    Icons.notifications,
-                    size: 32,
-                  ),
+                  icon: const Icon(Icons.notifications, size: 32),
                   onPressed: () {
                     Navigator.push(
                       context,
@@ -151,8 +151,10 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                   SwitchListTile(
                     secondary: const Icon(Icons.dark_mode),
                     title: const Text('Dark Mode'),
-                    value: false,
-                    onChanged: (val) {},
+                    value: themeNotifier.currentTheme == ThemeMode.dark,
+                    onChanged: (val) {
+                      themeNotifier.toggleTheme(val);
+                    },
                   ),
                   const Divider(),
                   ListTile(

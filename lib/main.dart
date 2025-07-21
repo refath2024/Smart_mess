@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
-import 'screens/splash_screen.dart';
+import 'package:provider/provider.dart';
+import 'package:smart_mess/screens/user/user_home_screen.dart';
+import 'theme_provider.dart';
+import 'screens/user/user_home_screen.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => ThemeNotifier(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -10,10 +18,17 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Smart Mess',
-      home: SplashScreen(),
+    return Consumer<ThemeNotifier>(
+      builder: (context, themeNotifier, child) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'Smart Mess',
+          themeMode: themeNotifier.currentTheme,
+          theme: ThemeData.light(),
+          darkTheme: ThemeData.dark(),
+          home: const UserHomeScreen(),
+        );
+      },
     );
   }
 }
