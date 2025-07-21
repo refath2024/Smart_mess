@@ -4,8 +4,9 @@ import 'meal_in_out_screen.dart';
 import 'messing.dart';
 import 'billing_screen.dart';
 import 'menu_set_screen.dart';
-import 'notification_page.dart'; // Add this import at the top
+import 'notification_page.dart';
 import 'my_pro.dart';
+
 class UserHomeScreen extends StatefulWidget {
   const UserHomeScreen({super.key});
 
@@ -16,13 +17,15 @@ class UserHomeScreen extends StatefulWidget {
 class _UserHomeScreenState extends State<UserHomeScreen> {
   int _selectedIndex = 0;
 
-  final List<Widget> _screens = [
-    const HomeContent(),
-    const MealInOutScreen(),
-    const MessingScreen(),
-    const MenuSetScreen(),
-    const BillingScreen(),
-  ];
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  late final List<Widget> _screens;
 
   final List<String> _titles = [
     "Smart Mess",
@@ -32,16 +35,20 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
     "Billing",
   ];
 
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+  @override
+  void initState() {
+    super.initState();
+    _screens = [
+      HomeContent(onBillingPressed: () => _onItemTapped(4)),
+      const MealInOutScreen(),
+      const MessingScreen(),
+      const MenuSetScreen(),
+      const BillingScreen(),
+    ];
   }
 
   @override
   Widget build(BuildContext context) {
-    final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
@@ -116,7 +123,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                     leading: const Icon(Icons.person),
                     title: const Text('My Profile'),
                     onTap: () {
-                      Navigator.pop(context); // Close the drawer first
+                      Navigator.pop(context);
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (_) => const MyProfilePage()),
@@ -126,9 +133,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                   ListTile(
                     leading: const Icon(Icons.help_outline),
                     title: const Text('Help & Support'),
-                    onTap: () {
-                      // Navigate to help & support page
-                    },
+                    onTap: () {},
                   ),
                   const Divider(),
                   const Padding(
@@ -146,10 +151,8 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                   SwitchListTile(
                     secondary: const Icon(Icons.dark_mode),
                     title: const Text('Dark Mode'),
-                    value: false, // Replace with your theme state
-                    onChanged: (val) {
-                      // Handle theme change
-                    },
+                    value: false,
+                    onChanged: (val) {},
                   ),
                   const Divider(),
                   ListTile(
@@ -174,26 +177,11 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
         unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.fastfood),
-            label: 'IN/OUT',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.food_bank),
-            label: 'Messing',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.menu_book),
-            label: 'Menu Set',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.receipt_long),
-            label: 'Billing',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.fastfood), label: 'IN/OUT'),
+          BottomNavigationBarItem(icon: Icon(Icons.food_bank), label: 'Messing'),
+          BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: 'Menu Set'),
+          BottomNavigationBarItem(icon: Icon(Icons.receipt_long), label: 'Billing'),
         ],
       ),
     );
@@ -201,7 +189,8 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
 }
 
 class HomeContent extends StatelessWidget {
-  const HomeContent({super.key});
+  final VoidCallback onBillingPressed;
+  const HomeContent({super.key, required this.onBillingPressed});
 
   Widget _buildMenuCard(String title, String subtitle, String imagePath) {
     return Card(
@@ -247,7 +236,7 @@ class HomeContent extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: ListView(
           children: [
-              const SizedBox(height: 24),
+            const SizedBox(height: 24),
             const Text("Today's Menu", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             Row(
@@ -293,12 +282,7 @@ class HomeContent extends StatelessWidget {
                       ),
                     ),
                     ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const BillingScreen()),
-                        );
-                      },
+                      onPressed: onBillingPressed,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
