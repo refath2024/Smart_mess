@@ -16,20 +16,11 @@ class _BillingScreenState extends State<BillingScreen> {
   String? _selectedMonth;
   int? _selectedYear;
   String? _selectedMethod;
+  bool _paymentSuccess = false;
 
   final List<String> _months = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December',
   ];
 
   final int currentYear = DateTime.now().year;
@@ -46,15 +37,18 @@ class _BillingScreenState extends State<BillingScreen> {
           child: Column(
             children: [
               if (method == 'bKash' || method == 'Tap') ...[
+                _buildInputField('Phone Number'),
                 _buildInputField('Transaction ID'),
-                _buildInputField('Amount', isNumber: true),
+                _buildInputField('Amount', isNumber: true, initialValue: '1000'),
               ] else if (method == 'Bank') ...[
                 _buildInputField('Bank Account No'),
                 _buildInputField('Bank Name'),
-                _buildInputField('Amount', isNumber: true),
+                _buildInputField('Amount', isNumber: true, initialValue: '1000'),
               ] else if (method == 'Card') ...[
-                _buildInputField('Bank Name'),
-                _buildInputField('Amount', isNumber: true),
+                _buildInputField('Card Number'),
+                _buildInputField('Expiry Date'),
+                _buildInputField('CVV', isNumber: true),
+                _buildInputField('Amount', isNumber: true, initialValue: '1000'),
               ],
             ],
           ),
@@ -67,9 +61,11 @@ class _BillingScreenState extends State<BillingScreen> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
+              setState(() => _paymentSuccess = true);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text("Payment details successfully sent."),
+                SnackBar(
+                  content: const Text("Payment successful!"),
+                  backgroundColor: Colors.green.shade700,
                 ),
               );
             },
@@ -77,13 +73,12 @@ class _BillingScreenState extends State<BillingScreen> {
               backgroundColor: const Color.fromARGB(255, 7, 125, 21),
             ),
             child: const Text('Submit', style: TextStyle(color: Colors.white)),
-          ),
-        ],
+      )],
       ),
     );
   }
 
-  Widget _buildInputField(String label, {bool isNumber = false}) {
+  Widget _buildInputField(String label, {bool isNumber = false, String? initialValue}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: TextField(
@@ -92,28 +87,9 @@ class _BillingScreenState extends State<BillingScreen> {
           labelText: label,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
         ),
-      ),
-    );
-  }
-
-  Widget _buildSidebarTile({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-    bool selected = false,
-    Color? color,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      splashColor: Colors.blue.shade100,
-      child: ListTile(
-        selected: selected,
-        selectedTileColor: Colors.blue.shade100,
-        leading: Icon(
-          icon,
-          color: color ?? (selected ? Colors.blue : Colors.black),
-        ),
-        title: Text(title, style: TextStyle(color: color ?? Colors.black)),
+        controller: initialValue != null 
+            ? TextEditingController(text: initialValue)
+            : null,
       ),
     );
   }
@@ -126,10 +102,61 @@ class _BillingScreenState extends State<BillingScreen> {
           padding: const EdgeInsets.all(16),
           child: ListView(
             children: [
-              const Text(
-                "Select Payment Method",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              if (_paymentSuccess)
+                Card(
+                  color: Colors.green.shade50,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.check_circle, color: Colors.green),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: const [
+                              Text("Payment Successful!", 
+                                  style: TextStyle(fontWeight: FontWeight.bold)),
+                              Text("Your payment of ৳1000 has been processed."),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+              Card(
+                color: Colors.red.shade50,
+                elevation: 2,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.receipt, color: Colors.red, size: 32),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            Text("Total Due", 
+                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.red)),
+                            SizedBox(height: 4),
+                            Text("৳ 1000", 
+                                style: TextStyle(fontSize: 16, color: Colors.black87)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
+              const SizedBox(height: 20),
+
+              const Text("Select Payment Method",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
               Column(
                 children: [
@@ -140,19 +167,14 @@ class _BillingScreenState extends State<BillingScreen> {
                 ],
               ),
               const SizedBox(height: 30),
-              const Text(
-                "View Your Mess Bill",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
+              
+              const Text("View Your Mess Bill",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 10),
               DropdownButtonFormField<String>(
                 value: _selectedMonth,
-                items: _months
-                    .map(
-                      (month) =>
-                          DropdownMenuItem(value: month, child: Text(month)),
-                    )
-                    .toList(),
+                items: _months.map((month) => 
+                    DropdownMenuItem(value: month, child: Text(month))).toList(),
                 decoration: const InputDecoration(
                   labelText: "Select Month",
                   border: OutlineInputBorder(),
@@ -162,14 +184,8 @@ class _BillingScreenState extends State<BillingScreen> {
               const SizedBox(height: 10),
               DropdownButtonFormField<int>(
                 value: _selectedYear,
-                items: List.generate(6, (i) => currentYear - i)
-                    .map(
-                      (year) => DropdownMenuItem(
-                        value: year,
-                        child: Text(year.toString()),
-                      ),
-                    )
-                    .toList(),
+                items: List.generate(6, (i) => currentYear - i).map((year) => 
+                    DropdownMenuItem(value: year, child: Text(year.toString()))).toList(),
                 decoration: const InputDecoration(
                   labelText: "Select Year",
                   border: OutlineInputBorder(),
@@ -182,9 +198,7 @@ class _BillingScreenState extends State<BillingScreen> {
                   if (_selectedMonth != null && _selectedYear != null) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text(
-                          "Viewing bill for $_selectedMonth $_selectedYear",
-                        ),
+                        content: Text("Viewing bill for $_selectedMonth $_selectedYear"),
                       ),
                     );
                   } else {
