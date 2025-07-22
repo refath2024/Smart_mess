@@ -8,14 +8,12 @@ import 'admin_voucher_screen.dart';
 import 'admin_inventory_screen.dart';
 import 'admin_messing_screen.dart';
 import 'admin_staff_state_screen.dart';
-import 'admin_dining_member_state.dart';
 import 'admin_payment_history.dart';
 import 'admin_meal_state_screen.dart';
 import 'admin_monthly_menu_screen.dart';
 import 'admin_menu_vote_screen.dart';
 import 'admin_bill_screen.dart';
 import 'add_user_form.dart';
-
 
 class DiningMember {
   String id;
@@ -47,6 +45,14 @@ class DiningMemberStatePage extends StatefulWidget {
 }
 
 class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
+  void _logout() {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      (route) => false,
+    );
+  }
+
   List<DiningMember> members = [
     DiningMember(
         id: 'BA-1234',
@@ -123,7 +129,8 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
     return ListTile(
       selected: selected,
       selectedTileColor: Colors.blue.shade100,
-      leading: Icon(icon, color: color ?? (selected ? Colors.blue : Colors.black)),
+      leading:
+          Icon(icon, color: color ?? (selected ? Colors.blue : Colors.black)),
       title: Text(title, style: TextStyle(color: color ?? Colors.black)),
       onTap: onTap,
     );
@@ -133,69 +140,228 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       drawer: Drawer(
-        child: SafeArea(
-          child: Column(
-            children: [
-              const DrawerHeader(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF002B5B), Color(0xFF1A4D8F)],
-                  ),
+        child: Column(
+          children: [
+            DrawerHeader(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF002B5B), Color(0xFF1A4D8F)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundImage: AssetImage('assets/me.png'),
-                      radius: 30,
-                    ),
-                    SizedBox(width: 10),
-                    Flexible(
-                      child: Text(
-                        "Shoaib Ahmed Sami",
-                        style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
+              child: Row(
+                children: const [
+                  CircleAvatar(
+                    backgroundImage: AssetImage('assets/me.png'),
+                    radius: 30,
+                  ),
+                  SizedBox(width: 10),
+                  Flexible(
+                    child: Text(
+                      "Shoaib Ahmed Sami",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ],
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  _buildSidebarTile(
+                      icon: Icons.dashboard,
+                      title: "Home",
+                      onTap: () => Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const AdminHomeScreen()))),
+                  _buildSidebarTile(
+                    icon: Icons.people,
+                    title: "Users",
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AdminUsersScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildSidebarTile(
+                    icon: Icons.pending,
+                    title: "Pending IDs",
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AdminPendingIdsScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildSidebarTile(
+                    icon: Icons.history,
+                    title: "Shopping History",
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const AdminShoppingHistoryScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildSidebarTile(
+                    icon: Icons.receipt,
+                    title: "Voucher List",
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AdminVoucherScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildSidebarTile(
+                    icon: Icons.storage,
+                    title: "Inventory",
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AdminInventoryScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildSidebarTile(
+                    icon: Icons.food_bank,
+                    title: "Messing",
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AdminMessingScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildSidebarTile(
+                    icon: Icons.menu_book,
+                    title: "Monthly Menu",
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const EditMenuScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildSidebarTile(
+                    icon: Icons.analytics,
+                    title: "Meal State",
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AdminMealStateScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildSidebarTile(
+                    icon: Icons.thumb_up,
+                    title: "Menu Vote",
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const MenuVoteScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildSidebarTile(
+                    icon: Icons.receipt_long,
+                    title: "Bills",
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AdminBillScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildSidebarTile(
+                    icon: Icons.payment,
+                    title: "Payments",
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const PaymentsDashboard(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildSidebarTile(
+                      icon: Icons.people_alt,
+                      title: "Dining Member State",
+                      selected: true,
+                      onTap: () => Navigator.pop(context)),
+                  _buildSidebarTile(
+                    icon: Icons.manage_accounts,
+                    title: "Staff State",
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AdminStaffStateScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: Colors.grey.shade300),
                 ),
               ),
-              Expanded(
-                child: ListView(
-                  children: [
-                    _buildSidebarTile(icon: Icons.dashboard, title: "Home", onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminHomeScreen()))),
-                    _buildSidebarTile(icon: Icons.people, title: "Users", onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AdminUsersScreen()))),
-                    _buildSidebarTile(icon: Icons.pending, title: "Pending IDs", onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminPendingIdsScreen()))),
-                    _buildSidebarTile(icon: Icons.history, title: "Shopping History", onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminShoppingHistoryScreen()))),
-                    _buildSidebarTile(icon: Icons.receipt, title: "Voucher List", onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminVoucherScreen()))),
-                    _buildSidebarTile(icon: Icons.storage, title: "Inventory", onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminInventoryScreen()))),
-                    _buildSidebarTile(icon: Icons.food_bank, title: "Messing", onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminMessingScreen()))),
-                    _buildSidebarTile(icon: Icons.menu_book, title: "Monthly Menu", onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const EditMenuScreen()))),
-                    _buildSidebarTile(icon: Icons.analytics, title: "Meal State", onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminMealStateScreen()))),
-                    _buildSidebarTile(icon: Icons.thumb_up, title: "Menu Vote", onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const MenuVoteScreen()))),
-                    _buildSidebarTile(icon: Icons.receipt_long, title: "Bills", onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminBillScreen()))),
-                    _buildSidebarTile(icon: Icons.payment, title: "Payments", onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const PaymentsDashboard()))),
-                    _buildSidebarTile(icon: Icons.people_alt, title: "Dining Member State", selected: true, onTap: () => Navigator.pop(context)),
-                    _buildSidebarTile(icon: Icons.manage_accounts, title: "Staff State", onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminStaffStateScreen()))),
-                  ],
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).padding.bottom + 8,
+                  top: 8,
                 ),
-              ),
-              Padding(
-                padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom + 8),
                 child: _buildSidebarTile(
                   icon: Icons.logout,
                   title: "Logout",
+                  onTap: _logout,
                   color: Colors.red,
-                  onTap: () => Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const LoginScreen()), (route) => false),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
       appBar: AppBar(
         backgroundColor: const Color(0xFF002B5B),
         iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
-        title: const Text("Dining Member State", style: TextStyle(color: Colors.white)),
+        title: const Text("Dining Member State",
+            style: TextStyle(color: Colors.white)),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -205,15 +371,18 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
               children: [
                 ElevatedButton.icon(
                   onPressed: () {
-  Navigator.push(context, MaterialPageRoute(builder: (_) => const AddUserFormPage()));
-},
-
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const AddUserFormPage()));
+                  },
                   icon: const Icon(Icons.add),
                   label: const Text("Add Users"),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                     textStyle: const TextStyle(fontSize: 16),
                   ),
                 ),
@@ -225,7 +394,8 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                     decoration: InputDecoration(
                       prefixIcon: Icon(Icons.search),
                       hintText: "Search Members",
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8)),
                     ),
                   ),
                 ),
@@ -236,45 +406,87 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: DataTable(
-                  headingRowColor: MaterialStateProperty.all(const Color(0xFF1A4D8F)),
+                  headingRowColor:
+                      MaterialStateProperty.all(const Color(0xFF1A4D8F)),
                   columns: const [
-                    DataColumn(label: Text('ID', style: TextStyle(color: Colors.white))),
-                    DataColumn(label: Text('Name', style: TextStyle(color: Colors.white))),
-                    DataColumn(label: Text('Rank', style: TextStyle(color: Colors.white))),
-                    DataColumn(label: Text('Unit', style: TextStyle(color: Colors.white))),
-                    DataColumn(label: Text('Phone', style: TextStyle(color: Colors.white))),
-                    DataColumn(label: Text('Email', style: TextStyle(color: Colors.white))),
-                    DataColumn(label: Text('Status', style: TextStyle(color: Colors.white))),
-                    DataColumn(label: Text('Bill', style: TextStyle(color: Colors.white))),
-                    DataColumn(label: Text('Action', style: TextStyle(color: Colors.white))),
+                    DataColumn(
+                        label:
+                            Text('ID', style: TextStyle(color: Colors.white))),
+                    DataColumn(
+                        label: Text('Name',
+                            style: TextStyle(color: Colors.white))),
+                    DataColumn(
+                        label: Text('Rank',
+                            style: TextStyle(color: Colors.white))),
+                    DataColumn(
+                        label: Text('Unit',
+                            style: TextStyle(color: Colors.white))),
+                    DataColumn(
+                        label: Text('Phone',
+                            style: TextStyle(color: Colors.white))),
+                    DataColumn(
+                        label: Text('Email',
+                            style: TextStyle(color: Colors.white))),
+                    DataColumn(
+                        label: Text('Status',
+                            style: TextStyle(color: Colors.white))),
+                    DataColumn(
+                        label: Text('Bill',
+                            style: TextStyle(color: Colors.white))),
+                    DataColumn(
+                        label: Text('Action',
+                            style: TextStyle(color: Colors.white))),
                   ],
                   rows: List.generate(filtered.length, (index) {
                     final m = filtered[index];
                     final isEditing = editingIndex == index;
-                    TextEditingController idCtrl = TextEditingController(text: m.id);
-                    TextEditingController nameCtrl = TextEditingController(text: m.name);
-                    TextEditingController rankCtrl = TextEditingController(text: m.rank);
-                    TextEditingController unitCtrl = TextEditingController(text: m.unit);
-                    TextEditingController phoneCtrl = TextEditingController(text: m.phone);
-                    TextEditingController emailCtrl = TextEditingController(text: m.email);
-                    TextEditingController billCtrl = TextEditingController(text: m.monthlyBill.toString());
+                    TextEditingController idCtrl =
+                        TextEditingController(text: m.id);
+                    TextEditingController nameCtrl =
+                        TextEditingController(text: m.name);
+                    TextEditingController rankCtrl =
+                        TextEditingController(text: m.rank);
+                    TextEditingController unitCtrl =
+                        TextEditingController(text: m.unit);
+                    TextEditingController phoneCtrl =
+                        TextEditingController(text: m.phone);
+                    TextEditingController emailCtrl =
+                        TextEditingController(text: m.email);
+                    TextEditingController billCtrl =
+                        TextEditingController(text: m.monthlyBill.toString());
 
                     return DataRow(cells: [
-                      DataCell(isEditing ? TextField(controller: idCtrl) : Text(m.id)),
-                      DataCell(isEditing ? TextField(controller: nameCtrl) : Text(m.name)),
-                      DataCell(isEditing ? TextField(controller: rankCtrl) : Text(m.rank)),
-                      DataCell(isEditing ? TextField(controller: unitCtrl) : Text(m.unit)),
-                      DataCell(isEditing ? TextField(controller: phoneCtrl) : Text(m.phone)),
-                      DataCell(isEditing ? TextField(controller: emailCtrl) : Text(m.email)),
+                      DataCell(isEditing
+                          ? TextField(controller: idCtrl)
+                          : Text(m.id)),
+                      DataCell(isEditing
+                          ? TextField(controller: nameCtrl)
+                          : Text(m.name)),
+                      DataCell(isEditing
+                          ? TextField(controller: rankCtrl)
+                          : Text(m.rank)),
+                      DataCell(isEditing
+                          ? TextField(controller: unitCtrl)
+                          : Text(m.unit)),
+                      DataCell(isEditing
+                          ? TextField(controller: phoneCtrl)
+                          : Text(m.phone)),
+                      DataCell(isEditing
+                          ? TextField(controller: emailCtrl)
+                          : Text(m.email)),
                       DataCell(
                         isEditing
                             ? DropdownButton<String>(
                                 value: m.status,
                                 items: const [
-                                  DropdownMenuItem(value: 'Active', child: Text('Active')),
-                                  DropdownMenuItem(value: 'Inactive', child: Text('Inactive')),
+                                  DropdownMenuItem(
+                                      value: 'Active', child: Text('Active')),
+                                  DropdownMenuItem(
+                                      value: 'Inactive',
+                                      child: Text('Inactive')),
                                 ],
-                                onChanged: (val) => setState(() => m.status = val!),
+                                onChanged: (val) =>
+                                    setState(() => m.status = val!),
                               )
                             : Text(m.status),
                       ),
@@ -288,32 +500,37 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                               ),
                       ),
                       DataCell(Row(children: [
-                        if (isEditing)
-                          ...[
-                            IconButton(
-                                icon: Icon(Icons.save, color: Colors.green),
-                                onPressed: () {
-                                  _save(
-                                    index,
-                                    DiningMember(
-                                      id: idCtrl.text,
-                                      name: nameCtrl.text,
-                                      rank: rankCtrl.text,
-                                      unit: unitCtrl.text,
-                                      phone: phoneCtrl.text,
-                                      email: emailCtrl.text,
-                                      status: m.status,
-                                      monthlyBill: double.tryParse(billCtrl.text) ?? m.monthlyBill,
-                                    ),
-                                  );
-                                }),
-                            IconButton(icon: Icon(Icons.cancel, color: Colors.red), onPressed: _cancelEditing)
-                          ]
-                        else
-                          ...[
-                            IconButton(icon: Icon(Icons.edit, color: Colors.blue), onPressed: () => _startEditing(index)),
-                            IconButton(icon: Icon(Icons.delete, color: Colors.red), onPressed: () => _delete(index)),
-                          ]
+                        if (isEditing) ...[
+                          IconButton(
+                              icon: Icon(Icons.save, color: Colors.green),
+                              onPressed: () {
+                                _save(
+                                  index,
+                                  DiningMember(
+                                    id: idCtrl.text,
+                                    name: nameCtrl.text,
+                                    rank: rankCtrl.text,
+                                    unit: unitCtrl.text,
+                                    phone: phoneCtrl.text,
+                                    email: emailCtrl.text,
+                                    status: m.status,
+                                    monthlyBill:
+                                        double.tryParse(billCtrl.text) ??
+                                            m.monthlyBill,
+                                  ),
+                                );
+                              }),
+                          IconButton(
+                              icon: Icon(Icons.cancel, color: Colors.red),
+                              onPressed: _cancelEditing)
+                        ] else ...[
+                          IconButton(
+                              icon: Icon(Icons.edit, color: Colors.blue),
+                              onPressed: () => _startEditing(index)),
+                          IconButton(
+                              icon: Icon(Icons.delete, color: Colors.red),
+                              onPressed: () => _delete(index)),
+                        ]
                       ]))
                     ]);
                   }),
