@@ -26,18 +26,65 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   void _handleApply() {
     if (_formKey.currentState!.validate()) {
-      debugPrint("BA No: ${_noController.text}");
-      debugPrint("Rank: ${_rankController.text}");
-      debugPrint("Name: ${_nameController.text}");
-      debugPrint("Unit: ${_unitController.text}");
-      debugPrint("Email: ${_emailController.text}");
-      debugPrint("Mobile: ${_mobileController.text}");
-      debugPrint("Password: ${_passwordController.text}");
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Confirm Application'),
+            content:
+                const Text('Are you sure you want to submit your application?'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Close the dialog
+                },
+                child: const Text('No'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Close the confirmation dialog
 
-      // TODO: Connect with Firebase or backend
+                  // TODO: Connect with Firebase or backend
+                  debugPrint("BA No: ${_noController.text}");
+                  debugPrint("Rank: ${_rankController.text}");
+                  debugPrint("Name: ${_nameController.text}");
+                  debugPrint("Unit: ${_unitController.text}");
+                  debugPrint("Email: ${_emailController.text}");
+                  debugPrint("Mobile: ${_mobileController.text}");
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Registration submitted successfully!')),
+                  // Show success dialog
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        title: const Text('Application Submitted'),
+                        content: const Text(
+                          'Your ID has been sent for approval. You will be notified via email once approved. '
+                          'You may also check your application status by logging in with your credentials.',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () {
+                              Navigator.of(context)
+                                  .pop(); // Close the success dialog
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => const LoginScreen()),
+                              );
+                            },
+                            child: const Text('OK'),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
+                child: const Text('Yes'),
+              ),
+            ],
+          );
+        },
       );
     }
   }
@@ -109,7 +156,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         style: TextStyle(fontSize: 14, color: Colors.black87),
                       ),
                       const SizedBox(height: 24),
-
                       _buildTextField(
                         "No *",
                         _noController,
@@ -117,12 +163,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ? 'Please enter your ID number'
                             : null,
                       ),
-
                       _buildTextField(
-                        "Rank",
+                        "Rank *",
                         _rankController,
                       ),
-
                       _buildTextField(
                         "Name *",
                         _nameController,
@@ -130,12 +174,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ? 'Please enter your name'
                             : null,
                       ),
-
                       _buildTextField(
-                        "Unit",
+                        "Unit *",
                         _unitController,
                       ),
-
                       _buildTextField(
                         "Email *",
                         _emailController,
@@ -152,7 +194,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           return null;
                         },
                       ),
-
                       _buildTextField(
                         "Mobile No * (at least 11 digits)",
                         _mobileController,
@@ -170,7 +211,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           return null;
                         },
                       ),
-
                       _buildPasswordField(
                         "Password *",
                         _passwordController,
@@ -190,7 +230,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           return null;
                         },
                       ),
-
                       _buildPasswordField(
                         "Confirm Password *",
                         _confirmPasswordController,
@@ -210,93 +249,61 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           return null;
                         },
                       ),
-
                       const SizedBox(height: 24),
-
                       Row(
-  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  children: [
-    // Cancel Button with Gradient
-    Container(
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color.fromARGB(255, 253, 56, 72), Color(0xFFFFC371)], // Reddish-orange gradient
-        ),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.red.shade200.withOpacity(0.5),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ElevatedButton(
-        onPressed: () {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const LoginScreen()),
-          );
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        child: const Text(
-          "Cancel",
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-            color: Colors.white,
-            letterSpacing: 1.1,
-          ),
-        ),
-      ),
-    ),
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // Cancel Button
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => const LoginScreen()),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.grey.shade100,
+                              foregroundColor: Colors.black87,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 32, vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              elevation: 1,
+                            ),
+                            child: const Text(
+                              "Cancel",
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
 
-    // Apply Button with Gradient
-    Container(
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color.fromARGB(255, 74, 172, 29), Color.fromARGB(255, 165, 243, 69)], // Green gradient
-        ),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.green.shade200.withOpacity(0.5),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ElevatedButton(
-        onPressed: _handleApply,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        child: const Text(
-          "Apply",
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-            color: Colors.white,
-            letterSpacing: 1.1,
-          ),
-        ),
-      ),
-    ),
-  ],
-),
-
+                          // Apply Button
+                          ElevatedButton(
+                            onPressed: _handleApply,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xff0d47a1),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 32, vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              elevation: 1,
+                            ),
+                            child: const Text(
+                              "Apply",
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -391,8 +398,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
               ),
               suffixIcon: IconButton(
-                icon:
-                    Icon(visible ? Icons.visibility_off : Icons.visibility),
+                icon: Icon(visible ? Icons.visibility_off : Icons.visibility),
                 onPressed: toggleVisibility,
                 color: Colors.grey.shade700,
               ),
