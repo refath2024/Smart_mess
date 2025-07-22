@@ -45,10 +45,9 @@ class _AdminAddShoppingScreenState extends State<AdminAddShoppingScreen> {
 
   void _save() {
     if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Voucher added successfully.")));
-
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Voucher added successfully")),
+      );
       Navigator.pop(context);
     }
   }
@@ -144,14 +143,11 @@ class _AdminAddShoppingScreenState extends State<AdminAddShoppingScreen> {
                 ),
 
                 // Image picker section
-                Align(
+                const Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     "Upload Images",
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                   ),
                 ),
                 const SizedBox(height: 8),
