@@ -305,14 +305,23 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                 ],
               ),
             ),
-            Divider(height: 1, color: Colors.grey.shade300),
-            SafeArea(
-              minimum: const EdgeInsets.only(bottom: 8),
-              child: _buildSidebarTile(
-                icon: Icons.logout,
-                title: "Logout",
-                onTap: _logout,
-                color: Colors.red,
+            Container(
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: Colors.grey.shade300),
+                ),
+              ),
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).padding.bottom + 8,
+                  top: 8,
+                ),
+                child: _buildSidebarTile(
+                  icon: Icons.logout,
+                  title: "Logout",
+                  onTap: _logout,
+                  color: Colors.red,
+                ),
               ),
             ),
           ],
