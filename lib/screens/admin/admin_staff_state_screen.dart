@@ -31,7 +31,23 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
     );
   }
 
-  final List<Map<String, String>> staffData = [
+  final List<String> _roles = [
+    'PMC',
+    'G2 (Mess)',
+    'Mess Secretary',
+    'Asst Mess Secretary',
+    'RP NCO',
+    'Barrack NCO',
+    'Mess Sgt',
+    'Asst Mess Sgt',
+    'Clerk',
+    'Cook',
+    'Butler',
+    'Waiter',
+    'NC(E)',
+  ];
+
+  final List<Map<String, dynamic>> staffData = [
     {
       'no': '12345',
       'rank': 'Sergeant',
@@ -39,8 +55,10 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
       'unit': 'Alpha',
       'mobile': '017xxxxxxxx',
       'email': 'john@example.com',
-      'role': 'Admin',
+      'role': 'PMC', // Using a valid role from _roles list
       'status': 'Active',
+      'isEditing': false,
+      'original': {},
     },
     {
       'no': '67890',
@@ -49,12 +67,105 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
       'unit': 'Bravo',
       'mobile': '018xxxxxxxx',
       'email': 'jane@example.com',
-      'role': 'Staff',
+      'role': 'Mess Secretary', // Using a valid role from _roles list
       'status': 'Inactive',
+      'isEditing': false,
+      'original': {},
     },
   ];
 
   String searchTerm = '';
+
+  void _startEdit(Map<String, dynamic> row) {
+    setState(() {
+      row['original'] = Map<String, dynamic>.from(row);
+      row['isEditing'] = true;
+    });
+  }
+
+  void _cancelEdit(Map<String, dynamic> row) {
+    setState(() {
+      row['no'] = row['original']['no'];
+      row['rank'] = row['original']['rank'];
+      row['name'] = row['original']['name'];
+      row['unit'] = row['original']['unit'];
+      row['mobile'] = row['original']['mobile'];
+      row['email'] = row['original']['email'];
+      row['role'] = row['original']['role'];
+      row['status'] = row['original']['status'];
+      row['isEditing'] = false;
+    });
+  }
+
+  Future<void> _saveEdit(Map<String, dynamic> row) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirm Save'),
+          content: const Text('Are you sure you want to save these changes?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: TextButton.styleFrom(foregroundColor: Colors.blue),
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm == true) {
+      setState(() {
+        row['isEditing'] = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Changes saved successfully')),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteStaff(Map<String, dynamic> row) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirm Delete'),
+          content: Text('Are you sure you want to delete "${row['name']}"?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm == true) {
+      setState(() {
+        staffData.remove(row);
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Staff member deleted successfully')),
+        );
+      }
+    }
+  }
 
   void _navigateToAddStaff() {
     Navigator.push(
@@ -351,11 +462,19 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  ElevatedButton(
+                  ElevatedButton.icon(
                     onPressed: _navigateToAddStaff,
-                    style:
-                        ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                    child: const Text('Add Staffs/Admin'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0052CC),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    icon: const Icon(Icons.add),
+                    label: const Text("Add Staff/Admin"),
                   ),
                 ],
               ),
@@ -364,72 +483,174 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: DataTable(
+                    headingRowColor:
+                        MaterialStateProperty.all(const Color(0xFF1A4D8F)),
                     columns: const [
-                      DataColumn(label: Text('BA/ID No')),
-                      DataColumn(label: Text('Rank')),
-                      DataColumn(label: Text('Name')),
-                      DataColumn(label: Text('Unit')),
-                      DataColumn(label: Text('Mobile No')),
-                      DataColumn(label: Text('Email')),
-                      DataColumn(label: Text('Role')),
-                      DataColumn(label: Text('Status')),
-                      DataColumn(label: Text('Action')),
+                      DataColumn(
+                          label: Text('BA/ID No',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold))),
+                      DataColumn(
+                          label: Text('Rank',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold))),
+                      DataColumn(
+                          label: Text('Name',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold))),
+                      DataColumn(
+                          label: Text('Unit',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold))),
+                      DataColumn(
+                          label: Text('Mobile No',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold))),
+                      DataColumn(
+                          label: Text('Email',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold))),
+                      DataColumn(
+                          label: Text('Role',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold))),
+                      DataColumn(
+                          label: Text('Status',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold))),
+                      DataColumn(
+                          label: Text('Action',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold))),
                     ],
                     rows: filteredData.map((row) {
+                      final bool isEditing = row['isEditing'] ?? false;
                       return DataRow(
                         cells: [
-                          DataCell(Text(row['no'] ?? '')),
-                          DataCell(Text(row['rank'] ?? '')),
-                          DataCell(Text(row['name'] ?? '')),
-                          DataCell(Text(row['unit'] ?? '')),
-                          DataCell(Text(row['mobile'] ?? '')),
-                          DataCell(Text(row['email'] ?? '')),
-                          DataCell(Text(row['role'] ?? '')),
+                          DataCell(isEditing
+                              ? TextField(
+                                  controller:
+                                      TextEditingController(text: row['no']),
+                                  onChanged: (val) => row['no'] = val,
+                                )
+                              : Text(row['no'] ?? '')),
+                          DataCell(isEditing
+                              ? TextField(
+                                  controller:
+                                      TextEditingController(text: row['rank']),
+                                  onChanged: (val) => row['rank'] = val,
+                                )
+                              : Text(row['rank'] ?? '')),
+                          DataCell(isEditing
+                              ? TextField(
+                                  controller:
+                                      TextEditingController(text: row['name']),
+                                  onChanged: (val) => row['name'] = val,
+                                )
+                              : Text(row['name'] ?? '')),
+                          DataCell(isEditing
+                              ? TextField(
+                                  controller:
+                                      TextEditingController(text: row['unit']),
+                                  onChanged: (val) => row['unit'] = val,
+                                )
+                              : Text(row['unit'] ?? '')),
+                          DataCell(isEditing
+                              ? TextField(
+                                  controller: TextEditingController(
+                                      text: row['mobile']),
+                                  onChanged: (val) => row['mobile'] = val,
+                                )
+                              : Text(row['mobile'] ?? '')),
+                          DataCell(isEditing
+                              ? TextField(
+                                  controller:
+                                      TextEditingController(text: row['email']),
+                                  onChanged: (val) => row['email'] = val,
+                                )
+                              : Text(row['email'] ?? '')),
+                          DataCell(isEditing
+                              ? Container(
+                                  constraints:
+                                      const BoxConstraints(maxWidth: 200),
+                                  child: DropdownButtonFormField<String>(
+                                    value: _roles.contains(row['role'])
+                                        ? row['role']
+                                        : _roles.first,
+                                    decoration: const InputDecoration(
+                                      contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 0),
+                                      border: OutlineInputBorder(),
+                                    ),
+                                    items: _roles
+                                        .map((role) => DropdownMenuItem(
+                                              value: role,
+                                              child: Text(role),
+                                            ))
+                                        .toList(),
+                                    onChanged: (value) {
+                                      setState(() {
+                                        row['role'] = value!;
+                                      });
+                                    },
+                                    isExpanded: true,
+                                  ),
+                                )
+                              : Text(row['role'] ?? '')),
                           DataCell(
-                            DropdownButton<String>(
-                              value: row['status'],
-                              items: ['Active', 'Inactive']
-                                  .map((status) => DropdownMenuItem(
-                                        value: status,
-                                        child: Text(status),
-                                      ))
-                                  .toList(),
-                              onChanged: (value) {
-                                setState(() {
-                                  row['status'] = value!;
-                                });
-                              },
-                            ),
+                            isEditing
+                                ? DropdownButton<String>(
+                                    value: row['status'],
+                                    items: ['Active', 'Inactive']
+                                        .map((status) => DropdownMenuItem(
+                                              value: status,
+                                              child: Text(status),
+                                            ))
+                                        .toList(),
+                                    onChanged: (value) {
+                                      setState(() {
+                                        row['status'] = value!;
+                                      });
+                                    },
+                                  )
+                                : Text(row['status'] ?? ''),
                           ),
                           DataCell(
                             Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                IconButton(
-                                  icon: const Icon(Icons.edit,
-                                      color: Colors.grey),
-                                  onPressed: () {
-                                    // Implement edit logic
-                                  },
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.save,
-                                      color: Colors.blue),
-                                  onPressed: () {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                          content: Text('Saved changes')),
-                                    );
-                                  },
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete,
-                                      color: Colors.red),
-                                  onPressed: () {
-                                    setState(() {
-                                      staffData.remove(row);
-                                    });
-                                  },
-                                ),
+                                if (!isEditing) ...[
+                                  IconButton(
+                                    icon: const Icon(Icons.edit),
+                                    color: const Color(0xFF1A4D8F),
+                                    onPressed: () => _startEdit(row),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete),
+                                    color: Colors.red,
+                                    onPressed: () => _deleteStaff(row),
+                                  ),
+                                ] else ...[
+                                  IconButton(
+                                    icon: const Icon(Icons.save),
+                                    color: Colors.green,
+                                    onPressed: () => _saveEdit(row),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.cancel),
+                                    color: Colors.grey,
+                                    onPressed: () => _cancelEdit(row),
+                                  ),
+                                ],
                               ],
                             ),
                           ),
