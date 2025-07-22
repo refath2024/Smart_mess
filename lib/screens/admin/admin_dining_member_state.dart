@@ -13,29 +13,7 @@ import 'admin_meal_state_screen.dart';
 import 'admin_monthly_menu_screen.dart';
 import 'admin_menu_vote_screen.dart';
 import 'admin_bill_screen.dart';
-import 'add_user_form.dart';
-
-class DiningMember {
-  String id;
-  String name;
-  String rank;
-  String unit;
-  String phone;
-  String email;
-  String status;
-  double monthlyBill;
-
-  DiningMember({
-    required this.id,
-    required this.name,
-    required this.rank,
-    required this.unit,
-    required this.phone,
-    required this.email,
-    required this.status,
-    required this.monthlyBill,
-  });
-}
+import 'add_dining_member.dart';
 
 class DiningMemberStatePage extends StatefulWidget {
   const DiningMemberStatePage({super.key});
@@ -53,30 +31,48 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
     );
   }
 
-  List<DiningMember> members = [
-    DiningMember(
-        id: 'BA-1234',
-        name: 'Maj John Smith',
-        rank: 'Major',
-        unit: '10 Signal Battalion',
-        phone: '+880 1700-000001',
-        email: 'john.smith@army.mil.bd',
-        status: 'Active',
-        monthlyBill: 3500.00),
-    DiningMember(
-        id: 'BA-1235',
-        name: 'Capt Sarah Johnson',
-        rank: 'Captain',
-        unit: 'Engineering Corps',
-        phone: '+880 1700-000003',
-        email: 'sarah.j@army.mil.bd',
-        status: 'Active',
-        monthlyBill: 2950.00),
+  final List<Map<String, dynamic>> members = [
+    {
+      'no': 'BA-10234',
+      'rank': 'Major',
+      'name': 'Maj Ahmed Khan',
+      'unit': '10 Signal Battalion',
+      'mobile': '+880 1700-000001',
+      'email': 'ahmed.khan@army.mil.bd',
+      'role': 'Dining Member',
+      'status': 'Active',
+      'isEditing': false,
+      'original': {},
+    },
+    {
+      'no': 'BA-10235',
+      'rank': 'Captain',
+      'name': 'Capt Fatima Rahman',
+      'unit': 'Engineering Corps',
+      'mobile': '+880 1700-000002',
+      'email': 'fatima.r@army.mil.bd',
+      'role': 'Dining Member',
+      'status': 'Active',
+      'isEditing': false,
+      'original': {},
+    },
+    {
+      'no': 'BA-10236',
+      'rank': 'Lieutenant',
+      'name': 'Lt Karim Ali',
+      'unit': 'Infantry Regiment',
+      'mobile': '+880 1700-000003',
+      'email': 'karim.ali@army.mil.bd',
+      'role': 'Dining Member',
+      'status': 'Inactive',
+      'isEditing': false,
+      'original': {},
+    },
   ];
 
-  int? editingIndex;
+  String searchTerm = '';
   final _searchController = TextEditingController();
-  List<DiningMember> filtered = [];
+  List<Map<String, dynamic>> filtered = [];
 
   @override
   void initState() {
@@ -84,37 +80,104 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
     filtered = List.from(members);
   }
 
-  void _startEditing(int index) {
-    setState(() => editingIndex = index);
-  }
-
-  void _cancelEditing() {
-    setState(() => editingIndex = null);
-  }
-
-  void _delete(int index) {
+  void _startEdit(Map<String, dynamic> row) {
     setState(() {
-      members.removeAt(index);
-      filtered = List.from(members);
+      row['original'] = Map<String, dynamic>.from(row);
+      row['isEditing'] = true;
     });
   }
 
-  void _save(int index, DiningMember updated) {
+  void _cancelEdit(Map<String, dynamic> row) {
     setState(() {
-      members[index] = updated;
-      filtered = List.from(members);
-      editingIndex = null;
+      row['no'] = row['original']['no'];
+      row['rank'] = row['original']['rank'];
+      row['name'] = row['original']['name'];
+      row['unit'] = row['original']['unit'];
+      row['mobile'] = row['original']['mobile'];
+      row['email'] = row['original']['email'];
+      row['role'] = row['original']['role'];
+      row['status'] = row['original']['status'];
+      row['isEditing'] = false;
     });
+  }
+
+  Future<void> _deleteStaff(Map<String, dynamic> row) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirm Delete'),
+          content: Text('Are you sure you want to delete "${row['name']}"?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm == true) {
+      setState(() {
+        members.remove(row);
+        filtered = List.from(members);
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Member deleted successfully')),
+        );
+      }
+    }
+  }
+
+  Future<void> _saveEdit(Map<String, dynamic> row) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirm Save'),
+          content: const Text('Are you sure you want to save these changes?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: TextButton.styleFrom(foregroundColor: Colors.blue),
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm == true) {
+      setState(() {
+        row['isEditing'] = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Changes saved successfully')),
+        );
+      }
+    }
   }
 
   void _search(String query) {
     setState(() {
+      searchTerm = query.toLowerCase();
       filtered = members
-          .where((m) =>
-              m.name.toLowerCase().contains(query.toLowerCase()) ||
-              m.rank.toLowerCase().contains(query.toLowerCase()) ||
-              m.status.toLowerCase().contains(query.toLowerCase()) ||
-              m.id.toLowerCase().contains(query.toLowerCase()))
+          .where((m) => m.values.any(
+              (value) => value.toString().toLowerCase().contains(searchTerm)))
           .toList();
     });
   }
@@ -360,8 +423,14 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
         backgroundColor: const Color(0xFF002B5B),
         iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
-        title: const Text("Dining Member State",
-            style: TextStyle(color: Colors.white)),
+        title: const Text(
+          "Dining Member State",
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+          ),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -369,35 +438,36 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
           children: [
             Row(
               children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: _search,
+                    decoration: const InputDecoration(
+                      labelText: 'Search All Text Columns',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.search),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
                 ElevatedButton.icon(
                   onPressed: () {
                     Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (_) => const AddUserFormPage()));
+                            builder: (_) => const AddDiningMemberForm()));
                   },
-                  icon: const Icon(Icons.add),
-                  label: const Text("Add Users"),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
+                    backgroundColor: const Color(0xFF0052CC),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    textStyle: const TextStyle(fontSize: 16),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: _search,
-                    decoration: InputDecoration(
-                      prefixIcon: Icon(Icons.search),
-                      hintText: "Search Members",
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8)),
+                        horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
+                  icon: const Icon(Icons.add),
+                  label: const Text("Add Dining Member"),
                 ),
               ],
             ),
@@ -410,74 +480,95 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                       MaterialStateProperty.all(const Color(0xFF1A4D8F)),
                   columns: const [
                     DataColumn(
-                        label:
-                            Text('ID', style: TextStyle(color: Colors.white))),
-                    DataColumn(
-                        label: Text('Name',
-                            style: TextStyle(color: Colors.white))),
+                        label: Text('BA No',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold))),
                     DataColumn(
                         label: Text('Rank',
-                            style: TextStyle(color: Colors.white))),
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold))),
+                    DataColumn(
+                        label: Text('Name',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold))),
                     DataColumn(
                         label: Text('Unit',
-                            style: TextStyle(color: Colors.white))),
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold))),
                     DataColumn(
-                        label: Text('Phone',
-                            style: TextStyle(color: Colors.white))),
+                        label: Text('Mobile No',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold))),
                     DataColumn(
                         label: Text('Email',
-                            style: TextStyle(color: Colors.white))),
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold))),
+                    DataColumn(
+                        label: Text('Role',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold))),
                     DataColumn(
                         label: Text('Status',
-                            style: TextStyle(color: Colors.white))),
-                    DataColumn(
-                        label: Text('Bill',
-                            style: TextStyle(color: Colors.white))),
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold))),
                     DataColumn(
                         label: Text('Action',
-                            style: TextStyle(color: Colors.white))),
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold))),
                   ],
-                  rows: List.generate(filtered.length, (index) {
-                    final m = filtered[index];
-                    final isEditing = editingIndex == index;
-                    TextEditingController idCtrl =
-                        TextEditingController(text: m.id);
-                    TextEditingController nameCtrl =
-                        TextEditingController(text: m.name);
-                    TextEditingController rankCtrl =
-                        TextEditingController(text: m.rank);
-                    TextEditingController unitCtrl =
-                        TextEditingController(text: m.unit);
-                    TextEditingController phoneCtrl =
-                        TextEditingController(text: m.phone);
-                    TextEditingController emailCtrl =
-                        TextEditingController(text: m.email);
-                    TextEditingController billCtrl =
-                        TextEditingController(text: m.monthlyBill.toString());
-
+                  rows: filtered.map((row) {
+                    final bool isEditing = row['isEditing'] ?? false;
                     return DataRow(cells: [
                       DataCell(isEditing
-                          ? TextField(controller: idCtrl)
-                          : Text(m.id)),
+                          ? TextField(
+                              controller:
+                                  TextEditingController(text: row['no']),
+                            )
+                          : Text(row['no'] ?? '')),
                       DataCell(isEditing
-                          ? TextField(controller: nameCtrl)
-                          : Text(m.name)),
+                          ? TextField(
+                              controller:
+                                  TextEditingController(text: row['rank']),
+                            )
+                          : Text(row['rank'] ?? '')),
                       DataCell(isEditing
-                          ? TextField(controller: rankCtrl)
-                          : Text(m.rank)),
+                          ? TextField(
+                              controller:
+                                  TextEditingController(text: row['name']),
+                            )
+                          : Text(row['name'] ?? '')),
                       DataCell(isEditing
-                          ? TextField(controller: unitCtrl)
-                          : Text(m.unit)),
+                          ? TextField(
+                              controller:
+                                  TextEditingController(text: row['unit']),
+                            )
+                          : Text(row['unit'] ?? '')),
                       DataCell(isEditing
-                          ? TextField(controller: phoneCtrl)
-                          : Text(m.phone)),
+                          ? TextField(
+                              controller:
+                                  TextEditingController(text: row['mobile']),
+                            )
+                          : Text(row['mobile'] ?? '')),
                       DataCell(isEditing
-                          ? TextField(controller: emailCtrl)
-                          : Text(m.email)),
+                          ? TextField(
+                              controller:
+                                  TextEditingController(text: row['email']),
+                            )
+                          : Text(row['email'] ?? '')),
+                      DataCell(Text('Dining Member')),
                       DataCell(
                         isEditing
                             ? DropdownButton<String>(
-                                value: m.status,
+                                value: row['status'],
                                 items: const [
                                   DropdownMenuItem(
                                       value: 'Active', child: Text('Active')),
@@ -486,54 +577,44 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                                       child: Text('Inactive')),
                                 ],
                                 onChanged: (val) =>
-                                    setState(() => m.status = val!),
+                                    setState(() => row['status'] = val!),
                               )
-                            : Text(m.status),
+                            : Text(row['status'] ?? ''),
                       ),
-                      DataCell(
-                        isEditing
-                            ? TextField(controller: billCtrl)
-                            : Text(
-                                '৳${m.monthlyBill.toStringAsFixed(2)}',
-                                overflow: TextOverflow.ellipsis,
-                                softWrap: false,
-                              ),
-                      ),
-                      DataCell(Row(children: [
-                        if (isEditing) ...[
-                          IconButton(
-                              icon: Icon(Icons.save, color: Colors.green),
-                              onPressed: () {
-                                _save(
-                                  index,
-                                  DiningMember(
-                                    id: idCtrl.text,
-                                    name: nameCtrl.text,
-                                    rank: rankCtrl.text,
-                                    unit: unitCtrl.text,
-                                    phone: phoneCtrl.text,
-                                    email: emailCtrl.text,
-                                    status: m.status,
-                                    monthlyBill:
-                                        double.tryParse(billCtrl.text) ??
-                                            m.monthlyBill,
-                                  ),
-                                );
-                              }),
-                          IconButton(
-                              icon: Icon(Icons.cancel, color: Colors.red),
-                              onPressed: _cancelEditing)
-                        ] else ...[
-                          IconButton(
-                              icon: Icon(Icons.edit, color: Colors.blue),
-                              onPressed: () => _startEditing(index)),
-                          IconButton(
-                              icon: Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _delete(index)),
-                        ]
-                      ]))
+                      DataCell(Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (isEditing) ...[
+                            IconButton(
+                              icon: const Icon(Icons.save),
+                              color: Colors.green,
+                              onPressed: () => _saveEdit(row),
+                              tooltip: 'Save',
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.cancel),
+                              color: Colors.red,
+                              onPressed: () => _cancelEdit(row),
+                              tooltip: 'Cancel',
+                            )
+                          ] else ...[
+                            IconButton(
+                              icon: const Icon(Icons.edit),
+                              color: Colors.blue,
+                              onPressed: () => _startEdit(row),
+                              tooltip: 'Edit',
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete),
+                              color: Colors.red,
+                              onPressed: () => _deleteStaff(row),
+                              tooltip: 'Delete',
+                            ),
+                          ]
+                        ],
+                      ))
                     ]);
-                  }),
+                  }).toList(),
                 ),
               ),
             )
