@@ -13,6 +13,7 @@ import 'admin_payment_history.dart';
 import 'admin_meal_state_screen.dart';
 import 'admin_monthly_menu_screen.dart';
 import 'admin_bill_screen.dart';
+import 'add_menu_set.dart';
 
 class MenuVoteScreen extends StatefulWidget {
   const MenuVoteScreen({super.key});
@@ -25,6 +26,13 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
   final TextEditingController _searchController = TextEditingController();
   String selectedDay = 'Sunday';
   bool isLoading = false;
+
+  void _filterRecords(String query) {
+    // TODO: Implement search functionality across meal sets
+    setState(() {
+      // This is where you would filter your meal data based on the search query
+    });
+  }
 
   // Dummy data structure for meal votes
   final Map<String, Map<String, List<Map<String, dynamic>>>> mealData = {
@@ -333,67 +341,100 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
             Row(
               children: [
                 Expanded(
+                  flex: 2,
                   child: TextField(
                     controller: _searchController,
+                    onChanged: _filterRecords, // Add this function
                     decoration: InputDecoration(
                       hintText: 'Search...',
-                      prefixIcon: const Icon(Icons.search),
+                      prefixIcon: const Icon(Icons.search, size: 20),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 8,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AddMenuSetScreen(),
+                      ),
+                    );
+                  },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF002B5B),
+                    backgroundColor: const Color(0xFF1A4D8F),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
-                  child: const Text('Go'),
-                ),
-                const SizedBox(width: 10),
-                ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF002B5B),
+                  child: const Text(
+                    'Add New Set',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  child: const Text('Insert New Set'),
                 ),
               ],
             ),
             const SizedBox(height: 20),
-            Row(
-              children: [
-                const Text(
-                  'Select Day: ',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(width: 10),
-                DropdownButton<String>(
-                  value: selectedDay,
-                  items: days.map((String day) {
-                    return DropdownMenuItem<String>(
-                      value: day,
-                      child: Text(day),
-                    );
-                  }).toList(),
-                  onChanged: (String? newValue) {
-                    if (newValue != null) {
-                      setState(() {
-                        selectedDay = newValue;
-                        isLoading = true;
-                        // Simulate loading
-                        Future.delayed(const Duration(seconds: 1), () {
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Select Day: ',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(width: 8),
+                  DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: selectedDay,
+                      icon: const Icon(Icons.arrow_drop_down),
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontSize: 14,
+                      ),
+                      items: days.map((String day) {
+                        return DropdownMenuItem<String>(
+                          value: day,
+                          child: Text(day),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        if (newValue != null) {
                           setState(() {
-                            isLoading = false;
+                            selectedDay = newValue;
+                            isLoading = true;
+                            // Simulate loading
+                            Future.delayed(const Duration(seconds: 1), () {
+                              setState(() {
+                                isLoading = false;
+                              });
+                            });
                           });
-                        });
-                      });
-                    }
-                  },
-                ),
-              ],
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 20),
             if (isLoading)
@@ -402,13 +443,17 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
               )
             else
               Expanded(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        DataTable(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: DataTable(
                           headingRowColor: MaterialStateColor.resolveWith(
                             (states) => const Color(0xFF1A4D8F),
                           ),
@@ -454,35 +499,46 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                               ),
                           ],
                         ),
-                        const SizedBox(height: 20),
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade200,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Remarks',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Expanded(
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Remarks',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Expanded(
+                              child: SingleChildScrollView(
+                                child: Column(
+                                  children: remarks
+                                      .map((remark) => Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 4),
+                                            child: Text('• $remark'),
+                                          ))
+                                      .toList(),
                                 ),
                               ),
-                              const SizedBox(height: 10),
-                              ...remarks.map((remark) => Padding(
-                                    padding:
-                                        const EdgeInsets.symmetric(vertical: 4),
-                                    child: Text('• $remark'),
-                                  )),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ),
           ],
