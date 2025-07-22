@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'gemini_service.dart'; // Import the GeminiService
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -16,18 +17,20 @@ class _ChatScreenState extends State<ChatScreen> {
 
     setState(() {
       _messages.add({'sender': 'user', 'text': text});
-      _messages.add({'sender': 'bot', 'text': _generateBotResponse(text)});
+      _messages.add({'sender': 'bot', 'text': 'Thinking...'}); // Temporary
+GeminiService.getReply(text).then((reply) {
+  setState(() {
+    _messages.removeLast(); // Remove "Thinking..."
+    _messages.add({'sender': 'bot', 'text': reply});
+  });
+});
+
     });
 
     _controller.clear();
   }
 
-  String _generateBotResponse(String input) {
-    // Simulated bot response. Replace with API call if needed.
-    if (input.toLowerCase().contains("bill")) return "To pay your bill, go to the Billing section.";
-    if (input.toLowerCase().contains("meal")) return "Use the Meal IN/OUT tab to update your status.";
-    return "Sorry, I didn't understand that. Please try again.";
-  }
+  
 
   Widget _buildMessage(String sender, String text) {
     final isUser = sender == 'user';
