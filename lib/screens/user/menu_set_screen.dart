@@ -1,9 +1,4 @@
 import 'package:flutter/material.dart';
-import 'user_home_screen.dart';
-import 'meal_in_out_screen.dart';
-import 'messing.dart';
-import 'billing_screen.dart';
-import '../login_screen.dart';
 
 class MenuSetScreen extends StatefulWidget {
   const MenuSetScreen({super.key});
@@ -85,28 +80,9 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
     );
   }
 
-  Widget _buildDrawerTile(
-    IconData icon,
-    String label,
-    Widget screen, {
-    bool selected = false,
-  }) {
-    return ListTile(
-      selected: selected,
-      selectedTileColor: Colors.blue.shade100,
-      leading: Icon(icon, color: selected ? Colors.blue : Colors.black),
-      title: Text(label),
-      onTap: () => Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => screen),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),

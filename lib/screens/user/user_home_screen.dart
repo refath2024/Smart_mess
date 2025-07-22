@@ -88,7 +88,8 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const NotificationPage()),
+                      MaterialPageRoute(
+                          builder: (_) => const NotificationPage()),
                     );
                   },
                 ),
@@ -100,7 +101,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
-                  UserAccountsDrawerHeader(
+                  const UserAccountsDrawerHeader(
                     accountName: const Text("Lt John Snow"),
                     accountEmail: const Text("johnsnow@gmail.com"),
                     currentAccountPicture: const CircleAvatar(
@@ -127,7 +128,8 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                       Navigator.pop(context);
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const MyProfilePage()),
+                        MaterialPageRoute(
+                            builder: (_) => const MyProfilePage()),
                       );
                     },
                   ),
@@ -166,7 +168,8 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                   const Divider(),
                   ListTile(
                     leading: const Icon(Icons.logout, color: Colors.red),
-                    title: const Text('Logout', style: TextStyle(color: Colors.red)),
+                    title: const Text('Logout',
+                        style: TextStyle(color: Colors.red)),
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -188,9 +191,12 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.fastfood), label: 'IN/OUT'),
-          BottomNavigationBarItem(icon: Icon(Icons.food_bank), label: 'Messing'),
-          BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: 'Menu Set'),
-          BottomNavigationBarItem(icon: Icon(Icons.receipt_long), label: 'Billing'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.food_bank), label: 'Messing'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.menu_book), label: 'Menu Set'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.receipt_long), label: 'Billing'),
         ],
       ),
     );
@@ -222,7 +228,8 @@ class HomeContent extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -246,47 +253,69 @@ class HomeContent extends StatelessWidget {
         child: ListView(
           children: [
             const SizedBox(height: 24),
-            const Text("Today's Menu", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const Text("Today's Menu",
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(child: _buildMenuCard("Breakfast", "Alu Paratha with Beef", "1.png")),
+                Expanded(
+                    child: _buildMenuCard(
+                        "Breakfast", "Alu Paratha with Beef", "1.png")),
                 const SizedBox(width: 10),
-                Expanded(child: _buildMenuCard("Lunch", "Khichuri with Chicken", "2.png")),
+                Expanded(
+                    child: _buildMenuCard(
+                        "Lunch", "Khichuri with Chicken", "2.png")),
                 const SizedBox(width: 10),
-                Expanded(child: _buildMenuCard("Dinner", "Ruti with dal and vaji", "3.png")),
+                Expanded(
+                    child: _buildMenuCard(
+                        "Dinner", "Ruti with dal and vaji", "3.png")),
               ],
             ),
             const SizedBox(height: 24),
-            const Text("Tomorrow's Menu", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const Text("Tomorrow's Menu",
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(child: _buildMenuCard("Breakfast", "Roti with Vegetables", "4.png")),
+                Expanded(
+                    child: _buildMenuCard(
+                        "Breakfast", "Roti with Vegetables", "4.png")),
                 const SizedBox(width: 10),
-                Expanded(child: _buildMenuCard("Lunch", "Rice with Curry", "5.png")),
+                Expanded(
+                    child: _buildMenuCard("Lunch", "Rice with Curry", "5.png")),
                 const SizedBox(width: 10),
-                Expanded(child: _buildMenuCard("Dinner", "Paratha with Chicken", "6.png")),
+                Expanded(
+                    child: _buildMenuCard(
+                        "Dinner", "Paratha with Chicken", "6.png")),
               ],
             ),
             const SizedBox(height: 24),
             Card(
               color: Colors.red.shade50,
               elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
                 child: Row(
                   children: [
-                    const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 32),
+                    const Icon(Icons.warning_amber_rounded,
+                        color: Colors.red, size: 32),
                     const SizedBox(width: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: const [
-                          Text("Total Due", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.red)),
+                          Text("Total Due",
+                              style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.red)),
                           SizedBox(height: 4),
-                          Text("৳ 1000", style: TextStyle(fontSize: 16, color: Colors.black87)),
+                          Text("৳ 1000",
+                              style: TextStyle(
+                                  fontSize: 16, color: Colors.black87)),
                         ],
                       ),
                     ),
@@ -294,9 +323,13 @@ class HomeContent extends StatelessWidget {
                       onPressed: onBillingPressed,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
                       ),
-                      child: const Text("Pay Bill", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      child: const Text("Pay Bill",
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),

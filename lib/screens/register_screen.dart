@@ -23,6 +23,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   bool _passwordVisible = false;
   bool _confirmPasswordVisible = false;
+  bool _passwordsMatch = false;
+  String _confirmPasswordError = '';
 
   void _handleApply() {
     if (_formKey.currentState!.validate()) {
@@ -141,7 +143,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       const Text(
-                        "Apply for SMART MESS",
+                        "SMART MESS",
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -151,13 +153,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        "Fill out the form to register for your officer ID",
+                        "Fill out the form to apply for your officer ID",
                         textAlign: TextAlign.center,
                         style: TextStyle(fontSize: 14, color: Colors.black87),
                       ),
                       const SizedBox(height: 24),
                       _buildTextField(
-                        "No *",
+                        "BA No *",
                         _noController,
                         validator: (val) => val == null || val.trim().isEmpty
                             ? 'Please enter your ID number'
@@ -195,7 +197,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         },
                       ),
                       _buildTextField(
-                        "Mobile No * (at least 11 digits)",
+                        "Mobile No (at least 11 digits) *",
                         _mobileController,
                         type: TextInputType.phone,
                         validator: (val) {
@@ -211,15 +213,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           return null;
                         },
                       ),
-                      _buildPasswordField(
-                        "Password *",
-                        _passwordController,
-                        _passwordVisible,
-                        () {
-                          setState(() {
-                            _passwordVisible = !_passwordVisible;
-                          });
-                        },
+                      TextFormField(
+                        controller: _passwordController,
+                        obscureText: !_passwordVisible,
                         validator: (val) {
                           if (val == null || val.isEmpty) {
                             return 'Please enter a password';
@@ -229,14 +225,61 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           }
                           return null;
                         },
+                        onChanged: (value) {
+                          if (_confirmPasswordController.text.isNotEmpty) {
+                            setState(() {
+                              _passwordsMatch =
+                                  value == _confirmPasswordController.text;
+                              _confirmPasswordError =
+                                  _confirmPasswordController.text != value
+                                      ? 'Passwords do not match'
+                                      : '';
+                            });
+                          }
+                        },
+                        decoration: InputDecoration(
+                          labelText: 'Password *',
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 14,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xff0d47a1),
+                              width: 2,
+                            ),
+                          ),
+                          suffixIcon: IconButton(
+                            icon: Icon(_passwordVisible
+                                ? Icons.visibility_off
+                                : Icons.visibility),
+                            onPressed: () {
+                              setState(() {
+                                _passwordVisible = !_passwordVisible;
+                              });
+                            },
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
                       ),
-                      _buildPasswordField(
-                        "Confirm Password *",
-                        _confirmPasswordController,
-                        _confirmPasswordVisible,
-                        () {
+                      const SizedBox(height: 15),
+                      TextFormField(
+                        controller: _confirmPasswordController,
+                        obscureText: !_confirmPasswordVisible,
+                        onChanged: (value) {
                           setState(() {
-                            _confirmPasswordVisible = !_confirmPasswordVisible;
+                            _passwordsMatch = value == _passwordController.text;
+                            _confirmPasswordError = value.isEmpty
+                                ? 'Please confirm your password'
+                                : value != _passwordController.text
+                                    ? 'Passwords do not match'
+                                    : '';
                           });
                         },
                         validator: (val) {
@@ -248,6 +291,68 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           }
                           return null;
                         },
+                        decoration: InputDecoration(
+                          labelText: 'Confirm Password *',
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 14,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          suffixIcon: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (_confirmPasswordController.text.isNotEmpty)
+                                Icon(
+                                  _passwordsMatch
+                                      ? Icons.check_circle
+                                      : Icons.error,
+                                  color: _passwordsMatch
+                                      ? Colors.green
+                                      : Colors.red,
+                                ),
+                              IconButton(
+                                icon: Icon(_confirmPasswordVisible
+                                    ? Icons.visibility_off
+                                    : Icons.visibility),
+                                onPressed: () {
+                                  setState(() {
+                                    _confirmPasswordVisible =
+                                        !_confirmPasswordVisible;
+                                  });
+                                },
+                                color: Colors.grey.shade700,
+                              ),
+                            ],
+                          ),
+                          errorText: _confirmPasswordError.isNotEmpty
+                              ? _confirmPasswordError
+                              : null,
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                              color: _confirmPasswordController.text.isEmpty
+                                  ? const Color(0xff0d47a1)
+                                  : _passwordsMatch
+                                      ? Colors.green
+                                      : Colors.red,
+                              width: 2,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                              color: _confirmPasswordController.text.isEmpty
+                                  ? Colors.grey
+                                  : _passwordsMatch
+                                      ? Colors.green
+                                      : Colors.red,
+                            ),
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 24),
                       Row(
@@ -323,88 +428,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(fontSize: 14, color: Colors.black87),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: type,
+        validator: validator,
+        decoration: InputDecoration(
+          labelText: label,
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 14,
           ),
-          const SizedBox(height: 5),
-          TextFormField(
-            controller: controller,
-            keyboardType: type,
-            validator: validator,
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: Colors.white,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 14,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(
-                  color: Color(0xff0d47a1),
-                  width: 2,
-                ),
-              ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(
+              color: Color(0xff0d47a1),
+              width: 2,
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPasswordField(
-    String label,
-    TextEditingController controller,
-    bool visible,
-    VoidCallback toggleVisibility, {
-    String? Function(String?)? validator,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 15),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(fontSize: 14, color: Colors.black87),
-          ),
-          const SizedBox(height: 5),
-          TextFormField(
-            controller: controller,
-            obscureText: !visible,
-            validator: validator,
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: Colors.white,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 14,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(
-                  color: Color(0xff0d47a1),
-                  width: 2,
-                ),
-              ),
-              suffixIcon: IconButton(
-                icon: Icon(visible ? Icons.visibility_off : Icons.visibility),
-                onPressed: toggleVisibility,
-                color: Colors.grey.shade700,
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

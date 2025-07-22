@@ -1,9 +1,4 @@
 import 'package:flutter/material.dart';
-import '../login_screen.dart';
-import 'user_home_screen.dart';
-import 'messing.dart';
-import 'billing_screen.dart';
-import 'menu_set_screen.dart';
 
 class MealInOutScreen extends StatefulWidget {
   const MealInOutScreen({super.key});
@@ -86,51 +81,18 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
     super.dispose();
   }
 
-  Widget _buildSidebarTile({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-    bool selected = false,
-    Color? color,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      splashColor: Colors.blue.shade100,
-      child: ListTile(
-        selected: selected,
-        selectedTileColor: Colors.blue.shade100,
-        leading: Icon(
-          icon,
-          color: color ?? (selected ? Colors.blue : Colors.black),
-        ),
-        title: Text(title, style: TextStyle(color: color ?? Colors.black)),
-      ),
-    );
-  }
-
-  void _logout() {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
-      (route) => false,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      
-      
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
             Text(
               "Select Your Meal",
-              style:
-                  textTheme.titleLarge ??
+              style: textTheme.titleLarge ??
                   const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),

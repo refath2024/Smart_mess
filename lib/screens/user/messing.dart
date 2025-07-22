@@ -1,10 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'meal_in_out_screen.dart';
-import 'user_home_screen.dart';
-import '../login_screen.dart';
-import 'billing_screen.dart';
-import 'menu_set_screen.dart';
 
 class MessingScreen extends StatefulWidget {
   const MessingScreen({super.key});
@@ -87,28 +82,6 @@ class _MessingScreenState extends State<MessingScreen> {
     );
   }
 
-  Widget _buildSidebarTile({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-    bool selected = false,
-    Color? color,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      splashColor: Colors.blue.shade100,
-      child: ListTile(
-        selected: selected,
-        selectedTileColor: Colors.blue.shade100,
-        leading: Icon(
-          icon,
-          color: color ?? (selected ? Colors.blue : Colors.black),
-        ),
-        title: Text(title, style: TextStyle(color: color ?? Colors.black)),
-      ),
-    );
-  }
-
   Widget _buildSimpleTable(String title, Map<String, String> data) {
     return Card(
       elevation: 2,
@@ -182,8 +155,7 @@ class _MessingScreenState extends State<MessingScreen> {
 
     double currentMessBill = totalMessing + totalExtras + totalBar;
     double arrears = 150.00;
-    double totalPayable =
-        currentMessBill +
+    double totalPayable = currentMessBill +
         totalSubscriptions +
         totalCuttings +
         totalMisc +
@@ -424,7 +396,6 @@ class _MessingScreenState extends State<MessingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
