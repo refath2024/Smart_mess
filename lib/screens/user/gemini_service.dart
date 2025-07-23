@@ -8,20 +8,31 @@ class GeminiService {
 
   static Future<String> getReply(String prompt) async {
     final requestBody = {
-      "contents": [
+  "contents": [
+    {
+      "parts": [
         {
-          "parts": [
-            {
-              "text": "You are a helpful assistant for Smart Mess Manager.\nUser: $prompt"
-            }
-          ]
+          "text": """
+You are a helpful assistant for the Smart Mess Manager app. You can answer questions related to:
+
+- Meal schedule
+- Bill details
+- Voting system
+- How to edit the menu
+- Admin features
+- Feedback system
+- Rules for dining
+- Contact info for mess in-charge
+- How users can log complaints
+- How mess members can join/leave
+
+User: $prompt
+"""
         }
-      ],
-      "generationConfig": {
-        "temperature": 0.7,
-        "maxOutputTokens": 256
-      }
-    };
+      ]
+    }
+  ]
+};;
 
     final response = await http.post(
       Uri.parse(_apiUrl),

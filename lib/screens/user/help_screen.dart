@@ -51,10 +51,13 @@ class HelpScreen extends StatelessWidget {
             onTap: () => _launchWeb("https://smartmess.com"),
           ),
           _buildContactTile(
-            icon: Icons.location_on,
-            title: "Office Address",
-            subtitle: "Smart Mess HQ, Cantonment, Dhaka",
-          ),
+  icon: Icons.location_on,
+  title: "Office Address",
+  subtitle: "Smart Mess HQ, Cantonment, Dhaka",
+  onTap: () => _launchMapWithCoordinates(23.8103, 90.4125), // Replace with your office's actual lat/lng
+),
+
+
           const Divider(height: 32),
 
           const Text("Need More Help?", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
@@ -160,4 +163,14 @@ class HelpScreen extends StatelessWidget {
       await launchUrl(url);
     }
   }
+  void _launchMapWithCoordinates(double latitude, double longitude) async {
+  final Uri googleMapUrl = Uri.parse("https://www.google.com/maps/search/?api=1&query=$latitude,$longitude");
+  if (await canLaunchUrl(googleMapUrl)) {
+    await launchUrl(googleMapUrl);
+  } else {
+    debugPrint("Could not launch Google Maps.");
+  }
+}
+
+
 }
