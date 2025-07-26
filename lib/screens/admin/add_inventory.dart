@@ -125,6 +125,7 @@ class _AddInventoryScreenState extends State<AddInventoryScreen> {
                         onPressed: _submitForm,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF007bff),
+                           foregroundColor: Colors.white,
                         ),
                         child: const Text("Submit"),
                       ),
@@ -135,6 +136,7 @@ class _AddInventoryScreenState extends State<AddInventoryScreen> {
                         onPressed: _cancelForm,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFdc3545),
+                           foregroundColor: Colors.white,
                         ),
                         child: const Text("Cancel"),
                       ),
