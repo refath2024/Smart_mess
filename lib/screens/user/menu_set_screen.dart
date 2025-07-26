@@ -24,12 +24,78 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
   String? _selectedDinner;
   final TextEditingController _remarksController = TextEditingController();
 
+  void _showHelpDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text(
+          "Menu Preference Guidelines",
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+        ),
+        content: const SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "Voting Process:",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              SizedBox(height: 8),
+              Text(
+                "• The menu option receiving the maximum percentage of votes will be considered for implementation from the following week.",
+                style: TextStyle(fontSize: 14),
+              ),
+              SizedBox(height: 8),
+              Text(
+                "• In case of a tie between options on any day, the final decision rests with the President of the Mess Committee (PMC).",
+                style: TextStyle(fontSize: 14),
+              ),
+              SizedBox(height: 12),
+              Text(
+                "Important Notice:",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              SizedBox(height: 8),
+              Text(
+                "• Menu changes are not mandatory. Officer feedback serves as input for discussion in the next Mess Committee meeting.",
+                style: TextStyle(fontSize: 14),
+              ),
+              SizedBox(height: 8),
+              Text(
+                "• Final menu decisions are subject to budget constraints, ingredient availability, and committee approval.",
+                style: TextStyle(fontSize: 14),
+              ),
+              SizedBox(height: 12),
+              Text(
+                "Your participation in this democratic process helps improve mess services for all officers.",
+                style: TextStyle(fontSize: 14, fontStyle: FontStyle.italic),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              "UNDERSTOOD",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _submitVote() {
     if (_selectedBreakfast == null &&
         _selectedLunch == null &&
         _selectedDinner == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please select at least one meal set.")),
+        const SnackBar(
+          content: Text("Please select at least one meal preference."),
+          backgroundColor: Colors.orange,
+        ),
       );
       return;
     }
@@ -37,12 +103,20 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text("Vote Submitted"),
-        content: const Text("Your vote has been submitted. Thank you."),
+        title: const Text(
+          "Vote Submitted Successfully",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          "Your menu preference has been recorded and will be considered for the next committee review. Thank you for your participation.",
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("OK"),
+            child: const Text(
+              "ACKNOWLEDGED",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -60,20 +134,20 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
       mealSets = [
         {
           'id': '${mealType}_set1',
-          'title': 'Ruti, Dal & Vaji',
-          'subtitle': '৳ 40',
+          'title': 'Continental Set',
+          'subtitle': 'Ruti, Dal & Mixed Veg - ৳ 40',
           'image': '1.png',
         },
         {
           'id': '${mealType}_set2',
-          'title': 'Paratha & Egg Curry',
-          'subtitle': '৳ 50',
+          'title': 'Traditional Set',
+          'subtitle': 'Paratha & Egg Curry - ৳ 50',
           'image': '2.png',
         },
         {
           'id': '${mealType}_set3',
-          'title': 'Khichuri & Beef',
-          'subtitle': '৳ 70',
+          'title': 'Special Set',
+          'subtitle': 'Khichuri & Beef - ৳ 70',
           'image': '3.png',
         },
       ];
@@ -81,20 +155,20 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
       mealSets = [
         {
           'id': '${mealType}_set1',
-          'title': 'Rice & Fish Curry',
-          'subtitle': '৳ 60',
+          'title': 'Standard Meal',
+          'subtitle': 'Rice & Fish Curry - ৳ 60',
           'image': '1.png',
         },
         {
           'id': '${mealType}_set2',
-          'title': 'Rice & Chicken Curry',
-          'subtitle': '৳ 70',
+          'title': 'Premium Meal',
+          'subtitle': 'Rice & Chicken Curry - ৳ 70',
           'image': '2.png',
         },
         {
           'id': '${mealType}_set3',
-          'title': 'Khichuri & Egg curry',
-          'subtitle': '৳ 55',
+          'title': 'Economy Meal',
+          'subtitle': 'Khichuri & Egg Curry - ৳ 55',
           'image': '3.png',
         },
       ];
@@ -102,20 +176,20 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
       mealSets = [
         {
           'id': '${mealType}_set1',
-          'title': 'Roti & Chicken Curry',
-          'subtitle': '৳ 50',
+          'title': 'Light Dinner',
+          'subtitle': 'Roti & Chicken Curry - ৳ 50',
           'image': '1.png',
         },
         {
           'id': '${mealType}_set2',
-          'title': 'Paratha & Mixed Veg',
-          'subtitle': '৳ 45',
+          'title': 'Vegetarian Option',
+          'subtitle': 'Paratha & Mixed Veg - ৳ 45',
           'image': '2.png',
         },
         {
           'id': '${mealType}_set3',
-          'title': 'Rice & Beef Curry',
-          'subtitle': '৳ 75',
+          'title': 'Full Course',
+          'subtitle': 'Rice & Beef Curry - ৳ 75',
           'image': '3.png',
         },
       ];
@@ -154,7 +228,8 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
                     child: Column(
                       children: [
                         Text(meal['title']!,
-                            style: const TextStyle(fontWeight: FontWeight.bold)),
+                            style:
+                                const TextStyle(fontWeight: FontWeight.bold)),
                         Text(meal['subtitle']!),
                       ],
                     ),
@@ -176,9 +251,23 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
           padding: const EdgeInsets.all(16),
           child: ListView(
             children: [
-              const Text(
-                "Menu Preference Vote",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Menu Preference Vote",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  IconButton(
+                    onPressed: _showHelpDialog,
+                    icon: const Icon(
+                      Icons.help_outline,
+                      color: Color(0xFF002B5B),
+                      size: 24,
+                    ),
+                    tooltip: "Voting Guidelines",
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
@@ -231,8 +320,12 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
                 controller: _remarksController,
                 maxLines: 3,
                 decoration: const InputDecoration(
-                  labelText: "Remarks",
+                  labelText: "Additional Comments/Suggestions",
+                  hintText:
+                      "Share your feedback or suggestions for mess improvement...",
                   border: OutlineInputBorder(),
+                  helperText:
+                      "Optional: Your suggestions will be forwarded to the Mess Committee",
                 ),
               ),
               const SizedBox(height: 20),
@@ -240,11 +333,19 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
                 onPressed: _submitVote,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF002B5B),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
                 child: const Text(
-                  "Submit Your Vote",
-                  style: TextStyle(color: Colors.white, fontSize: 16),
+                  "SUBMIT PREFERENCE",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
             ],
