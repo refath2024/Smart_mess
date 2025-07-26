@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:smart_mess/screens/admin/admin_login_screen.dart';
-import '../login_screen.dart';
+
 import 'admin_home_screen.dart';
 import 'admin_payment_history.dart';
 import 'admin_dining_member_state.dart';
@@ -15,7 +15,6 @@ import 'admin_meal_state_screen.dart';
 import 'admin_monthly_menu_screen.dart';
 import 'admin_menu_vote_screen.dart';
 import 'admin_bill_screen.dart';
-import 'admin_login_screen.dart';
 
 class AdminShoppingHistoryScreen extends StatefulWidget {
   const AdminShoppingHistoryScreen({super.key});

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../login_screen.dart';
+
 import 'admin_home_screen.dart';
 import 'admin_users_screen.dart';
 import 'admin_pending_ids_screen.dart';
@@ -15,6 +15,7 @@ import 'admin_menu_vote_screen.dart';
 import 'admin_meal_state_screen.dart';
 import 'transaction.dart';
 import 'admin_login_screen.dart';
+
 class PaymentsDashboard extends StatefulWidget {
   const PaymentsDashboard({super.key});
 
@@ -108,7 +109,8 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
     }
 
     setState(() {
-      final DateTime paymentTime = DateTime.tryParse(controllers[1].text) ?? transactions[index].paymentTime;
+      final DateTime paymentTime = DateTime.tryParse(controllers[1].text) ??
+          transactions[index].paymentTime;
       transactions[index] = PaymentData(
         amount: amount,
         paymentTime: paymentTime,
@@ -134,7 +136,8 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Confirm Delete'),
-        content: const Text('Are you sure you want to delete this transaction?'),
+        content:
+            const Text('Are you sure you want to delete this transaction?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -378,7 +381,8 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
                       ),
                     );
 
-                    if (newTransaction != null && newTransaction is PaymentData) {
+                    if (newTransaction != null &&
+                        newTransaction is PaymentData) {
                       setState(() {
                         transactions.add(newTransaction);
                       });
@@ -388,7 +392,8 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
                   label: const Text('Insert Transaction'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                   ),
                 ),
               ],
@@ -414,13 +419,27 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
                     headingRowColor:
                         MaterialStateProperty.all(const Color(0xFFF4F4F4)),
                     columns: const [
-                      DataColumn(label: Text('Payment Amount (BDT)', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Payment Time', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Payment Method', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('BA No', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Rank', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Name', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(
+                          label: Text('Payment Amount (BDT)',
+                              style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(
+                          label: Text('Payment Time',
+                              style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(
+                          label: Text('Payment Method',
+                              style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(
+                          label: Text('BA No',
+                              style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(
+                          label: Text('Rank',
+                              style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(
+                          label: Text('Name',
+                              style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(
+                          label: Text('Actions',
+                              style: TextStyle(fontWeight: FontWeight.bold))),
                     ],
                     rows: List.generate(filtered.length, (index) {
                       final txn = filtered[index];
@@ -429,24 +448,31 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
                       return DataRow(cells: [
                         DataCell(
                           isEditing
-                              ? TextField(controller: controllers[0], decoration: const InputDecoration(isDense: true))
+                              ? TextField(
+                                  controller: controllers[0],
+                                  decoration:
+                                      const InputDecoration(isDense: true))
                               : Text('${txn.amount} BDT'),
                         ),
                         DataCell(
                           isEditing
-                              ? TextField(controller: controllers[1], decoration: const InputDecoration(isDense: true))
+                              ? TextField(
+                                  controller: controllers[1],
+                                  decoration:
+                                      const InputDecoration(isDense: true))
                               : Text(txn.paymentTime.toString()),
                         ),
                         DataCell(
                           isEditing
                               ? DropdownButtonFormField<String>(
                                   value: controllers[2].text,
-                                  items: ['Bank', 'Card', 'Bkash', 'Tap', 'Cash']
-                                      .map((method) => DropdownMenuItem(
-                                            value: method,
-                                            child: Text(method),
-                                          ))
-                                      .toList(),
+                                  items:
+                                      ['Bank', 'Card', 'Bkash', 'Tap', 'Cash']
+                                          .map((method) => DropdownMenuItem(
+                                                value: method,
+                                                child: Text(method),
+                                              ))
+                                          .toList(),
                                   onChanged: (val) {
                                     if (val != null) {
                                       setState(() {
@@ -454,44 +480,58 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
                                       });
                                     }
                                   },
-                                  decoration: const InputDecoration(isDense: true),
+                                  decoration:
+                                      const InputDecoration(isDense: true),
                                 )
                               : Text(txn.paymentMethod),
                         ),
                         DataCell(
                           isEditing
-                              ? TextField(controller: controllers[3], decoration: const InputDecoration(isDense: true))
+                              ? TextField(
+                                  controller: controllers[3],
+                                  decoration:
+                                      const InputDecoration(isDense: true))
                               : Text(txn.baNo),
                         ),
                         DataCell(
                           isEditing
-                              ? TextField(controller: controllers[4], decoration: const InputDecoration(isDense: true))
+                              ? TextField(
+                                  controller: controllers[4],
+                                  decoration:
+                                      const InputDecoration(isDense: true))
                               : Text(txn.rank),
                         ),
                         DataCell(
                           isEditing
-                              ? TextField(controller: controllers[5], decoration: const InputDecoration(isDense: true))
+                              ? TextField(
+                                  controller: controllers[5],
+                                  decoration:
+                                      const InputDecoration(isDense: true))
                               : Text(txn.name),
                         ),
                         DataCell(Row(
                           children: isEditing
                               ? [
                                   IconButton(
-                                    icon: const Icon(Icons.save, color: Colors.green),
+                                    icon: const Icon(Icons.save,
+                                        color: Colors.green),
                                     onPressed: () => _saveTransaction(index),
                                   ),
                                   IconButton(
-                                    icon: const Icon(Icons.cancel, color: Colors.grey),
+                                    icon: const Icon(Icons.cancel,
+                                        color: Colors.grey),
                                     onPressed: _cancelEdit,
                                   ),
                                 ]
                               : [
                                   IconButton(
-                                    icon: const Icon(Icons.edit, color: Colors.blue),
+                                    icon: const Icon(Icons.edit,
+                                        color: Colors.blue),
                                     onPressed: () => _editTransaction(index),
                                   ),
                                   IconButton(
-                                    icon: const Icon(Icons.delete, color: Colors.red),
+                                    icon: const Icon(Icons.delete,
+                                        color: Colors.red),
                                     onPressed: () => _deleteTransaction(index),
                                   ),
                                 ],

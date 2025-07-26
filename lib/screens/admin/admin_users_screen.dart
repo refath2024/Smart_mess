@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../login_screen.dart';
 import 'admin_home_screen.dart';
 import 'admin_pending_ids_screen.dart';
 import 'admin_shopping_history.dart';
@@ -14,6 +13,7 @@ import 'admin_monthly_menu_screen.dart';
 import 'admin_menu_vote_screen.dart';
 import 'admin_meal_state_screen.dart';
 import 'admin_login_screen.dart';
+
 class AdminUsersScreen extends StatefulWidget {
   const AdminUsersScreen({super.key});
 
@@ -642,7 +642,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 border: Border(
                   top: BorderSide(color: Colors.grey.shade300),
                 ),
-              ),          
+              ),
               child: Padding(
                 padding: EdgeInsets.only(
                   bottom: MediaQuery.of(context).padding.bottom + 8,
