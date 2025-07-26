@@ -16,7 +16,7 @@ import 'admin_meal_state_screen.dart';
 import 'add_indl_entry.dart';
 import 'add_misc_entry.dart';
 import 'add_messing.dart';
-
+import 'admin_login_screen.dart';
 class AdminMessingScreen extends StatefulWidget {
   const AdminMessingScreen({super.key});
 
@@ -111,7 +111,7 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
   void _logout() {
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
       (route) => false,
     );
   }

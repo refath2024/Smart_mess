@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:smart_mess/screens/admin/admin_login_screen.dart';
 import '../login_screen.dart';
 import 'admin_home_screen.dart';
 import 'admin_payment_history.dart';
@@ -14,6 +15,7 @@ import 'admin_meal_state_screen.dart';
 import 'admin_monthly_menu_screen.dart';
 import 'admin_menu_vote_screen.dart';
 import 'admin_bill_screen.dart';
+import 'admin_login_screen.dart';
 
 class AdminShoppingHistoryScreen extends StatefulWidget {
   const AdminShoppingHistoryScreen({super.key});
@@ -139,7 +141,7 @@ class _AdminShoppingHistoryScreenState
   void _logout() {
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
       (route) => false,
     );
   }

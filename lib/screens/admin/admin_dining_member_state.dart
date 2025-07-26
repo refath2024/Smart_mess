@@ -14,6 +14,7 @@ import 'admin_monthly_menu_screen.dart';
 import 'admin_menu_vote_screen.dart';
 import 'admin_bill_screen.dart';
 import 'add_dining_member.dart';
+import 'admin_login_screen.dart';
 
 class DiningMemberStatePage extends StatefulWidget {
   const DiningMemberStatePage({super.key});
@@ -26,7 +27,7 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
   void _logout() {
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
       (route) => false,
     );
   }

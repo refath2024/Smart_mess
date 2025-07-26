@@ -18,7 +18,7 @@ import 'admin_menu_vote_screen.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-
+import 'admin_login_screen.dart';
 class AdminBillScreen extends StatefulWidget {
   const AdminBillScreen({Key? key}) : super(key: key);
 
@@ -30,7 +30,7 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
   void _logout() {
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
       (route) => false,
     );
   }

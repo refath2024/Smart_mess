@@ -15,7 +15,7 @@ import 'admin_meal_state_screen.dart';
 import 'admin_monthly_menu_screen.dart';
 import 'admin_menu_vote_screen.dart';
 import 'admin_bill_screen.dart';
-
+import 'admin_login_screen.dart';
 class AdminVoucherScreen extends StatefulWidget {
   const AdminVoucherScreen({super.key});
 
@@ -198,7 +198,7 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
   void _logout() {
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
       (route) => false,
     );
   }

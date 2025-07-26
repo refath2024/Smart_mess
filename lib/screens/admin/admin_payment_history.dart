@@ -14,7 +14,7 @@ import 'admin_monthly_menu_screen.dart';
 import 'admin_menu_vote_screen.dart';
 import 'admin_meal_state_screen.dart';
 import 'transaction.dart';
-
+import 'admin_login_screen.dart';
 class PaymentsDashboard extends StatefulWidget {
   const PaymentsDashboard({super.key});
 
@@ -158,7 +158,7 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
   void _logout() {
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
       (route) => false,
     );
   }
