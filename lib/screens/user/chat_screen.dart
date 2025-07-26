@@ -10,7 +10,8 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
-  final List<Map<String, String>> _messages = []; // [{'sender': 'user', 'text': '...'}]
+  final List<Map<String, String>> _messages =
+      []; // [{'sender': 'user', 'text': '...'}]
 
   void _sendMessage(String text) {
     if (text.trim().isEmpty) return;
@@ -18,19 +19,16 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() {
       _messages.add({'sender': 'user', 'text': text});
       _messages.add({'sender': 'bot', 'text': 'Thinking...'}); // Temporary
-GeminiService.getReply(text).then((reply) {
-  setState(() {
-    _messages.removeLast(); // Remove "Thinking..."
-    _messages.add({'sender': 'bot', 'text': reply});
-  });
-});
-
+      GeminiService.getReply(text).then((reply) {
+        setState(() {
+          _messages.removeLast(); // Remove "Thinking..."
+          _messages.add({'sender': 'bot', 'text': reply});
+        });
+      });
     });
 
     _controller.clear();
   }
-
-  
 
   Widget _buildMessage(String sender, String text) {
     final isUser = sender == 'user';
@@ -75,8 +73,13 @@ GeminiService.getReply(text).then((reply) {
             ),
           ),
           const Divider(height: 1),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          Container(
+            padding: EdgeInsets.only(
+              left: 12,
+              right: 12,
+              top: 8,
+              bottom: MediaQuery.of(context).padding.bottom + 8,
+            ),
             child: Row(
               children: [
                 Expanded(

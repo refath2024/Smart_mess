@@ -17,20 +17,28 @@ class HelpScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text("FAQs", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text("FAQs",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          _buildFaqTile("How do I update my meal info?", "Go to Meal IN/OUT tab and select your current meal status."),
-          _buildFaqTile("How can I pay my mess bill?", "Navigate to the Billing tab and click on Pay Bill."),
-          _buildFaqTile("Can I change my menu preference?", "Yes, in the Menu Set screen, choose your preferred item."),
+          _buildFaqTile("How do I update my meal info?",
+              "Go to Meal IN/OUT tab and select your current meal status."),
+          _buildFaqTile("How can I pay my mess bill?",
+              "Navigate to the Billing tab and click on Pay Bill."),
+          _buildFaqTile("Can I change my menu preference?",
+              "Yes, in the Menu Set screen, choose your preferred item."),
           const Divider(height: 32),
 
-          const Text("Guides & Tutorials", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text("Guides & Tutorials",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          _buildGuideTile("💡 Getting Started Guide", "Tap to learn how to use the app."),
-          _buildGuideTile("📝 How to submit feedback", "Learn how to suggest features."),
+          _buildGuideTile(
+              "💡 Getting Started Guide", "Tap to learn how to use the app."),
+          _buildGuideTile(
+              "📝 How to submit feedback", "Learn how to suggest features."),
           const Divider(height: 32),
 
-          const Text("Contact Us", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text("Contact Us",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           _buildContactTile(
             icon: Icons.phone,
@@ -54,28 +62,30 @@ class HelpScreen extends StatelessWidget {
             icon: Icons.location_on,
             title: "Office Address",
             subtitle: "Smart Mess HQ, Cantonment, Dhaka",
-            onTap: () => _launchMapWithCoordinates(23.8283, 90.3915), // Dhaka Cantonment coordinates
-),
-
+            onTap: () => _launchMapWithCoordinates(
+                23.8283, 90.3915), // Dhaka Cantonment coordinates
+          ),
 
           const Divider(height: 32),
 
-          const Text("Need More Help?", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text("Need More Help?",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           ListTile(
-  leading: const Icon(Icons.chat),
-  title: const Text("Talk to AI Assistant"),
-  subtitle: const Text("Instant help through smart chatbot"),
-  onTap: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const ChatScreen()),
-    );
-  },
-),
+            leading: const Icon(Icons.chat),
+            title: const Text("Talk to AI Assistant"),
+            subtitle: const Text("Instant help through smart chatbot"),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ChatScreen()),
+              );
+            },
+          ),
           const Divider(height: 32),
 
-          const Text("Was this page helpful?", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text("Was this page helpful?",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -83,7 +93,8 @@ class HelpScreen extends StatelessWidget {
               ElevatedButton.icon(
                 onPressed: () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Thank you for your feedback!")),
+                    const SnackBar(
+                        content: Text("Thank you for your feedback!")),
                   );
                 },
                 icon: const Icon(Icons.thumb_up),
@@ -101,6 +112,9 @@ class HelpScreen extends StatelessWidget {
               ),
             ],
           ),
+
+          // Add bottom spacing to avoid navigation bar overlap
+          SizedBox(height: MediaQuery.of(context).padding.bottom + 20),
         ],
       ),
     );
@@ -108,7 +122,8 @@ class HelpScreen extends StatelessWidget {
 
   Widget _buildFaqTile(String question, String answer) {
     return ExpansionTile(
-      title: Text(question, style: const TextStyle(fontWeight: FontWeight.w600)),
+      title:
+          Text(question, style: const TextStyle(fontWeight: FontWeight.w600)),
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -163,14 +178,14 @@ class HelpScreen extends StatelessWidget {
       await launchUrl(url);
     }
   }
+
   void _launchMapWithCoordinates(double latitude, double longitude) async {
-  final Uri googleMapUrl = Uri.parse("https://www.google.com/maps/search/?api=1&query=$latitude,$longitude");
-  if (await canLaunchUrl(googleMapUrl)) {
-    await launchUrl(googleMapUrl);
-  } else {
-    debugPrint("Could not launch Google Maps.");
+    final Uri googleMapUrl = Uri.parse(
+        "https://www.google.com/maps/search/?api=1&query=$latitude,$longitude");
+    if (await canLaunchUrl(googleMapUrl)) {
+      await launchUrl(googleMapUrl);
+    } else {
+      debugPrint("Could not launch Google Maps.");
+    }
   }
-}
-
-
 }
