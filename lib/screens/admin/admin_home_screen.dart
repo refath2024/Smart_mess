@@ -13,6 +13,7 @@ import 'admin_meal_state_screen.dart';
 import 'admin_bill_screen.dart';
 import 'admin_monthly_menu_screen.dart';
 import 'admin_menu_vote_screen.dart';
+import 'admin_login_screen.dart';
 import 'package:provider/provider.dart';
 import '../../theme_provider.dart';
 class AdminHomeScreen extends StatefulWidget {
@@ -26,7 +27,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   void _logout() {
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
       (route) => false,
     );
   }
