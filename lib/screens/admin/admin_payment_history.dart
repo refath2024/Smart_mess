@@ -13,24 +13,7 @@ import 'admin_bill_screen.dart';
 import 'admin_monthly_menu_screen.dart';
 import 'admin_menu_vote_screen.dart';
 import 'admin_meal_state_screen.dart';
-
-class PaymentData {
-  final double amount;
-  final DateTime paymentTime;
-  final String paymentMethod;
-  final String baNo;
-  final String rank;
-  final String name;
-
-  PaymentData({
-    required this.amount,
-    required this.paymentTime,
-    required this.paymentMethod,
-    required this.baNo,
-    required this.rank,
-    required this.name,
-  });
-}
+import 'transaction.dart';
 
 class PaymentsDashboard extends StatefulWidget {
   const PaymentsDashboard({super.key});
@@ -87,37 +70,6 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
   ];
 
   String searchQuery = '';
-
-  void _logout() {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
-      (route) => false,
-    );
-  }
-
-  Widget _buildSidebarTile({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-    bool selected = false,
-    Color? color,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      splashColor: Colors.blue.shade100,
-      child: ListTile(
-        selected: selected,
-        selectedTileColor: Colors.blue.shade100,
-        leading: Icon(
-          icon,
-          color: color ?? (selected ? Colors.blue : Colors.black),
-        ),
-        title: Text(title, style: TextStyle(color: color ?? Colors.black)),
-      ),
-    );
-  }
-
   void _editTransaction(int index) {
     setState(() {
       editingIndex = index;
@@ -134,7 +86,6 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
   }
 
   void _saveTransaction(int index) {
-    // Validate required fields
     if (controllers.any((controller) => controller.text.trim().isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -145,7 +96,6 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
       return;
     }
 
-    // Validate amount is a valid number
     final amount = double.tryParse(controllers[0].text);
     if (amount == null || amount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -158,10 +108,7 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
     }
 
     setState(() {
-      // Convert date string back to DateTime
-      final DateTime paymentTime = DateTime.tryParse(controllers[1].text) ??
-          transactions[index].paymentTime;
-
+      final DateTime paymentTime = DateTime.tryParse(controllers[1].text) ?? transactions[index].paymentTime;
       transactions[index] = PaymentData(
         amount: amount,
         paymentTime: paymentTime,
@@ -187,8 +134,7 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Confirm Delete'),
-        content:
-            const Text('Are you sure you want to delete this transaction?'),
+        content: const Text('Are you sure you want to delete this transaction?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -205,6 +151,43 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
             child: const Text('Delete'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _logout() {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      (route) => false,
+    );
+  }
+
+  void _navigate(Widget screen) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => screen),
+    );
+  }
+
+  Widget _buildSidebarTile({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    bool selected = false,
+    Color? color,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      splashColor: Colors.blue.shade100,
+      child: ListTile(
+        selected: selected,
+        selectedTileColor: Colors.blue.shade100,
+        leading: Icon(
+          icon,
+          color: color ?? (selected ? Colors.blue : Colors.black),
+        ),
+        title: Text(title, style: TextStyle(color: color ?? Colors.black)),
       ),
     );
   }
@@ -258,165 +241,73 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
                   _buildSidebarTile(
                     icon: Icons.dashboard,
                     title: "Home",
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const AdminHomeScreen(),
-                        ),
-                      );
-                    },
+                    onTap: () => _navigate(const AdminHomeScreen()),
                   ),
                   _buildSidebarTile(
                     icon: Icons.people,
                     title: "Users",
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminUsersScreen(),
-                        ),
-                      );
-                    },
+                    onTap: () => _navigate(const AdminUsersScreen()),
                   ),
                   _buildSidebarTile(
                     icon: Icons.pending,
                     title: "Pending IDs",
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminPendingIdsScreen(),
-                        ),
-                      );
-                    },
+                    onTap: () => _navigate(const AdminPendingIdsScreen()),
                   ),
                   _buildSidebarTile(
                     icon: Icons.history,
                     title: "Shopping History",
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              const AdminShoppingHistoryScreen(),
-                        ),
-                      );
-                    },
+                    onTap: () => _navigate(const AdminShoppingHistoryScreen()),
                   ),
                   _buildSidebarTile(
                     icon: Icons.receipt,
                     title: "Voucher List",
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminVoucherScreen(),
-                        ),
-                      );
-                    },
+                    onTap: () => _navigate(const AdminVoucherScreen()),
                   ),
                   _buildSidebarTile(
                     icon: Icons.storage,
                     title: "Inventory",
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminInventoryScreen(),
-                        ),
-                      );
-                    },
+                    onTap: () => _navigate(const AdminInventoryScreen()),
                   ),
                   _buildSidebarTile(
                     icon: Icons.food_bank,
                     title: "Messing",
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminMessingScreen(),
-                        ),
-                      );
-                    },
+                    onTap: () => _navigate(const AdminMessingScreen()),
                   ),
                   _buildSidebarTile(
                     icon: Icons.menu_book,
                     title: "Monthly Menu",
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const EditMenuScreen(),
-                        ),
-                      );
-                    },
+                    onTap: () => _navigate(const EditMenuScreen()),
                   ),
                   _buildSidebarTile(
                     icon: Icons.analytics,
                     title: "Meal State",
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminMealStateScreen(),
-                        ),
-                      );
-                    },
+                    onTap: () => _navigate(const AdminMealStateScreen()),
                   ),
                   _buildSidebarTile(
                     icon: Icons.thumb_up,
                     title: "Menu Vote",
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const MenuVoteScreen(),
-                        ),
-                      );
-                    },
+                    onTap: () => _navigate(const MenuVoteScreen()),
                   ),
                   _buildSidebarTile(
                     icon: Icons.receipt_long,
                     title: "Bills",
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminBillScreen(),
-                        ),
-                      );
-                    },
+                    onTap: () => _navigate(const AdminBillScreen()),
                   ),
                   _buildSidebarTile(
                     icon: Icons.payment,
                     title: "Payments",
-                    onTap: () => Navigator.pop(context),
                     selected: true,
+                    onTap: () => Navigator.pop(context),
                   ),
                   _buildSidebarTile(
                     icon: Icons.people_alt,
                     title: "Dining Member State",
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const DiningMemberStatePage(),
-                        ),
-                      );
-                    },
+                    onTap: () => _navigate(const DiningMemberStatePage()),
                   ),
                   _buildSidebarTile(
                     icon: Icons.manage_accounts,
                     title: "Staff State",
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminStaffStateScreen(),
-                        ),
-                      );
-                    },
+                    onTap: () => _navigate(const AdminStaffStateScreen()),
                   ),
                 ],
               ),
@@ -479,17 +370,25 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
                 ),
                 const SizedBox(width: 16),
                 ElevatedButton.icon(
-                  onPressed: () {
-                    // TODO: Implement add transaction
+                  onPressed: () async {
+                    final newTransaction = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => InsertTransactionScreen(),
+                      ),
+                    );
+
+                    if (newTransaction != null && newTransaction is PaymentData) {
+                      setState(() {
+                        transactions.add(newTransaction);
+                      });
+                    }
                   },
                   icon: const Icon(Icons.add),
                   label: const Text('Insert Transaction'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   ),
                 ),
               ],
@@ -515,202 +414,89 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
                     headingRowColor:
                         MaterialStateProperty.all(const Color(0xFFF4F4F4)),
                     columns: const [
-                      DataColumn(
-                        label: Text(
-                          'Payment Amount (BDT)',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Payment Time',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Payment Method',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'BA No',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Rank',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Name',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Actions',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
+                      DataColumn(label: Text('Payment Amount (BDT)', style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text('Payment Time', style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text('Payment Method', style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text('BA No', style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text('Rank', style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text('Name', style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
                     ],
                     rows: List.generate(filtered.length, (index) {
                       final txn = filtered[index];
                       final isEditing = editingIndex == index;
 
-                      return DataRow(
-                        cells: [
-                          DataCell(
-                            isEditing
-                                ? SizedBox(
-                                    width: 100,
-                                    child: TextField(
-                                      controller: controllers[0],
-                                      keyboardType: TextInputType.number,
-                                      decoration: const InputDecoration(
-                                        isDense: true,
-                                        contentPadding: EdgeInsets.symmetric(
-                                            vertical: 8, horizontal: 8),
-                                      ),
-                                    ),
-                                  )
-                                : Text('${txn.amount} BDT'),
-                          ),
-                          DataCell(
-                            isEditing
-                                ? SizedBox(
-                                    width: 150,
-                                    child: TextField(
-                                      controller: controllers[1],
-                                      readOnly: true,
-                                      onTap: () async {
-                                        final date = await showDatePicker(
-                                          context: context,
-                                          initialDate: DateTime.tryParse(
-                                                  controllers[1].text) ??
-                                              DateTime.now(),
-                                          firstDate: DateTime(2000),
-                                          lastDate: DateTime.now(),
-                                        );
-                                        if (date != null) {
-                                          final time = await showTimePicker(
-                                            context: context,
-                                            initialTime: TimeOfDay.now(),
-                                          );
-                                          if (time != null) {
-                                            final dateTime = DateTime(
-                                              date.year,
-                                              date.month,
-                                              date.day,
-                                              time.hour,
-                                              time.minute,
-                                            );
-                                            controllers[1].text =
-                                                dateTime.toString();
-                                          }
-                                        }
-                                      },
-                                      decoration: const InputDecoration(
-                                        isDense: true,
-                                        contentPadding: EdgeInsets.symmetric(
-                                            vertical: 8, horizontal: 8),
-                                        suffixIcon: Icon(Icons.calendar_today,
-                                            size: 18),
-                                      ),
-                                    ),
-                                  )
-                                : Text(txn.paymentTime.toString()),
-                          ),
-                          DataCell(
-                            isEditing
-                                ? DropdownButtonFormField<String>(
-                                    value: txn.paymentMethod,
-                                    items:
-                                        ['Bank', 'Card', 'Bkash', 'Tap', 'Cash']
-                                            .map((method) => DropdownMenuItem(
-                                                  value: method,
-                                                  child: Text(method),
-                                                ))
-                                            .toList(),
-                                    onChanged: (val) {
-                                      if (val != null) {
+                      return DataRow(cells: [
+                        DataCell(
+                          isEditing
+                              ? TextField(controller: controllers[0], decoration: const InputDecoration(isDense: true))
+                              : Text('${txn.amount} BDT'),
+                        ),
+                        DataCell(
+                          isEditing
+                              ? TextField(controller: controllers[1], decoration: const InputDecoration(isDense: true))
+                              : Text(txn.paymentTime.toString()),
+                        ),
+                        DataCell(
+                          isEditing
+                              ? DropdownButtonFormField<String>(
+                                  value: controllers[2].text,
+                                  items: ['Bank', 'Card', 'Bkash', 'Tap', 'Cash']
+                                      .map((method) => DropdownMenuItem(
+                                            value: method,
+                                            child: Text(method),
+                                          ))
+                                      .toList(),
+                                  onChanged: (val) {
+                                    if (val != null) {
+                                      setState(() {
                                         controllers[2].text = val;
-                                      }
-                                    },
-                                    decoration: const InputDecoration(
-                                      isDense: true,
-                                      contentPadding:
-                                          EdgeInsets.symmetric(vertical: 8),
-                                    ),
-                                  )
-                                : Text(txn.paymentMethod),
-                          ),
-                          DataCell(
-                            isEditing
-                                ? TextField(
-                                    controller: controllers[3],
-                                    decoration: const InputDecoration(
-                                      isDense: true,
-                                    ),
-                                  )
-                                : Text(txn.baNo),
-                          ),
-                          DataCell(
-                            isEditing
-                                ? TextField(
-                                    controller: controllers[4],
-                                    decoration: const InputDecoration(
-                                      isDense: true,
-                                    ),
-                                  )
-                                : Text(txn.rank),
-                          ),
-                          DataCell(
-                            isEditing
-                                ? TextField(
-                                    controller: controllers[5],
-                                    decoration: const InputDecoration(
-                                      isDense: true,
-                                    ),
-                                  )
-                                : Text(txn.name),
-                          ),
-                          DataCell(
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (isEditing) ...[
+                                      });
+                                    }
+                                  },
+                                  decoration: const InputDecoration(isDense: true),
+                                )
+                              : Text(txn.paymentMethod),
+                        ),
+                        DataCell(
+                          isEditing
+                              ? TextField(controller: controllers[3], decoration: const InputDecoration(isDense: true))
+                              : Text(txn.baNo),
+                        ),
+                        DataCell(
+                          isEditing
+                              ? TextField(controller: controllers[4], decoration: const InputDecoration(isDense: true))
+                              : Text(txn.rank),
+                        ),
+                        DataCell(
+                          isEditing
+                              ? TextField(controller: controllers[5], decoration: const InputDecoration(isDense: true))
+                              : Text(txn.name),
+                        ),
+                        DataCell(Row(
+                          children: isEditing
+                              ? [
                                   IconButton(
-                                    icon: const Icon(Icons.save,
-                                        color: Colors.green),
+                                    icon: const Icon(Icons.save, color: Colors.green),
                                     onPressed: () => _saveTransaction(index),
                                   ),
                                   IconButton(
-                                    icon: const Icon(Icons.cancel,
-                                        color: Colors.grey),
+                                    icon: const Icon(Icons.cancel, color: Colors.grey),
                                     onPressed: _cancelEdit,
                                   ),
-                                ] else ...[
+                                ]
+                              : [
                                   IconButton(
-                                    icon: const Icon(Icons.edit,
-                                        color: Colors.blue),
+                                    icon: const Icon(Icons.edit, color: Colors.blue),
                                     onPressed: () => _editTransaction(index),
                                   ),
                                   IconButton(
-                                    icon: const Icon(Icons.delete,
-                                        color: Colors.red),
+                                    icon: const Icon(Icons.delete, color: Colors.red),
                                     onPressed: () => _deleteTransaction(index),
                                   ),
                                 ],
-                              ],
-                            ),
-                          ),
-                        ],
-                      );
+                        )),
+                      ]);
                     }),
                   ),
                 ),
