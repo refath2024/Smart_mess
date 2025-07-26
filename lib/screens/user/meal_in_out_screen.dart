@@ -8,9 +8,7 @@ class MealInOutScreen extends StatefulWidget {
 }
 
 class _MealInOutScreenState extends State<MealInOutScreen> {
-  final _breakfast = ValueNotifier<bool>(false);
-  final _lunch = ValueNotifier<bool>(false);
-  final _dinner = ValueNotifier<bool>(false);
+  final Set<int> _selectedMeals = {}; // Updated to support multiple selections
   final _remarksController = TextEditingController();
 
   bool _disposalYes = false;
@@ -55,17 +53,13 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
   void _submit() {
     final data = {
       'date': _mealDate,
-      'breakfast': _breakfast.value ? 'Yes' : 'No',
-      'lunch': _lunch.value ? 'Yes' : 'No',
-      'dinner': _dinner.value ? 'Yes' : 'No',
+      'selectedMeals': _selectedMeals.toList(),
       'remarks': _remarksController.text.trim(),
       'disposal': _disposalYes,
       'disposalType': _disposalYes ? _disposalType : 'No',
       'from': _disposalYes ? _fromDate?.toIso8601String() : null,
       'to': _disposalYes ? _toDate?.toIso8601String() : null,
     };
-
-    // TODO: Submit this to your backend
 
     ScaffoldMessenger.of(
       context,
@@ -74,9 +68,6 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
 
   @override
   void dispose() {
-    _breakfast.dispose();
-    _lunch.dispose();
-    _dinner.dispose();
     _remarksController.dispose();
     super.dispose();
   }
@@ -84,6 +75,27 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+
+    final meals = [
+      {
+        'label': 'Breakfast',
+        'image': 'assets/1.png',
+        'name': 'Ruti, Dal & Vaji',
+        'price': '৳ 30'
+      },
+      {
+        'label': 'Lunch',
+        'image': 'assets/2.png',
+        'name': 'Rice & Fish Curry',
+        'price': '৳ 150'
+      },
+      {
+        'label': 'Dinner',
+        'image': 'assets/3.png',
+        'name': 'Pasta & Garlic Bread',
+        'price': '৳ 80'
+      },
+    ];
 
     return Scaffold(
       body: SafeArea(
@@ -99,37 +111,74 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
             Text("For: $_mealDate", style: const TextStyle(color: Colors.grey)),
             const SizedBox(height: 16),
 
-            // Meal options
-            ValueListenableBuilder<bool>(
-              valueListenable: _breakfast,
-              builder: (_, val, __) => CheckboxListTile(
-                title: const Text("Breakfast  (Eggs, Toast, Juice)"),
-                subtitle: const Text("৳ 30"),
-                value: val,
-                onChanged: (v) => _breakfast.value = v ?? false,
-              ),
-            ),
-            ValueListenableBuilder<bool>(
-              valueListenable: _lunch,
-              builder: (_, val, __) => CheckboxListTile(
-                title: const Text("Lunch  (Rice, Chicken Curry, Salad)"),
-                subtitle: const Text("৳ 150"),
-                value: val,
-                onChanged: (v) => _lunch.value = v ?? false,
-              ),
-            ),
-            ValueListenableBuilder<bool>(
-              valueListenable: _dinner,
-              builder: (_, val, __) => CheckboxListTile(
-                title: const Text("Dinner  (Pasta, Garlic Bread, Dessert)"),
-                subtitle: const Text("৳ 80"),
-                value: val,
-                onChanged: (v) => _dinner.value = v ?? false,
-              ),
-            ),
-            const Divider(),
+            Row(
+              children: List.generate(meals.length, (index) {
+                final meal = meals[index];
+                final isSelected = _selectedMeals.contains(index);
 
-            // Remarks
+                return Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        if (isSelected) {
+                          _selectedMeals.remove(index);
+                        } else {
+                          _selectedMeals.add(index);
+                        }
+                      });
+                    },
+                    child: Card(
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                        side: BorderSide(
+                          color: isSelected ? Colors.blue : Colors.transparent,
+                          width: 2,
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          ClipRRect(
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+                            child: Image.asset(
+                              meal['image']!,
+                              height: 100,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                            child: Column(
+                              children: [
+                                Text(
+                                  meal['label']!,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold, fontSize: 16),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  meal['name']!,
+                                  style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                                  textAlign: TextAlign.center,
+                                ),
+                                Text(
+                                  meal['price']!,
+                                  style: const TextStyle(color: Colors.green),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ),
+
+            const Divider(height: 32),
+
             TextField(
               controller: _remarksController,
               decoration: const InputDecoration(
@@ -141,7 +190,6 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
 
             const SizedBox(height: 16),
 
-            // Disposal switch
             Row(
               children: [
                 const Text("Disposal? "),
