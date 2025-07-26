@@ -14,6 +14,11 @@ import 'admin_meal_state_screen.dart';
 import 'admin_monthly_menu_screen.dart';
 import 'admin_menu_vote_screen.dart';
 
+// Add these imports:
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+
 class AdminBillScreen extends StatefulWidget {
   const AdminBillScreen({Key? key}) : super(key: key);
 
@@ -83,6 +88,44 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
         // Add more dummy data as needed
       ];
     });
+  }
+
+  // PDF GENERATION FUNCTION
+  Future<void> _generateBillsPdf(List<Map<String, dynamic>> bills) async {
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.MultiPage(
+        build: (pw.Context context) => [
+          pw.Header(level: 0, child: pw.Text('Bills Report',
+              style: pw.TextStyle(
+                  fontSize: 24, fontWeight: pw.FontWeight.bold))),
+          pw.Table.fromTextArray(
+            headers: [
+              'BA No', 'Rank', 'Name', 'Status', 'Arrear', 'Current Bill', 'Total Due'
+            ],
+            data: bills.map((bill) => [
+              bill['ba_no'],
+              bill['rank'],
+              bill['name'],
+              bill['bill_status'],
+              bill['previous_arrear'].toString(),
+              bill['current_bill'].toString(),
+              bill['total_due'].toString(),
+            ]).toList(),
+            headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+            cellStyle: pw.TextStyle(fontSize: 12),
+            headerDecoration: pw.BoxDecoration(color: PdfColors.blue50),
+            cellAlignment: pw.Alignment.centerLeft,
+            border: pw.TableBorder.all(),
+          ),
+        ],
+      ),
+    );
+
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdf.save(),
+    );
   }
 
   @override
@@ -356,12 +399,14 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                 ),
                 const SizedBox(width: 10),
                 ElevatedButton(
-                  onPressed: () {
-                    // Replace with PDF generation logic
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text("PDF generation not implemented")),
-                    );
+                  onPressed: () async {
+                    if (filteredBills.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("No bills to generate PDF")),
+                      );
+                    } else {
+                      await _generateBillsPdf(filteredBills);
+                    }
                   },
                   style:
                       ElevatedButton.styleFrom(backgroundColor: Colors.green),
@@ -387,7 +432,6 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                 ],
               ),
             ),
-
             const SizedBox(height: 8),
 
             // Bill list
@@ -438,7 +482,8 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                                   flex: 2,
                                   child: Text("${bill['current_bill']}")),
                               Expanded(
-                                  flex: 2, child: Text("${bill['total_due']}")),
+                                  flex: 2,
+                                  child: Text("${bill['total_due']}")),
                             ],
                           ),
                         );
