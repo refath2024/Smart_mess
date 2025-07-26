@@ -642,7 +642,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 border: Border(
                   top: BorderSide(color: Colors.grey.shade300),
                 ),
-              ),
+              ),          
               child: Padding(
                 padding: EdgeInsets.only(
                   bottom: MediaQuery.of(context).padding.bottom + 8,

@@ -13,7 +13,8 @@ import 'admin_meal_state_screen.dart';
 import 'admin_bill_screen.dart';
 import 'admin_monthly_menu_screen.dart';
 import 'admin_menu_vote_screen.dart';
-
+import 'package:provider/provider.dart';
+import '../../theme_provider.dart';
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
 
@@ -174,6 +175,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final themeNotifier = Provider.of<ThemeNotifier>(context);
     return Scaffold(
       drawer: Drawer(
         child: Column(
@@ -376,6 +378,27 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 ],
               ),
             ),
+            const Divider(),
+            const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Text(
+                      "Preferences",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey,
+                        fontSize: 13,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ),
+                  SwitchListTile(
+                    secondary: const Icon(Icons.dark_mode),
+                    title: const Text('Dark Mode'),
+                    value: themeNotifier.currentTheme == ThemeMode.dark,
+                    onChanged: (val) {
+                      themeNotifier.toggleTheme(val);
+                    },
+                  ),
             Container(
               decoration: BoxDecoration(
                 border: Border(

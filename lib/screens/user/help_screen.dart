@@ -47,14 +47,14 @@ class HelpScreen extends StatelessWidget {
           _buildContactTile(
             icon: Icons.web,
             title: "Visit Website",
-            subtitle: "https://smartmess.com",
-            onTap: () => _launchWeb("https://smartmess.com"),
+            subtitle: "https://mist-mess.vercel.com",
+            onTap: () => _launchWeb("https://mist-mess.vercel.com"),
           ),
           _buildContactTile(
-  icon: Icons.location_on,
-  title: "Office Address",
-  subtitle: "Smart Mess HQ, Cantonment, Dhaka",
-  onTap: () => _launchMapWithCoordinates(23.8103, 90.4125), // Replace with your office's actual lat/lng
+            icon: Icons.location_on,
+            title: "Office Address",
+            subtitle: "Smart Mess HQ, Cantonment, Dhaka",
+            onTap: () => _launchMapWithCoordinates(23.8283, 90.3915), // Dhaka Cantonment coordinates
 ),
 
 
