@@ -34,7 +34,6 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
       return;
     }
 
-    // You can process or send the data here
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -50,33 +49,122 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
     );
   }
 
-  Widget _buildMealSet({
-    required String title,
+  Widget _buildMealRow({
     required String mealType,
     required String? selectedValue,
     required Function(String?) onChanged,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Column(
-          children: List.generate(3, (index) {
-            final setId = "${mealType}_set${index + 1}";
-            final setText = "Set ${index + 1} - Dummy Meal Description";
-            return RadioListTile<String>(
-              title: Text(setText),
-              value: setId,
-              groupValue: selectedValue,
-              onChanged: onChanged,
-            );
-          }),
-        ),
-      ],
+    List<Map<String, String>> mealSets = [];
+
+    if (mealType == "breakfast") {
+      mealSets = [
+        {
+          'id': '${mealType}_set1',
+          'title': 'Ruti, Dal & Vaji',
+          'subtitle': '৳ 40',
+          'image': '1.png',
+        },
+        {
+          'id': '${mealType}_set2',
+          'title': 'Paratha & Egg Curry',
+          'subtitle': '৳ 50',
+          'image': '2.png',
+        },
+        {
+          'id': '${mealType}_set3',
+          'title': 'Khichuri & Beef',
+          'subtitle': '৳ 70',
+          'image': '3.png',
+        },
+      ];
+    } else if (mealType == "lunch") {
+      mealSets = [
+        {
+          'id': '${mealType}_set1',
+          'title': 'Rice & Fish Curry',
+          'subtitle': '৳ 60',
+          'image': '1.png',
+        },
+        {
+          'id': '${mealType}_set2',
+          'title': 'Rice & Chicken Curry',
+          'subtitle': '৳ 70',
+          'image': '2.png',
+        },
+        {
+          'id': '${mealType}_set3',
+          'title': 'Khichuri & Egg curry',
+          'subtitle': '৳ 55',
+          'image': '3.png',
+        },
+      ];
+    } else if (mealType == "dinner") {
+      mealSets = [
+        {
+          'id': '${mealType}_set1',
+          'title': 'Roti & Chicken Curry',
+          'subtitle': '৳ 50',
+          'image': '1.png',
+        },
+        {
+          'id': '${mealType}_set2',
+          'title': 'Paratha & Mixed Veg',
+          'subtitle': '৳ 45',
+          'image': '2.png',
+        },
+        {
+          'id': '${mealType}_set3',
+          'title': 'Rice & Beef Curry',
+          'subtitle': '৳ 75',
+          'image': '3.png',
+        },
+      ];
+    }
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: mealSets.map((meal) {
+        final isSelected = selectedValue == meal['id'];
+        return Expanded(
+          child: GestureDetector(
+            onTap: () => onChanged(meal['id']),
+            child: Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(
+                  color: isSelected ? Colors.blue : Colors.transparent,
+                  width: 2,
+                ),
+              ),
+              elevation: 3,
+              child: Column(
+                children: [
+                  ClipRRect(
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(12)),
+                    child: Image.asset(
+                      'assets/${meal['image']}',
+                      height: 80,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      children: [
+                        Text(meal['title']!,
+                            style: const TextStyle(fontWeight: FontWeight.bold)),
+                        Text(meal['subtitle']!),
+                      ],
+                    ),
+                  )
+                ],
+              ),
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 
@@ -111,30 +199,38 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
                 },
               ),
               const SizedBox(height: 20),
-              _buildMealSet(
-                title: "Breakfast",
+              const Text("Breakfast",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              _buildMealRow(
                 mealType: "breakfast",
                 selectedValue: _selectedBreakfast,
                 onChanged: (value) =>
                     setState(() => _selectedBreakfast = value),
               ),
-              _buildMealSet(
-                title: "Lunch",
+              const SizedBox(height: 20),
+              const Text("Lunch",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              _buildMealRow(
                 mealType: "lunch",
                 selectedValue: _selectedLunch,
                 onChanged: (value) => setState(() => _selectedLunch = value),
               ),
-              _buildMealSet(
-                title: "Dinner",
+              const SizedBox(height: 20),
+              const Text("Dinner",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              _buildMealRow(
                 mealType: "dinner",
                 selectedValue: _selectedDinner,
                 onChanged: (value) => setState(() => _selectedDinner = value),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               TextField(
                 controller: _remarksController,
                 maxLines: 3,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: "Remarks",
                   border: OutlineInputBorder(),
                 ),
