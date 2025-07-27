@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "583783414450",
-    "project_id": "loginsignup-172cd",
-    "storage_bucket": "loginsignup-172cd.firebasestorage.app"
+    "project_number": "477255080513",
+    "project_id": "smart-mess-dfe03",
+    "storage_bucket": "smart-mess-dfe03.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:583783414450:android:c1cdfdfa8cae00c0a0e7ab",
+        "mobilesdk_app_id": "1:477255080513:android:7bb3fc6aadd1ae8fda04c0",
         "android_client_info": {
-          "package_name": "com.example.signup_login"
+          "package_name": "com.example.smart_mess"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAbkDUtfhXTT0aCqY80Z_jhhWWhpU4khfY"
+          "current_key": "AIzaSyC-INObGkM5Wwy4lzIeMd6gDktPEmGu9JE"
         }
       ],
       "services": {
