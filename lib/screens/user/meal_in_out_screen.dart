@@ -80,19 +80,19 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
       {
         'label': 'Breakfast',
         'image': 'assets/1.png',
-        'name': 'Ruti, Dal & Vaji',
+        'name': 'Bhuna Khichuri',
         'price': '৳ 30'
       },
       {
         'label': 'Lunch',
         'image': 'assets/2.png',
-        'name': 'Rice & Fish Curry',
+        'name': 'Luchi with alur dom',
         'price': '৳ 150'
       },
       {
         'label': 'Dinner',
         'image': 'assets/3.png',
-        'name': 'Pasta & Garlic Bread',
+        'name': 'Luchi with dal curry',
         'price': '৳ 80'
       },
     ];
@@ -102,15 +102,63 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Text(
-              "Select Your Meal",
-              style: textTheme.titleLarge ??
-                  const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    "Select Your Meal",
+                    style: textTheme.titleLarge ??
+                        const TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(
+                    Icons.help_outline,
+                    color: Colors.grey,
+                    size: 20,
+                  ),
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          title: const Text(
+                            "Meal Enrollment Information",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF002B5B),
+                            ),
+                          ),
+                          content: const Text(
+                            "• These are approximate bills and may vary based on your meal participation and daily market prices of fresh ingredients.\n\n"
+                            "• Last time to enroll for meals is 21:00 (9:00 PM) of the current day.\n\n"
+                            "• The page will automatically refresh for the next day after 21:00.\n\n"
+                            "• Please ensure timely enrollment to avoid meal schedule conflicts.",
+                            style: TextStyle(fontSize: 14, height: 1.5),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: const Text(
+                                "Got it",
+                                style: TextStyle(
+                                  color: Color(0xFF002B5B),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
+                ),
+              ],
             ),
             const SizedBox(height: 4),
             Text("For: $_mealDate", style: const TextStyle(color: Colors.grey)),
             const SizedBox(height: 16),
-
             Row(
               children: List.generate(meals.length, (index) {
                 final meal = meals[index];
@@ -136,49 +184,66 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
                           width: 2,
                         ),
                       ),
-                      child: Column(
-                        children: [
-                          ClipRRect(
-                            borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-                            child: Image.asset(
-                              meal['image']!,
-                              height: 100,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
+                      child: SizedBox(
+                        height: 180, // Fixed height for consistency
+                        child: Column(
+                          children: [
+                            ClipRRect(
+                              borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(15)),
+                              child: Image.asset(
+                                meal['image']!,
+                                height: 100,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                              ),
                             ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                            child: Column(
-                              children: [
-                                Text(
-                                  meal['label']!,
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold, fontSize: 16),
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 6),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      meal['label']!,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Flexible(
+                                      child: Text(
+                                        meal['name']!,
+                                        style: TextStyle(
+                                            fontSize: 13,
+                                            color: Colors.grey.shade700),
+                                        textAlign: TextAlign.center,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      meal['price']!,
+                                      style: const TextStyle(
+                                          color: Colors.green,
+                                          fontWeight: FontWeight.w600),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  meal['name']!,
-                                  style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
-                                  textAlign: TextAlign.center,
-                                ),
-                                Text(
-                                  meal['price']!,
-                                  style: const TextStyle(color: Colors.green),
-                                ),
-                              ],
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 );
               }),
             ),
-
             const Divider(height: 32),
-
             TextField(
               controller: _remarksController,
               decoration: const InputDecoration(
@@ -187,9 +252,7 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
               ),
               maxLines: 3,
             ),
-
             const SizedBox(height: 16),
-
             Row(
               children: [
                 const Text("Disposal? "),
@@ -199,7 +262,6 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
                 ),
               ],
             ),
-
             if (_disposalYes) ...[
               DropdownButtonFormField<String>(
                 value: _disposalType,
@@ -237,9 +299,7 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
                 ],
               ),
             ],
-
             const SizedBox(height: 24),
-
             ElevatedButton(
               onPressed: _submit,
               style: ElevatedButton.styleFrom(

@@ -134,20 +134,20 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
       mealSets = [
         {
           'id': '${mealType}_set1',
-          'title': 'Continental Set',
-          'subtitle': 'Ruti, Dal & Mixed Veg - ৳ 40',
+          'title': 'Ruti, Dal & Mixed Veg',
+          'subtitle': '৳ 40',
           'image': '1.png',
         },
         {
           'id': '${mealType}_set2',
-          'title': 'Traditional Set',
-          'subtitle': 'Paratha & Egg Curry - ৳ 50',
+          'title': 'Paratha & Egg Curry',
+          'subtitle': '৳ 50',
           'image': '2.png',
         },
         {
           'id': '${mealType}_set3',
-          'title': 'Special Set',
-          'subtitle': 'Khichuri & Beef - ৳ 70',
+          'title': 'Khichuri & Beef',
+          'subtitle': '৳ 70',
           'image': '3.png',
         },
       ];
@@ -155,20 +155,20 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
       mealSets = [
         {
           'id': '${mealType}_set1',
-          'title': 'Standard Meal',
-          'subtitle': 'Rice & Fish Curry - ৳ 60',
+          'title': 'Rice & Fish Curry',
+          'subtitle': '৳ 60',
           'image': '1.png',
         },
         {
           'id': '${mealType}_set2',
-          'title': 'Premium Meal',
-          'subtitle': 'Rice & Chicken Curry - ৳ 70',
+          'title': 'Rice & Chicken Curry',
+          'subtitle': '৳ 70',
           'image': '2.png',
         },
         {
           'id': '${mealType}_set3',
-          'title': 'Economy Meal',
-          'subtitle': 'Khichuri & Egg Curry - ৳ 55',
+          'title': 'Khichuri & Egg Curry',
+          'subtitle': '৳ 55',
           'image': '3.png',
         },
       ];
@@ -176,20 +176,20 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
       mealSets = [
         {
           'id': '${mealType}_set1',
-          'title': 'Light Dinner',
-          'subtitle': 'Roti & Chicken Curry - ৳ 50',
+          'title': 'Roti & Chicken Curry',
+          'subtitle': '৳ 50',
           'image': '1.png',
         },
         {
           'id': '${mealType}_set2',
-          'title': 'Vegetarian Option',
-          'subtitle': 'Paratha & Mixed Veg - ৳ 45',
+          'title': 'Paratha & Mixed Veg',
+          'subtitle': '৳ 45',
           'image': '2.png',
         },
         {
           'id': '${mealType}_set3',
-          'title': 'Full Course',
-          'subtitle': 'Rice & Beef Curry - ৳ 75',
+          'title': 'Rice & Beef Curry',
+          'subtitle': '৳ 75',
           'image': '3.png',
         },
       ];
@@ -211,30 +211,53 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
                 ),
               ),
               elevation: 3,
-              child: Column(
-                children: [
-                  ClipRRect(
-                    borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(12)),
-                    child: Image.asset(
-                      'assets/${meal['image']}',
-                      height: 80,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
+              child: SizedBox(
+                height: 160, // Fixed height for consistency
+                child: Column(
+                  children: [
+                    ClipRRect(
+                      borderRadius:
+                          const BorderRadius.vertical(top: Radius.circular(12)),
+                      child: Image.asset(
+                        'assets/${meal['image']}',
+                        height: 100,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Column(
-                      children: [
-                        Text(meal['title']!,
-                            style:
-                                const TextStyle(fontWeight: FontWeight.bold)),
-                        Text(meal['subtitle']!),
-                      ],
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                meal['title']!,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              meal['subtitle']!,
+                              style: const TextStyle(
+                                color: Colors.green,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  )
-                ],
+                  ],
+                ),
               ),
             ),
           ),
