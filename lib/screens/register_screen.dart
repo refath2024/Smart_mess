@@ -1,5 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'login_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -43,10 +45,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 child: const Text('No'),
               ),
               TextButton(
-                onPressed: () {
+                onPressed: () async {
                   Navigator.of(context).pop(); // Close the confirmation dialog
 
                   // TODO: Connect with Firebase or backend
+                  
+                 final userid = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+                    email: _emailController.text.trim(),
+                    password: _passwordController.text.trim(),
+                  ).then((userCredential) {
+                    // Handle successful registration
+                    debugPrint("User registered: ${userCredential.user?.uid}");
+                    return userCredential.user!.uid;
+                  }).catchError((error) {
+                    // Handle registration error
+                    debugPrint("Registration error: $error");
+                  });
+                  FirebaseFirestore.instance.collection('officers').doc(userid).set({
+                    'ba_no': _noController.text.trim(),
+                    'rank': _rankController.text.trim(),
+                    'name': _nameController.text.trim(),
+                    'unit': _unitController.text.trim(),
+                    'email': _emailController.text.trim(),
+                    'mobile': _mobileController.text.trim(),
+                    'status': 'pending', // Initial status
+                    'created_at': FieldValue.serverTimestamp(),
+                    'user_id': userid
+                  });
                   debugPrint("BA No: ${_noController.text}");
                   debugPrint("Rank: ${_rankController.text}");
                   debugPrint("Name: ${_nameController.text}");
