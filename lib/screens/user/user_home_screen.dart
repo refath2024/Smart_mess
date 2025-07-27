@@ -211,49 +211,38 @@ class HomeContent extends StatelessWidget {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       elevation: 4,
-      child: SizedBox(
-        height: 160, // Fixed height for consistency
-        child: Column(
-          children: [
-            ClipRRect(
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(15)),
-              child: Image.asset(
-                'assets/$imagePath',
-                height: 100,
-                width: double.infinity,
-                fit: BoxFit.cover,
-              ),
+      child: Column(
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+            child: Image.asset(
+              'assets/$imagePath',
+              height: 100,
+              width: double.infinity,
+              fit: BoxFit.cover,
             ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 16),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 4),
-                    Flexible(
-                      child: Text(
-                        subtitle,
-                        style: TextStyle(
-                            fontSize: 13, color: Colors.grey.shade700),
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 16),
+                  textAlign: TextAlign.center,
                 ),
-              ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -273,7 +262,7 @@ class HomeContent extends StatelessWidget {
               children: [
                 Expanded(
                     child: _buildMenuCard(
-                        "Breakfast", "Alu Paratha with Beef", "2.png")),
+                        "Breakfast", "Alu Paratha with Beef Curry", "2.png")),
                 const SizedBox(width: 10),
                 Expanded(
                     child: _buildMenuCard(

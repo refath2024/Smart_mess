@@ -80,7 +80,7 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
       {
         'label': 'Breakfast',
         'image': 'assets/1.png',
-        'name': 'Bhuna Khichuri',
+        'name': 'Bhuna Khichuri with Egg',
         'price': '৳ 30'
       },
       {
@@ -184,59 +184,50 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
                           width: 2,
                         ),
                       ),
-                      child: SizedBox(
-                        height: 180, // Fixed height for consistency
-                        child: Column(
-                          children: [
-                            ClipRRect(
-                              borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(15)),
-                              child: Image.asset(
-                                meal['image']!,
-                                height: 100,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                              ),
+                      child: Column(
+                        children: [
+                          ClipRRect(
+                            borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(15)),
+                            child: Image.asset(
+                              meal['image']!,
+                              height: 100,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
                             ),
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 6),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      meal['label']!,
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Flexible(
-                                      child: Text(
-                                        meal['name']!,
-                                        style: TextStyle(
-                                            fontSize: 13,
-                                            color: Colors.grey.shade700),
-                                        textAlign: TextAlign.center,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      meal['price']!,
-                                      style: const TextStyle(
-                                          color: Colors.green,
-                                          fontWeight: FontWeight.w600),
-                                    ),
-                                  ],
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 6),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  meal['label']!,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16),
+                                  textAlign: TextAlign.center,
                                 ),
-                              ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  meal['name']!,
+                                  style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.grey.shade700),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  meal['price']!,
+                                  style: const TextStyle(
+                                      color: Colors.green,
+                                      fontWeight: FontWeight.w600),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
