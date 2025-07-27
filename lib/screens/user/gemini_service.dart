@@ -25,6 +25,9 @@ You are a helpful assistant for the Smart Mess Manager app. You can answer quest
 - Contact info for mess in-charge
 - How users can log complaints
 - How mess members can join/leave
+- How to update meal info
+- How to pay bills
+
 
 User: $prompt
 """
