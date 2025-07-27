@@ -262,7 +262,7 @@ class HomeContent extends StatelessWidget {
               children: [
                 Expanded(
                     child: _buildMenuCard(
-                        "Breakfast", "Alu Paratha with Beef Curry", "2.png")),
+                        "Breakfast", "Alu Paratha with Beef", "2.png")),
                 const SizedBox(width: 10),
                 Expanded(
                     child: _buildMenuCard(
@@ -280,8 +280,8 @@ class HomeContent extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                    child:
-                        _buildMenuCard("Breakfast", "Roti with Beef", "4.png")),
+                    child: _buildMenuCard(
+                        "Breakfast", "Roti with Beef Curry", "4.png")),
                 const SizedBox(width: 10),
                 Expanded(
                     child: _buildMenuCard("Lunch", "Rice with Curry", "5.png")),
