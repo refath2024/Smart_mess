@@ -37,7 +37,12 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
   }
 
   List<Map<String, dynamic>> bills = []; // will hold bill data
+  List<Map<String, dynamic>> filteredBills = [];
   String searchTerm = "";
+  int? editingIndex;
+  final TextEditingController _previousArrearController =
+      TextEditingController();
+  final TextEditingController _currentBillController = TextEditingController();
 
   Widget _buildSidebarTile({
     required IconData icon,
@@ -64,6 +69,100 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
     fetchBills(); // Simulated fetch
   }
 
+  void _filterBills(String query) {
+    setState(() {
+      filteredBills = bills.where((bill) {
+        final combined =
+            (bill['ba_no'] + bill['rank'] + bill['name']).toLowerCase();
+        return combined.contains(query.toLowerCase());
+      }).toList();
+    });
+  }
+
+  void _startEditing(int index, Map<String, dynamic> bill) {
+    setState(() {
+      editingIndex = index;
+      _previousArrearController.text = bill['previous_arrear'].toString();
+      _currentBillController.text = bill['current_bill'].toString();
+    });
+  }
+
+  void _saveEditing(int index) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Save'),
+        content: const Text('Are you sure you want to save the changes?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.green,
+              textStyle: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    ).then((confirmed) {
+      if (confirmed == true) {
+        setState(() {
+          final previousArrear =
+              double.tryParse(_previousArrearController.text) ?? 0.0;
+          final currentBill =
+              double.tryParse(_currentBillController.text) ?? 0.0;
+          final totalDue = previousArrear + currentBill;
+
+          bills[index]['previous_arrear'] = previousArrear;
+          bills[index]['current_bill'] = currentBill;
+          bills[index]['total_due'] = totalDue;
+          bills[index]['bill_status'] = totalDue > 0 ? 'Unpaid' : 'Paid';
+
+          editingIndex = null;
+          _filterBills(searchTerm); // Refresh filtered bills
+        });
+      }
+    });
+  }
+
+  void _cancelEditing() {
+    setState(() {
+      editingIndex = null;
+    });
+  }
+
+  void _deleteBill(int index) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Delete'),
+        content:
+            const Text('Are you sure you want to delete this bill record?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                bills.removeAt(index);
+                _filterBills(searchTerm); // Refresh filtered bills
+              });
+              Navigator.pop(context);
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void fetchBills() {
     // Simulated API data fetch (replace with actual logic)
     setState(() {
@@ -86,8 +185,18 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
           "current_bill": 1700,
           "total_due": 1700
         },
+        {
+          "ba_no": "789012",
+          "rank": "Lieutenant",
+          "name": "Ahmed",
+          "bill_status": "Unpaid",
+          "previous_arrear": 200,
+          "current_bill": 1400,
+          "total_due": 1600
+        },
         // Add more dummy data as needed
       ];
+      filteredBills = List.from(bills);
     });
   }
 
@@ -383,13 +492,6 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
             fontSize: 18,
           ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: fetchBills,
-            tooltip: 'Refresh Bills',
-          ),
-        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -398,108 +500,236 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
             // Search bar
             Row(
               children: [
-                Expanded(
+                SizedBox(
+                  width: 180, // Reduced width
                   child: TextField(
-                    decoration: const InputDecoration(
-                      hintText: 'Search by BA No, Name or Rank...',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.search),
+                    decoration: InputDecoration(
+                      hintText: 'Search...',
+                      prefixIcon: const Icon(Icons.search, size: 20),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 8,
+                      ),
                     ),
-                    onChanged: (val) => setState(() => searchTerm = val),
+                    onChanged: (val) {
+                      setState(() => searchTerm = val);
+                      _filterBills(val);
+                    },
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 ElevatedButton(
                   onPressed: () async {
                     if (filteredBills.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text("No bills to generate PDF")),
+                        const SnackBar(content: Text("No bills to export")),
                       );
                     } else {
                       await _generateBillsPdf(filteredBills);
                     }
                   },
-                  style:
-                      ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                  child: const Text("Generate Bills"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1A4D8F),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text(
+                    'Export Bills',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 20),
 
-            // Table headers
-            Container(
-              color: Colors.grey.shade300,
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-              child: Row(
-                children: const [
-                  Expanded(flex: 2, child: Text("BA No")),
-                  Expanded(flex: 2, child: Text("Rank")),
-                  Expanded(flex: 3, child: Text("Name")),
-                  Expanded(flex: 2, child: Text("Status")),
-                  Expanded(flex: 2, child: Text("Arrear")),
-                  Expanded(flex: 2, child: Text("Current Bill")),
-                  Expanded(flex: 2, child: Text("Total Due")),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-
-            // Bill list
+            // Table
             Expanded(
-              child: filteredBills.isEmpty
-                  ? const Center(child: Text("No bills found."))
-                  : ListView.builder(
-                      itemCount: filteredBills.length,
-                      itemBuilder: (context, index) {
-                        final bill = filteredBills[index];
-                        return Container(
-                          margin: const EdgeInsets.symmetric(vertical: 4),
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 10, horizontal: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            border: Border.all(color: Colors.grey.shade300),
-                            borderRadius: BorderRadius.circular(8),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.shade100,
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(flex: 2, child: Text(bill['ba_no'])),
-                              Expanded(flex: 2, child: Text(bill['rank'])),
-                              Expanded(flex: 3, child: Text(bill['name'])),
-                              Expanded(
-                                flex: 2,
-                                child: Text(
-                                  bill['bill_status'],
-                                  style: TextStyle(
-                                    color: bill['bill_status'] == "Paid"
-                                        ? Colors.green
-                                        : Colors.red,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  headingRowColor: MaterialStateProperty.all(
+                    const Color(0xFF1A4D8F),
+                  ),
+                  columns: const [
+                    DataColumn(
+                      label: Text(
+                        'BA No',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    DataColumn(
+                      label: Text(
+                        'Rank',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    DataColumn(
+                      label: Text(
+                        'Name',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    DataColumn(
+                      label: Text(
+                        'Status',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    DataColumn(
+                      label: Text(
+                        'Previous Arrear',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    DataColumn(
+                      label: Text(
+                        'Current Bill',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    DataColumn(
+                      label: Text(
+                        'Total Due',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    DataColumn(
+                      label: Text(
+                        'Action',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                  rows: filteredBills.isEmpty
+                      ? [
+                          DataRow(
+                              cells: List.generate(
+                                  8, (index) => const DataCell(Text('-')))),
+                        ]
+                      : List.generate(filteredBills.length, (index) {
+                          final bill = filteredBills[index];
+                          final isEditing = editingIndex == index;
+
+                          return DataRow(cells: [
+                            DataCell(Text(bill['ba_no'] ?? '')),
+                            DataCell(Text(bill['rank'] ?? '')),
+                            DataCell(Text(bill['name'] ?? '')),
+                            DataCell(
+                              Text(
+                                bill['bill_status'] ?? '',
+                                style: TextStyle(
+                                  color: bill['bill_status'] == 'Paid'
+                                      ? Colors.green
+                                      : Colors.red,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              Expanded(
-                                  flex: 2,
-                                  child: Text("${bill['previous_arrear']}")),
-                              Expanded(
-                                  flex: 2,
-                                  child: Text("${bill['current_bill']}")),
-                              Expanded(
-                                  flex: 2, child: Text("${bill['total_due']}")),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
+                            ),
+                            DataCell(
+                              isEditing
+                                  ? SizedBox(
+                                      width: 80,
+                                      child: TextField(
+                                        controller: _previousArrearController,
+                                        keyboardType: TextInputType.number,
+                                        decoration: const InputDecoration(
+                                          border: OutlineInputBorder(),
+                                          contentPadding: EdgeInsets.all(8),
+                                        ),
+                                      ),
+                                    )
+                                  : Text('৳${bill['previous_arrear']}'),
+                            ),
+                            DataCell(
+                              isEditing
+                                  ? SizedBox(
+                                      width: 80,
+                                      child: TextField(
+                                        controller: _currentBillController,
+                                        keyboardType: TextInputType.number,
+                                        decoration: const InputDecoration(
+                                          border: OutlineInputBorder(),
+                                          contentPadding: EdgeInsets.all(8),
+                                        ),
+                                      ),
+                                    )
+                                  : Text('৳${bill['current_bill']}'),
+                            ),
+                            DataCell(Text('৳${bill['total_due']}')),
+                            DataCell(
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (isEditing) ...[
+                                    IconButton(
+                                      icon: const Icon(Icons.save,
+                                          color: Colors.green),
+                                      onPressed: () => _saveEditing(index),
+                                      tooltip: 'Save',
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.cancel,
+                                          color: Colors.orange),
+                                      onPressed: _cancelEditing,
+                                      tooltip: 'Cancel',
+                                    ),
+                                  ] else ...[
+                                    IconButton(
+                                      icon: const Icon(Icons.edit,
+                                          color: Colors.blue),
+                                      onPressed: () =>
+                                          _startEditing(index, bill),
+                                      tooltip: 'Edit',
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete,
+                                          color: Colors.red),
+                                      onPressed: () => _deleteBill(index),
+                                      tooltip: 'Delete',
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ]);
+                        }).toList(),
+                ),
+              ),
             ),
           ],
         ),

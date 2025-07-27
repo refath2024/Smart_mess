@@ -102,8 +102,8 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                 padding: EdgeInsets.zero,
                 children: [
                   const UserAccountsDrawerHeader(
-                    accountName: const Text("Lt John Snow"),
-                    accountEmail: const Text("johnsnow@gmail.com"),
+                    accountName: const Text("Lt Shoaib Ahmed Sami"),
+                    accountEmail: const Text("shoaib.mil12030@gmail.com"),
                     currentAccountPicture: const CircleAvatar(
                       backgroundImage: AssetImage('assets/pro.png'),
                     ),
@@ -260,11 +260,11 @@ class HomeContent extends StatelessWidget {
               children: [
                 Expanded(
                     child: _buildMenuCard(
-                        "Breakfast", "Alu Paratha with Beef", "1.png")),
+                        "Breakfast", "Alu Paratha with Beef", "2.png")),
                 const SizedBox(width: 10),
                 Expanded(
                     child: _buildMenuCard(
-                        "Lunch", "Khichuri with Chicken", "2.png")),
+                        "Lunch", "Khichuri with Chicken", "1.png")),
                 const SizedBox(width: 10),
                 Expanded(
                     child: _buildMenuCard(
@@ -278,8 +278,8 @@ class HomeContent extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                    child: _buildMenuCard(
-                        "Breakfast", "Roti with Vegetables", "4.png")),
+                    child:
+                        _buildMenuCard("Breakfast", "Roti with Beef", "4.png")),
                 const SizedBox(width: 10),
                 Expanded(
                     child: _buildMenuCard("Lunch", "Rice with Curry", "5.png")),
