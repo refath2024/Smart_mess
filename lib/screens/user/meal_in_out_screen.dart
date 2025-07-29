@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MealInOutScreen extends StatefulWidget {
   const MealInOutScreen({super.key});
@@ -8,13 +10,13 @@ class MealInOutScreen extends StatefulWidget {
 }
 
 class _MealInOutScreenState extends State<MealInOutScreen> {
-  final Set<int> _selectedMeals = {}; // Updated to support multiple selections
+  final Set<int> _selectedMeals = {};
   final _remarksController = TextEditingController();
-
   bool _disposalYes = false;
   String _disposalType = 'SIQ';
   DateTime? _fromDate;
   DateTime? _toDate;
+  bool _isSubmitting = false;
 
   String _formatDate(DateTime date) {
     return "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
@@ -22,9 +24,8 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
 
   String get _mealDate {
     final now = DateTime.now();
-    final target = now.hour >= 21
-        ? now.add(const Duration(days: 2))
-        : now.add(const Duration(days: 1));
+    final target =
+        now.hour >= 21 ? now.add(const Duration(days: 2)) : now.add(const Duration(days: 1));
     return _formatDate(target);
   }
 
@@ -35,7 +36,6 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
     );
-
     if (pickedDate != null) {
       setState(() {
         if (isFrom) {
@@ -50,8 +50,29 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
     }
   }
 
-  void _submit() {
+  Future<void> _submit() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("You must be logged in to submit.")),
+      );
+      return;
+    }
+    if (_selectedMeals.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Select at least one meal.")),
+      );
+      return;
+    }
+    if (_disposalYes &&
+        (_fromDate == null || _toDate == null || _toDate!.isBefore(_fromDate!))) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text("Please select valid From/To dates for disposal.")));
+      return;
+    }
+
     final data = {
+      'userId': user.uid,
       'date': _mealDate,
       'selectedMeals': _selectedMeals.toList(),
       'remarks': _remarksController.text.trim(),
@@ -59,11 +80,37 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
       'disposalType': _disposalYes ? _disposalType : 'No',
       'from': _disposalYes ? _fromDate?.toIso8601String() : null,
       'to': _disposalYes ? _toDate?.toIso8601String() : null,
+      'timestamp': FieldValue.serverTimestamp(),
     };
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Meal selection submitted')));
+    setState(() {
+      _isSubmitting = true;
+    });
+    try {
+      await FirebaseFirestore.instance
+          .collection('meals')
+          .doc(user.uid)
+          .collection('entries')
+          .add(data);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Meal selection submitted')),
+      );
+      setState(() {
+        _selectedMeals.clear();
+        _remarksController.clear();
+        _disposalYes = false;
+        _fromDate = null;
+        _toDate = null;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Failed to submit: $e')));
+    } finally {
+      setState(() {
+        _isSubmitting = false;
+      });
+    }
   }
 
   @override
@@ -75,7 +122,6 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-
     final meals = [
       {
         'label': 'Breakfast',
@@ -108,8 +154,7 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
                   child: Text(
                     "Select Your Meal",
                     style: textTheme.titleLarge ??
-                        const TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.bold),
+                        const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                 ),
                 IconButton(
@@ -163,7 +208,6 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
               children: List.generate(meals.length, (index) {
                 final meal = meals[index];
                 final isSelected = _selectedMeals.contains(index);
-
                 return Expanded(
                   child: GestureDetector(
                     onTap: () {
@@ -187,8 +231,8 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
                       child: Column(
                         children: [
                           ClipRRect(
-                            borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(15)),
+                            borderRadius:
+                                const BorderRadius.vertical(top: Radius.circular(15)),
                             child: Image.asset(
                               meal['image']!,
                               height: 100,
@@ -197,24 +241,22 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
                             ),
                           ),
                           Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 6),
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
                                   meal['label']!,
                                   style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16),
+                                      fontWeight: FontWeight.bold, fontSize: 16),
                                   textAlign: TextAlign.center,
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   meal['name']!,
                                   style: TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.grey.shade700),
+                                      fontSize: 13, color: Colors.grey.shade700),
                                   textAlign: TextAlign.center,
                                 ),
                                 const SizedBox(height: 2),
@@ -272,9 +314,7 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
                     child: OutlinedButton(
                       onPressed: () => _pickDate(isFrom: true),
                       child: Text(
-                        _fromDate == null
-                            ? 'From Date'
-                            : _formatDate(_fromDate!),
+                        _fromDate == null ? 'From Date' : _formatDate(_fromDate!),
                       ),
                     ),
                   ),
@@ -291,15 +331,25 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
               ),
             ],
             const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _submit,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF002B5B),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              child: const Text(
-                "Submit",
-                style: TextStyle(fontSize: 16, color: Colors.white),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _isSubmitting ? null : _submit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF002B5B),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                child: _isSubmitting
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Text("Submit",
+                        style: TextStyle(fontSize: 16, color: Colors.white)),
               ),
             ),
           ],
