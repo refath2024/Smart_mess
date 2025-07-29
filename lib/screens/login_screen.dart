@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'admin/admin_login_screen.dart';
 import 'forgot_password_screen.dart';
@@ -60,15 +61,63 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      // Attempt sign in with Firebase Auth
-      await _auth.signInWithEmailAndPassword(email: email, password: password);
+      // Sign in with Firebase Authentication
+      UserCredential userCredential =
+          await _auth.signInWithEmailAndPassword(email: email, password: password);
+      final user = userCredential.user;
 
-      // Navigate to user home on success
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const UserHomeScreen()),
-      );
+      if (user == null) {
+        throw FirebaseAuthException(
+            code: 'user-null', message: 'User is null after sign in.');
+      }
+
+      // Check approval status in Firestore
+      final userDoc = await FirebaseFirestore.instance
+          .collection('user_requests')
+          .doc(user.uid)
+          .get();
+
+      if (!userDoc.exists) {
+        // User record not found (maybe not registered properly)
+        await _auth.signOut();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Your registration record was not found.')),
+        );
+        return;
+      }
+
+      final data = userDoc.data()!;
+      final approved = data['approved'] ?? false;
+      final rejected = data['rejected'] ?? false;
+      final status = data['status'] ?? '';
+
+      if (approved == true) {
+        // Approved user - proceed to home
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const UserHomeScreen()),
+        );
+      } else if (rejected == true) {
+        // Rejected user - sign out and show message
+        await _auth.signOut();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text(
+                  'Your registration has been rejected. Please contact admin.')),
+        );
+      } else {
+        // Not yet approved - sign out and info message
+        await _auth.signOut();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text(
+                  'Your application is pending approval. Please wait for admin approval.')),
+        );
+      }
     } on FirebaseAuthException catch (e) {
       String errorMessage = 'Login failed';
       if (e.code == 'user-not-found') {
@@ -153,9 +202,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_off
-                                : Icons.visibility,
+                            _obscurePassword ? Icons.visibility_off : Icons.visibility,
                             color: Colors.grey,
                           ),
                           onPressed: () {
@@ -209,9 +256,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (context) => const ForgotPasswordScreen(),
-                          ),
+                          MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
                         );
                       },
                       child: const Text("Forgot Password?"),
@@ -220,9 +265,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: () {
                         Navigator.pushReplacement(
                           context,
-                          MaterialPageRoute(
-                            builder: (context) => const AdminLoginScreen(),
-                          ),
+                          MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
                         );
                       },
                       child: const Text("← Go to Admin Portal"),
@@ -231,9 +274,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (context) => const RegisterScreen(),
-                          ),
+                          MaterialPageRoute(builder: (context) => const RegisterScreen()),
                         );
                       },
                       child: const Text("Don't have an account? Register here"),

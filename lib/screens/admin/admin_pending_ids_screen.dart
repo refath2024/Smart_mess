@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'admin_home_screen.dart';
 import 'admin_users_screen.dart';
@@ -25,72 +26,93 @@ class AdminPendingIdsScreen extends StatefulWidget {
 class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
   final TextEditingController _searchController = TextEditingController();
 
-  List<Map<String, String>> pendingUsers = [
-    {
-      'no': '201',
-      'rank': 'Lt',
-      'name': 'Shahriar',
-      'unit': '6 Sig',
-      'email': 'shahriar@army.bd',
-      'mobile': '01711111111',
-      'requestedAt': '2025-07-05',
-    },
-    {
-      'no': '202',
-      'rank': 'Capt',
-      'name': 'Reema',
-      'unit': 'Brigade',
-      'email': 'reema@army.bd',
-      'mobile': '01722222222',
-      'requestedAt': '2025-07-04',
-    },
-    {
-      'no': '203',
-      'rank': 'Maj',
-      'name': 'Afsan',
-      'unit': '4 Engr',
-      'email': 'afsan@mist.bd',
-      'mobile': '01733333333',
-      'requestedAt': '2025-07-03',
-    },
-  ];
-
-  List<Map<String, String>> filteredUsers = [];
+  List<Map<String, dynamic>> pendingUsers = [];
+  List<Map<String, dynamic>> filteredUsers = [];
 
   @override
   void initState() {
     super.initState();
-    filteredUsers = List.from(pendingUsers);
+    _fetchPendingUsers();
+  }
+
+  Future<void> _fetchPendingUsers() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('user_requests')
+          .where('approved', isEqualTo: false)
+          .where('rejected', isEqualTo: false)
+          .get();
+
+      final docs = snapshot.docs;
+
+      setState(() {
+        pendingUsers = docs.map((doc) {
+          final data = doc.data();
+          return {
+            'id': doc.id,
+            'no': data['no'] ?? '',
+            'rank': data['rank'] ?? '',
+            'name': data['name'] ?? '',
+            'unit': data['unit'] ?? '',
+            'email': data['email'] ?? '',
+            'mobile': data['mobile'] ?? '',
+            'requestedAt': data['created_at'] is Timestamp
+                ? (data['created_at'] as Timestamp).toDate().toString().split(' ')[0]
+                : (data['created_at'] ?? ''),
+          };
+        }).toList();
+
+        filteredUsers = List.from(pendingUsers);
+      });
+    } catch (e) {
+      debugPrint('Failed to fetch pending users: $e');
+    }
   }
 
   void _search(String query) {
     setState(() {
       filteredUsers = pendingUsers.where((user) {
         return user.values.any(
-          (value) => value.toLowerCase().contains(query.toLowerCase()),
+          (value) => value.toString().toLowerCase().contains(query.toLowerCase()),
         );
       }).toList();
     });
   }
 
-  void _acceptUser(String id) {
-    setState(() {
-      pendingUsers.removeWhere((u) => u['no'] == id);
-      filteredUsers.removeWhere((u) => u['no'] == id);
-    });
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text("User $id has been accepted.")));
+  Future<void> _acceptUser(String docId) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('user_requests')
+          .doc(docId)
+          .update({'approved': true, 'status': "active"});
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("User has been accepted.")),
+      );
+      await _fetchPendingUsers();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to accept user: $e")),
+      );
+    }
   }
 
-  void _rejectUser(String id) {
-    setState(() {
-      pendingUsers.removeWhere((u) => u['no'] == id);
-      filteredUsers.removeWhere((u) => u['no'] == id);
-    });
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text("User $id has been rejected.")));
+  Future<void> _rejectUser(String docId) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('user_requests')
+          .doc(docId)
+          .update({'rejected': true, 'status': "rejected"});
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("User has been rejected.")),
+      );
+      await _fetchPendingUsers();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to reject user: $e")),
+      );
+    }
   }
 
   Widget _buildSidebarTile({
@@ -109,9 +131,7 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
         leading: Icon(
           icon,
           color: color ??
-              (selected
-                  ? const Color.fromARGB(255, 40, 150, 240)
-                  : Colors.black),
+              (selected ? const Color.fromARGB(255, 40, 150, 240) : Colors.black),
         ),
         title: Text(title, style: TextStyle(color: color ?? Colors.black)),
       ),
@@ -171,8 +191,7 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const AdminHomeScreen(),
-                        ),
+                            builder: (context) => const AdminHomeScreen()),
                       );
                     },
                   ),
@@ -183,8 +202,7 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const AdminUsersScreen(),
-                        ),
+                            builder: (context) => const AdminUsersScreen()),
                       );
                     },
                   ),
@@ -201,9 +219,8 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (context) =>
-                              const AdminShoppingHistoryScreen(),
-                        ),
+                            builder: (context) =>
+                                const AdminShoppingHistoryScreen()),
                       );
                     },
                   ),
@@ -214,8 +231,7 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const AdminVoucherScreen(),
-                        ),
+                            builder: (context) => const AdminVoucherScreen()),
                       );
                     },
                   ),
@@ -226,8 +242,7 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const AdminInventoryScreen(),
-                        ),
+                            builder: (context) => const AdminInventoryScreen()),
                       );
                     },
                   ),
@@ -238,8 +253,7 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const AdminMessingScreen(),
-                        ),
+                            builder: (context) => const AdminMessingScreen()),
                       );
                     },
                   ),
@@ -250,8 +264,7 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const EditMenuScreen(),
-                        ),
+                            builder: (context) => const EditMenuScreen()),
                       );
                     },
                   ),
@@ -262,8 +275,7 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const AdminMealStateScreen(),
-                        ),
+                            builder: (context) => const AdminMealStateScreen()),
                       );
                     },
                   ),
@@ -274,8 +286,7 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const MenuVoteScreen(),
-                        ),
+                            builder: (context) => const MenuVoteScreen()),
                       );
                     },
                   ),
@@ -286,8 +297,7 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const AdminBillScreen(),
-                        ),
+                            builder: (context) => const AdminBillScreen()),
                       );
                     },
                   ),
@@ -298,8 +308,7 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const PaymentsDashboard(),
-                        ),
+                            builder: (context) => const PaymentsDashboard()),
                       );
                     },
                   ),
@@ -310,8 +319,7 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const DiningMemberStatePage(),
-                        ),
+                            builder: (context) => const DiningMemberStatePage()),
                       );
                     },
                   ),
@@ -322,8 +330,7 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const AdminStaffStateScreen(),
-                        ),
+                            builder: (context) => const AdminStaffStateScreen()),
                       );
                     },
                   ),
@@ -401,9 +408,8 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
                     columnSpacing: 20,
                     headingRowHeight: 50,
                     dataRowHeight: 60,
-                    headingRowColor: WidgetStateProperty.all(
-                      const Color(0xFF1A4D8F),
-                    ), // Dark navy
+                    headingRowColor:
+                        MaterialStateProperty.all(const Color(0xFF1A4D8F)),
                     headingTextStyle: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
@@ -428,25 +434,24 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
                       DataColumn(label: Text("Action")),
                     ],
                     rows: filteredUsers.map((user) {
+                      final docId = user['id'] as String;
                       return DataRow(
-                        color: WidgetStateProperty.resolveWith<Color?>((
-                          Set<WidgetState> states,
-                        ) {
+                        color: MaterialStateProperty.resolveWith<Color?>((states) {
                           return Colors.grey.shade100;
                         }),
                         cells: [
-                          DataCell(Text(user['no']!)),
-                          DataCell(Text(user['rank']!)),
-                          DataCell(Text(user['name']!)),
-                          DataCell(Text(user['unit']!)),
-                          DataCell(Text(user['email']!)),
-                          DataCell(Text(user['mobile']!)),
-                          DataCell(Text(user['requestedAt']!)),
+                          DataCell(Text(user['no'] ?? '')),
+                          DataCell(Text(user['rank'] ?? '')),
+                          DataCell(Text(user['name'] ?? '')),
+                          DataCell(Text(user['unit'] ?? '')),
+                          DataCell(Text(user['email'] ?? '')),
+                          DataCell(Text(user['mobile'] ?? '')),
+                          DataCell(Text(user['requestedAt'] ?? '')),
                           DataCell(
                             Row(
                               children: [
                                 ElevatedButton.icon(
-                                  onPressed: () => _acceptUser(user['no']!),
+                                  onPressed: () => _acceptUser(docId),
                                   icon: const Icon(Icons.check, size: 16),
                                   label: const Text("Accept"),
                                   style: ElevatedButton.styleFrom(
@@ -467,7 +472,7 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
                                 ),
                                 const SizedBox(width: 8),
                                 ElevatedButton.icon(
-                                  onPressed: () => _rejectUser(user['no']!),
+                                  onPressed: () => _rejectUser(docId),
                                   icon: const Icon(Icons.close, size: 16),
                                   label: const Text("Reject"),
                                   style: ElevatedButton.styleFrom(
