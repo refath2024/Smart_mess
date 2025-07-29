@@ -1,106 +1,52 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
-
   @override
   State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
 }
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _otpController = TextEditingController();
-
-  bool _otpVisible = false;
   bool _isLoading = false;
   String _message = '';
   String _error = '';
-  Timer? _countdownTimer;
-  Duration _timerDuration = const Duration(minutes: 10);
 
-  String get _formattedTime {
-    final minutes = _timerDuration.inMinutes
-        .remainder(60)
-        .toString()
-        .padLeft(2, '0');
-    final seconds = _timerDuration.inSeconds
-        .remainder(60)
-        .toString()
-        .padLeft(2, '0');
-    return '$minutes:$seconds';
-  }
-
-  void _startTimer() {
-    _countdownTimer?.cancel();
-    _timerDuration = const Duration(minutes: 10);
-    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_timerDuration.inSeconds == 0) {
-        timer.cancel();
-        setState(() {
-          _error = 'OTP expired.  Please request a new one.';
-          _otpVisible = false;
-        });
-      } else {
-        setState(() {
-          _timerDuration -= const Duration(seconds: 1);
-        });
-      }
-    });
-  }
-
-  void _sendOtp() async {
+  void _sendResetEmail() async {
     final email = _emailController.text.trim();
     if (email.isEmpty) {
       setState(() => _error = "Please enter your email.");
       return;
     }
-
     setState(() {
       _isLoading = true;
       _message = '';
       _error = '';
     });
-
-    await Future.delayed(const Duration(seconds: 2)); // Simulate request
-
-    setState(() {
-      _isLoading = false;
-      _otpVisible = true;
-      _message = "OTP sent to your email.";
-    });
-
-    _startTimer();
-  }
-
-  void _verifyOtp() async {
-    final otp = _otpController.text.trim();
-    if (otp.isEmpty) {
-      setState(() => _error = "Please enter the OTP.");
-      return;
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      setState(() {
+        _isLoading = false;
+        _message = "Password reset email sent! Check your inbox.";
+      });
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        _isLoading = false;
+        if (e.code == 'user-not-found') {
+          _error = 'No account found with this email.';
+        } else if (e.message != null) {
+          _error = e.message!;
+        } else {
+          _error = "Failed to send reset email.";
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _error = "An error occurred.";
+      });
     }
-
-    setState(() {
-      _isLoading = true;
-      _error = '';
-    });
-
-    await Future.delayed(const Duration(seconds: 2)); // Simulate request
-
-    setState(() {
-      _isLoading = false;
-      _message = "OTP verified successfully.";
-    });
-
-    // TODO: Navigate to reset password page
-  }
-
-  @override
-  void dispose() {
-    _countdownTimer?.cancel();
-    _emailController.dispose();
-    _otpController.dispose();
-    super.dispose();
   }
 
   @override
@@ -121,17 +67,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               ],
             ),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Align(
-  alignment: Alignment.centerLeft,
-  child: IconButton(
-    icon: const Icon(Icons.arrow_back, color: Colors.black),
-    onPressed: () => Navigator.pop(context),
-  ),
-),
-
-                
+                  alignment: Alignment.centerLeft,
+                  child: IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Colors.black),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ),
                 Image.asset('assets/army.png', height: 60),
                 const SizedBox(height: 12),
                 const Text(
@@ -144,8 +87,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 20),
-
-                // Email Input
                 TextField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
@@ -157,10 +98,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-
-                // Send OTP Button
                 ElevatedButton(
-                  onPressed: _isLoading ? null : _sendOtp,
+                  onPressed: _isLoading ? null : _sendResetEmail,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xff0d47a1),
                     foregroundColor: Colors.white,
@@ -179,59 +118,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             color: Colors.white,
                           ),
                         )
-                      : const Text("Send OTP"),
+                      : const Text("Send Password Reset Email"),
                 ),
-
                 const SizedBox(height: 20),
-
-                if (_otpVisible) ...[
-                  TextField(
-                    controller: _otpController,
-                    keyboardType: TextInputType.number,
-                    maxLength: 6,
-                    decoration: InputDecoration(
-                      labelText: "Enter OTP",
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
-                    onPressed: _isLoading ? null : _verifyOtp,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xff0d47a1),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      textStyle: const TextStyle(fontWeight: FontWeight.bold),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    child: const Text("Verify OTP"),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    _formattedTime,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.red,
-                    ),
-                  ),
-                ],
-
-                const SizedBox(height: 12),
-
-                // Message
                 if (_message.isNotEmpty)
                   Text(
                     _message,
                     style: const TextStyle(color: Colors.green),
                     textAlign: TextAlign.center,
                   ),
-
-                // Error
                 if (_error.isNotEmpty)
                   Text(
                     _error,
