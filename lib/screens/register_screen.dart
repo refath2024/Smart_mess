@@ -35,7 +35,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _handleApply() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Confirmation dialog before submit
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -48,19 +47,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
     );
 
-    if (confirm != true) return; // user cancelled
+    if (confirm != true) return;
 
     setState(() => _isLoading = true);
 
     try {
-      // Create Firebase Auth user
       UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
       final String userid = userCredential.user!.uid;
 
-      // Save custom user data with 'approved' and 'rejected' fields for admin approval
+      // Save user info to Firestore under 'user_requests' collection
       await FirebaseFirestore.instance.collection('user_requests').doc(userid).set({
         'no': _noController.text.trim(),
         'rank': _rankController.text.trim(),
@@ -68,30 +66,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
         'unit': _unitController.text.trim(),
         'email': _emailController.text.trim(),
         'mobile': _mobileController.text.trim(),
-        'approved': false, // mark as not approved
-        'rejected': false, // mark as not rejected
+        'approved': false,
+        'rejected': false,
         'status': 'pending',
         'created_at': FieldValue.serverTimestamp(),
         'user_id': userid,
       });
 
-      // Show success dialog
+      // Success dialog
       await showDialog<void>(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Application Submitted'),
           content: const Text(
-            'Your ID has been sent for approval. You will be notified via email once approved. '
+            'Your ID has been sent for approval. You will be notified via email once approved.\n'
             'You may also check your application status by logging in with your credentials.',
           ),
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // close dialog
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                );
+                Navigator.of(context).pop();
+                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginScreen()));
               },
               child: const Text('OK'),
             ),
@@ -99,32 +94,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
       );
     } on FirebaseAuthException catch (e) {
-      // Show error dialog with Firebase error message
       await showDialog<void>(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Registration Error'),
           content: Text(e.message ?? 'An unexpected error occurred.'),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('OK'),
-            ),
+            TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('OK')),
           ],
         ),
       );
     } catch (e) {
-      // Show generic error dialog
       await showDialog<void>(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Error'),
           content: Text(e.toString()),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('OK'),
-            ),
+            TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('OK')),
           ],
         ),
       );
@@ -229,15 +216,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       _buildTextField(
                         "BA No *",
                         _noController,
-                        validator: (val) =>
-                            val == null || val.trim().isEmpty ? 'Please enter your ID number' : null,
+                        validator: (val) => val == null || val.trim().isEmpty ? 'Please enter your ID number' : null,
                       ),
                       _buildTextField("Rank *", _rankController),
                       _buildTextField(
                         "Name *",
                         _nameController,
-                        validator: (val) =>
-                            val == null || val.trim().isEmpty ? 'Please enter your name' : null,
+                        validator: (val) => val == null || val.trim().isEmpty ? 'Please enter your name' : null,
                       ),
                       _buildTextField("Unit *", _unitController),
                       _buildTextField(
@@ -274,8 +259,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           labelText: 'Password *',
                           filled: true,
                           fillColor: Colors.white,
-                          contentPadding:
-                              const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
@@ -302,8 +286,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           labelText: 'Confirm Password *',
                           filled: true,
                           fillColor: Colors.white,
-                          contentPadding:
-                              const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                           suffixIcon: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -318,9 +301,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       : Colors.red,
                                 ),
                               IconButton(
-                                icon: Icon(
-                                  _confirmPasswordVisible ? Icons.visibility_off : Icons.visibility,
-                                ),
+                                icon: Icon(_confirmPasswordVisible ? Icons.visibility_off : Icons.visibility),
                                 onPressed: () =>
                                     setState(() => _confirmPasswordVisible = !_confirmPasswordVisible),
                                 color: Colors.grey.shade700,
@@ -368,15 +349,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               backgroundColor: Colors.grey.shade100,
                               foregroundColor: Colors.black87,
                               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                               elevation: 1,
                             ),
-                            child: const Text(
-                              "Cancel",
-                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-                            ),
+                            child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
                           ),
                           ElevatedButton(
                             onPressed: _isLoading ? null : _handleApply,
@@ -384,24 +360,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               backgroundColor: const Color(0xff0d47a1),
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                               elevation: 1,
                             ),
                             child: _isLoading
                                 ? const SizedBox(
                                     width: 20,
                                     height: 20,
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 2,
-                                    ),
+                                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                                   )
-                                : const Text(
-                                    "Apply",
-                                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-                                  ),
+                                : const Text("Apply", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
                           ),
                         ],
                       ),

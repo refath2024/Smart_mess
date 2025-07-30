@@ -1,6 +1,10 @@
-import 'package:flutter/material.dart';
 import 'dart:io';
+
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 class MyProfilePage extends StatefulWidget {
   const MyProfilePage({super.key});
@@ -12,58 +16,244 @@ class MyProfilePage extends StatefulWidget {
 class _MyProfilePageState extends State<MyProfilePage> {
   final _formKey = GlobalKey<FormState>();
   bool _isEditing = false;
-  String name = "Lt John Snow";
-  String email = "johnsnow@gmail.com";
-  String phone = "0123456789";
-  
-  String baNo = "BA123456";
-  String rank = "Lieutenant";
-  String unit = "Alpha Company";
-  
-  File? _imageFile;
+  bool _isLoading = true;
+  bool _isSaving = false;
 
-  Future<void> _pickImage() async {
-    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
+  late TextEditingController _nameController;
+  late TextEditingController _emailController;
+  late TextEditingController _phoneController;
+  late TextEditingController _noController;
+  late TextEditingController _rankController;
+  late TextEditingController _unitController;
+
+  String? _imageUrl;
+  File? _imageFile;
+  final ImagePicker _picker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController();
+    _emailController = TextEditingController();
+    _phoneController = TextEditingController();
+    _noController = TextEditingController();
+    _rankController = TextEditingController();
+    _unitController = TextEditingController();
+    _loadProfile();
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _noController.dispose();
+    _rankController.dispose();
+    _unitController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadProfile() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
       setState(() {
-        _imageFile = File(pickedFile.path);
+        _isLoading = false;
+      });
+      return;
+    }
+    try {
+      final doc = await FirebaseFirestore.instance.collection('user_requests').doc(user.uid).get();
+      if (doc.exists) {
+        final data = doc.data()!;
+        _nameController.text = data['name'] ?? '';
+        _emailController.text = data['email'] ?? '';
+        _phoneController.text = data['mobile'] ?? '';
+        _noController.text = data['no'] ?? '';
+        _rankController.text = data['rank'] ?? '';
+        _unitController.text = data['unit'] ?? '';
+        _imageUrl = data['image_url'];
+      }
+    } catch (e) {
+      debugPrint('Failed to load profile: $e');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to load profile: $e')));
+    } finally {
+      setState(() {
+        _isLoading = false;
       });
     }
   }
 
+  Future<void> _pickImage() async {
+    try {
+      final pickedFile = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 80,
+      );
+      if (pickedFile != null) {
+        final file = File(pickedFile.path);
+        final bytes = await file.length();
+        const maxSizeInBytes = 5 * 1024 * 1024; // 5 MB limit
+        if (bytes > maxSizeInBytes) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Image size exceeds 5 MB, please select smaller one.")),
+          );
+          return;
+        }
+        setState(() {
+          _imageFile = file;
+        });
+      }
+    } catch (e) {
+      debugPrint('Image picking failed: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to pick image: $e')),
+      );
+    }
+  }
+
+  Future<String?> _uploadImage(File imageFile) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return null;
+
+      final ext = imageFile.path.split('.').last;
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('user_profile_images')
+          .child('${user.uid}.$ext');
+
+      await ref.putFile(imageFile);
+      final url = await ref.getDownloadURL();
+      return url;
+    } catch (e) {
+      debugPrint('Image upload failed: $e');
+      return null;
+    }
+  }
+
+  Future<void> _saveProfile() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isSaving = true;
+    });
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    String? uploadedImageUrl = _imageUrl;
+
+    if (_imageFile != null) {
+      final url = await _uploadImage(_imageFile!);
+      if (url != null) {
+        uploadedImageUrl = url;
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to upload profile image')),
+        );
+        setState(() {
+          _isSaving = false;
+        });
+        return;
+      }
+    }
+
+    try {
+      await FirebaseFirestore.instance.collection('user_requests').doc(user.uid).update({
+        'name': _nameController.text.trim(),
+        'email': _emailController.text.trim(),
+        'mobile': _phoneController.text.trim(),
+        'no': _noController.text.trim(),
+        'rank': _rankController.text.trim(),
+        'unit': _unitController.text.trim(),
+        if (uploadedImageUrl != null) 'image_url': uploadedImageUrl,
+      });
+
+      setState(() {
+        _imageUrl = uploadedImageUrl;
+        _imageFile = null;
+        _isEditing = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profile updated successfully')),
+      );
+    } catch (e) {
+      debugPrint('Profile update failed: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update profile: $e')),
+      );
+    } finally {
+      setState(() {
+        _isSaving = false;
+      });
+    }
+  }
+
+  Widget _buildTextField({
+    required String label,
+    required TextEditingController controller,
+    required bool enabled,
+    String? Function(String?)? validator,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: TextFormField(
+        controller: controller,
+        enabled: enabled,
+        validator: validator,
+        keyboardType: keyboardType,
+        decoration: InputDecoration(
+          labelText: label,
+          filled: true,
+          fillColor: enabled ? Colors.white : Colors.grey.shade200,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF002B5B),
+        title: const Text('My Profile'),
+        centerTitle: true,
+        elevation: 2,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          "My Profile",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 20,
-            letterSpacing: 1,
-          ),
-        ),
-        centerTitle: true,
-        elevation: 2,
         actions: [
           IconButton(
-            icon: Icon(_isEditing ? Icons.check : Icons.edit, color: Colors.white),
-            onPressed: () {
-              if (_isEditing && _formKey.currentState!.validate()) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Profile updated!")),
-                );
-              }
-              setState(() {
-                _isEditing = !_isEditing;
-              });
-            },
+            icon: _isSaving
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  )
+                : Icon(_isEditing ? Icons.check : Icons.edit, color: Colors.white),
+            onPressed: _isSaving
+                ? null
+                : () {
+                    if (_isEditing) {
+                      _saveProfile();
+                    } else {
+                      setState(() {
+                        _isEditing = true;
+                      });
+                    }
+                  },
           ),
         ],
       ),
@@ -77,10 +267,13 @@ class _MyProfilePageState extends State<MyProfilePage> {
                 child: Stack(
                   children: [
                     CircleAvatar(
-                      radius: 55,
+                      radius: 60,
                       backgroundImage: _imageFile != null
                           ? FileImage(_imageFile!)
-                          : const AssetImage('assets/pro.png') as ImageProvider,
+                          : (_imageUrl != null && _imageUrl!.isNotEmpty)
+                              ? NetworkImage(_imageUrl!)
+                              : const AssetImage('assets/pro.png') as ImageProvider,
+                      backgroundColor: Colors.grey.shade300,
                     ),
                     if (_isEditing)
                       Positioned(
@@ -90,89 +283,62 @@ class _MyProfilePageState extends State<MyProfilePage> {
                           radius: 18,
                           backgroundColor: Colors.white,
                           child: IconButton(
-                            icon: const Icon(Icons.camera_alt, size: 18),
+                            icon: const Icon(Icons.camera_alt, size: 20),
                             onPressed: _pickImage,
+                            tooltip: 'Change Profile Picture',
                           ),
                         ),
                       ),
                   ],
                 ),
               ),
-              const SizedBox(height: 30),
-              TextFormField(
+              const SizedBox(height: 24),
+              _buildTextField(
+                label: "Name *",
+                controller: _nameController,
                 enabled: _isEditing,
-                initialValue: name,
-                decoration: const InputDecoration(
-                  labelText: "Name",
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.person),
-                ),
-                onChanged: (val) => name = val,
-                validator: (val) => val == null || val.isEmpty ? "Enter your name" : null,
+                validator: (val) => val == null || val.trim().isEmpty ? 'Please enter your name' : null,
               ),
-              const SizedBox(height: 20),
-              TextFormField(
+              _buildTextField(
+                label: "Email *",
+                controller: _emailController,
                 enabled: _isEditing,
-                initialValue: baNo,
-                decoration: const InputDecoration(
-                  labelText: "BA No",
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.badge),
-                ),
-                onChanged: (val) => baNo = val,
-                validator: (val) => val == null || val.isEmpty ? "Enter your BA No" : null,
+                keyboardType: TextInputType.emailAddress,
+                validator: (val) {
+                  if (val == null || val.isEmpty) return 'Please enter your email';
+                  final regex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+                  if (!regex.hasMatch(val)) return 'Enter a valid email address';
+                  return null;
+                },
               ),
-              const SizedBox(height: 20),
-              TextFormField(
+              _buildTextField(
+                label: "Mobile No *",
+                controller: _phoneController,
                 enabled: _isEditing,
-                initialValue: rank,
-                decoration: const InputDecoration(
-                  labelText: "Rank",
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.military_tech),
-                ),
-                onChanged: (val) => rank = val,
-                validator: (val) => val == null || val.isEmpty ? "Enter your rank" : null,
-              ),
-              const SizedBox(height: 20),
-              TextFormField(
-                enabled: _isEditing,
-                initialValue: unit,
-                decoration: const InputDecoration(
-                  labelText: "Unit",
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.account_balance),
-                ),
-                onChanged: (val) => unit = val,
-                validator: (val) => val == null || val.isEmpty ? "Enter your unit" : null,
-              ),
-              
-              const SizedBox(height: 20),
-              TextFormField(
-                enabled: _isEditing,
-                initialValue: email,
-                decoration: const InputDecoration(
-                  labelText: "Email",
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.email),
-                ),
-                onChanged: (val) => email = val,
-                validator: (val) => val == null || val.isEmpty ? "Enter your email" : null,
-              ),
-              const SizedBox(height: 20),
-              TextFormField(
-                enabled: _isEditing,
-                initialValue: phone,
-                decoration: const InputDecoration(
-                  labelText: "Phone",
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.phone),
-                ),
                 keyboardType: TextInputType.phone,
-                onChanged: (val) => phone = val,
-                validator: (val) => val == null || val.isEmpty ? "Enter your phone" : null,
+                validator: (val) {
+                  if (val == null || val.isEmpty) return 'Please enter your mobile number';
+                  if (!RegExp(r'^\d+$').hasMatch(val)) return 'Mobile number must contain only digits';
+                  if (val.length < 11) return 'Mobile number must be at least 11 digits';
+                  return null;
+                },
               ),
-              
+              _buildTextField(
+                label: "BA No *",
+                controller: _noController,
+                enabled: _isEditing,
+                validator: (val) => val == null || val.trim().isEmpty ? 'Please enter your BA No' : null,
+              ),
+              _buildTextField(
+                label: "Rank *",
+                controller: _rankController,
+                enabled: _isEditing,
+              ),
+              _buildTextField(
+                label: "Unit *",
+                controller: _unitController,
+                enabled: _isEditing,
+              ),
             ],
           ),
         ),
