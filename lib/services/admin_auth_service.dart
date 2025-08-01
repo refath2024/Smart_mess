@@ -43,15 +43,15 @@ class AdminAuthService {
           };
         }
 
+        // First, try to sign in to see if Firebase Auth account already exists
         try {
-          // Create Firebase Auth account for first-time login
           final UserCredential userCredential =
-              await _auth.createUserWithEmailAndPassword(
+              await _auth.signInWithEmailAndPassword(
             email: email,
             password: password,
           );
 
-          // Update the document ID to match Firebase Auth UID and mark as created
+          // Firebase Auth account exists, update the staff_state document
           await _firestore
               .collection('staff_state')
               .doc(userCredential.user!.uid)
@@ -74,22 +74,93 @@ class AdminAuthService {
             'success': true,
             'data': data,
             'uid': userCredential.user!.uid,
-            'first_login': true,
+            'first_login': false,
           };
-        } on FirebaseAuthException catch (e) {
-          if (e.code == 'email-already-in-use') {
-            // If email already exists in Firebase Auth, try to sign in normally
-            return await _signInExistingUser(email, password, data);
+        } on FirebaseAuthException catch (signInError) {
+          if (signInError.code == 'user-not-found') {
+            // No Firebase Auth account exists, create one
+            try {
+              final UserCredential userCredential =
+                  await _auth.createUserWithEmailAndPassword(
+                email: email,
+                password: password,
+              );
+
+              // Update the document ID to match Firebase Auth UID and mark as created
+              await _firestore
+                  .collection('staff_state')
+                  .doc(userCredential.user!.uid)
+                  .set({
+                ...data,
+                'firebase_auth_created': true,
+                'first_login_at': FieldValue.serverTimestamp(),
+                'user_id': userCredential.user!.uid,
+              });
+
+              // Delete the old document if it has a different ID
+              if (staffDoc.id != userCredential.user!.uid) {
+                await _firestore
+                    .collection('staff_state')
+                    .doc(staffDoc.id)
+                    .delete();
+              }
+
+              return {
+                'success': true,
+                'data': data,
+                'uid': userCredential.user!.uid,
+                'first_login': true,
+              };
+            } on FirebaseAuthException catch (createError) {
+              if (createError.code == 'email-already-in-use') {
+                return {
+                  'success': false,
+                  'error':
+                      'Email already in use with different password. Please use forgot password to reset.',
+                };
+              } else {
+                return {
+                  'success': false,
+                  'error': 'Failed to create account: ${createError.message}',
+                };
+              }
+            }
+          } else if (signInError.code == 'wrong-password' ||
+              signInError.code == 'invalid-credential') {
+            // Try to fix the password mismatch by sending reset email
+            try {
+              await _auth.sendPasswordResetEmail(email: email);
+
+              return {
+                'success': false,
+                'error':
+                    'Password sync issue detected. A password reset email has been sent to $email. Please check your email, reset your password to "${data['password']}" (your database password), then try logging in again.',
+              };
+            } catch (resetError) {
+              return {
+                'success': false,
+                'error':
+                    'Firebase Auth password mismatch detected. Please contact system administrator.',
+              };
+            }
           } else {
             return {
               'success': false,
-              'error': 'Failed to create account: ${e.message}',
+              'error': 'Authentication error: ${signInError.message}',
             };
           }
         }
       } else {
-        // Firebase Auth account already exists, sign in normally
-        return await _signInExistingUser(email, password, data);
+        // Firebase Auth account already exists
+        // First verify against stored password
+        if (data['password'] == password) {
+          return await _signInExistingUser(email, password, data);
+        } else {
+          return {
+            'success': false,
+            'error': 'Incorrect password.',
+          };
+        }
       }
     } catch (e) {
       return {
@@ -138,12 +209,21 @@ class AdminAuthService {
         };
       }
     } on FirebaseAuthException catch (e) {
+      if (e.code == 'wrong-password' || e.code == 'invalid-credential') {
+        return {
+          'success': false,
+          'error':
+              'Firebase Auth password mismatch. Please use the forgot password feature to reset your password.',
+        };
+      }
+
       String errorMessage;
       switch (e.code) {
         case 'user-not-found':
           errorMessage = 'No user found with this email.';
           break;
         case 'wrong-password':
+        case 'invalid-credential':
           errorMessage = 'Incorrect password.';
           break;
         case 'invalid-email':

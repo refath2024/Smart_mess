@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../login_screen.dart';
 import 'admin_home_screen.dart';
-import '../forgot_password_screen.dart';
+import 'admin_forgot_password_screen.dart';
 import '../../services/admin_auth_service.dart';
 
 class AdminLoginScreen extends StatefulWidget {
@@ -185,7 +185,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const ForgotPasswordScreen(),
+                        builder: (context) => const AdminForgotPasswordScreen(),
                       ),
                     );
                   },

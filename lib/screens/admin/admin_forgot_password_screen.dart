@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'login_screen.dart';
+import 'admin_login_screen.dart';
 
-class ForgotPasswordScreen extends StatefulWidget {
-  const ForgotPasswordScreen({super.key});
+class AdminForgotPasswordScreen extends StatefulWidget {
+  const AdminForgotPasswordScreen({super.key});
   @override
-  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  State<AdminForgotPasswordScreen> createState() =>
+      _AdminForgotPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+class _AdminForgotPasswordScreenState extends State<AdminForgotPasswordScreen> {
   final TextEditingController _emailController = TextEditingController();
   bool _isLoading = false;
   String _message = '';
@@ -41,53 +42,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           .get();
 
       if (staffQuery.docs.isNotEmpty) {
-        final userData = staffQuery.docs.first.data();
-        final String role = userData['role'] ?? '';
-
-        // Check if user is admin - redirect to admin portal
-        if (role.toLowerCase() == 'admin' ||
-            role.toLowerCase() == 'administrator') {
-          setState(() {
-            _isLoading = false;
-            _error =
-                'This is an admin account. Please use the Admin Portal for password reset.';
-          });
-          return;
-        }
-
-        // Regular officer account
+        // Since all accounts in staff_state are admin accounts, proceed with reset
         await _sendPasswordResetEmail(email);
         return;
       }
 
-      // Check if email exists in user_requests collection
-      final userQuery = await FirebaseFirestore.instance
-          .collection('user_requests')
-          .where('email', isEqualTo: email)
-          .get();
-
-      if (userQuery.docs.isNotEmpty) {
-        final userData = userQuery.docs.first.data();
-        final bool isApproved = userData['approved'] ?? false;
-
-        if (!isApproved) {
-          setState(() {
-            _isLoading = false;
-            _error =
-                'Your account is not yet approved. Please wait for admin approval or contact support.';
-          });
-          return;
-        }
-
-        await _sendPasswordResetEmail(email);
-        return;
-      }
-
-      // Email not found in either collection
+      // Email not found in staff_state collection
       setState(() {
         _isLoading = false;
         _error =
-            'No account found with this email address. Admin accounts should use the Admin Portal.';
+            'No admin account found with this email address. Please check the email or contact system administrator.';
       });
     } catch (e) {
       setState(() {
@@ -109,7 +73,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         _isLoading = false;
         if (e.code == 'user-not-found') {
           _error =
-              'No Firebase account found. Please contact admin for assistance.';
+              'No Firebase account found. Please contact system administrator for assistance.';
         } else if (e.message != null) {
           _error = e.message!;
         } else {
@@ -147,7 +111,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             ],
           ),
           content: const Text(
-            "Password reset email has been sent successfully!\n\nPlease check your inbox and spam folder.",
+            "Admin password reset email has been sent successfully!\n\nPlease check your inbox and spam folder.",
             style: TextStyle(fontSize: 16),
           ),
           actions: [
@@ -156,7 +120,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 Navigator.of(context).pop(); // Close dialog
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  MaterialPageRoute(
+                      builder: (context) => const AdminLoginScreen()),
                 );
               },
               style: ElevatedButton.styleFrom(
@@ -207,7 +172,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 Image.asset('assets/army.png', height: 60),
                 const SizedBox(height: 12),
                 const Text(
-                  "Forgot Password",
+                  "Admin - Forgot Password",
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w600,
@@ -217,7 +182,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  "Reset password for officer accounts",
+                  "Reset password for admin accounts",
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey.shade600,
@@ -229,11 +194,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
-                    labelText: "Enter your email",
+                    labelText: "Enter your admin email",
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    prefixIcon: const Icon(Icons.person, color: Colors.blue),
+                    prefixIcon: const Icon(Icons.admin_panel_settings,
+                        color: Colors.blue),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -263,7 +229,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                   color: Colors.white,
                                 ),
                               )
-                            : const Text("Send Reset Email"),
+                            : const Text("Send Admin Reset Email"),
                       ),
                     ),
                   ],
@@ -274,12 +240,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const LoginScreen(),
+                        builder: (context) => const AdminLoginScreen(),
                       ),
                     );
                   },
                   child: const Text(
-                    "← Back to Officer Login",
+                    "← Back to Admin Login",
                     style: TextStyle(
                       color: Color(0xff0d47a1),
                       fontWeight: FontWeight.w600,
