@@ -176,9 +176,12 @@ class _AddDiningMemberFormState extends State<AddDiningMemberForm> {
     }
 
     try {
+      final credential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+              email: _emailController.text.trim(),
+              password: _passwordController.text.trim());
       // Generate a temporary user ID for Firestore document
-      String userid =
-          FirebaseFirestore.instance.collection('user_requests').doc().id;
+      String userid = credential.user!.uid; // Use Firebase Auth user ID
 
       // Save user info to Firestore under 'user_requests' collection with approved status
       // Note: We don't create Firebase Auth user here to avoid interfering with admin's session
@@ -193,8 +196,6 @@ class _AddDiningMemberFormState extends State<AddDiningMemberForm> {
         'unit': _unitController.text.trim(),
         'email': _emailController.text.trim(),
         'mobile': _mobileController.text.trim(),
-        'password': _passwordController.text
-            .trim(), // Store temporarily for first login
         'approved': true, // Admin is directly approving
         'rejected': false,
         'status': 'approved',
@@ -208,26 +209,28 @@ class _AddDiningMemberFormState extends State<AddDiningMemberForm> {
             false, // Flag to indicate Auth user not yet created
       });
 
-      // Success dialog
-      await showDialog<void>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Success'),
-          content: Text(
-            '${_nameController.text} has been successfully registered as a dining member.\n\nThey can now log in using their email and password.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Close dialog
-                Navigator.of(context)
-                    .pop(); // Return to dining member state page
-              },
-              child: const Text('OK'),
+      if (context.mounted) {
+        // Success dialog
+        await showDialog<void>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Success'),
+            content: Text(
+              '${_nameController.text} has been successfully registered as a dining member.\n\nThey can now log in using their email and password.',
             ),
-          ],
-        ),
-      );
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Close dialog
+                  Navigator.of(context)
+                      .pop(); // Return to dining member state page
+                },
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
     } on FirebaseAuthException catch (e) {
       await showDialog<void>(
         context: context,
@@ -242,18 +245,21 @@ class _AddDiningMemberFormState extends State<AddDiningMemberForm> {
         ),
       );
     } catch (e) {
-      await showDialog<void>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Error'),
-          content: Text('Failed to add dining member: $e'),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('OK')),
-          ],
-        ),
-      );
+      if (context.mounted) {
+        // Handle any other errors
+        await showDialog<void>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Error'),
+            content: Text('Failed to add dining member: $e'),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('OK')),
+            ],
+          ),
+        );
+      }
     } finally {
       setState(() => _isLoading = false);
     }

@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -162,9 +163,12 @@ class _AddNewUserFormState extends State<AddNewUserForm> {
     }
 
     try {
+      final credential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+              email: _emailController.text.trim(),
+              password: _passwordController.text.trim());
       // Generate a temporary document ID for Firestore
-      String staffId =
-          FirebaseFirestore.instance.collection('staff_state').doc().id;
+      final String staffId = credential.user!.uid; // Use Firebase Auth user ID
 
       // Save staff info to Firestore under 'staff_state' collection
       // Note: We don't create Firebase Auth user here to avoid interfering with admin's session
@@ -178,8 +182,6 @@ class _AddNewUserFormState extends State<AddNewUserForm> {
         'unit': _unitController.text.trim(),
         'email': _emailController.text.trim(),
         'mobile': _mobileController.text.trim(),
-        'password': _passwordController.text
-            .trim(), // Store temporarily for first login
         'role': _selectedRole,
         'status': 'Active', // Set as active staff member
         'created_at': FieldValue.serverTimestamp(),

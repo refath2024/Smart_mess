@@ -97,11 +97,11 @@ class _AdminForgotPasswordScreenState extends State<AdminForgotPasswordScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          title: Row(
+          title: const Row(
             children: [
               Icon(Icons.check_circle, color: Colors.green, size: 28),
-              const SizedBox(width: 8),
-              const Text(
+              SizedBox(width: 8),
+              Text(
                 "Email Sent!",
                 style: TextStyle(
                   color: Colors.green,
