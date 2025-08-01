@@ -1,1 +1,30 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"smart-mess-dfe03","appId":"1:477255080513:android:7bb3fc6aadd1ae8fda04c0","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"smart-mess-dfe03","configurations":{"android":"1:477255080513:android:7bb3fc6aadd1ae8fda04c0","web":"1:477255080513:web:c8df24030ac7ce67da04c0"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "smart-mess-dfe03",
+          "appId": "1:477255080513:android:7bb3fc6aadd1ae8fda04c0",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "smart-mess-dfe03",
+          "configurations": {
+            "android": "1:477255080513:android:7bb3fc6aadd1ae8fda04c0",
+            "web": "1:477255080513:web:c8df24030ac7ce67da04c0"
+          }
+        }
+      }
+    }
+  },
+  "emulators": {
+    "dataconnect": {
+      "dataDir": "dataconnect/.dataconnect/pgliteData"
+    }
+  },
+  "dataconnect": {
+    "source": "dataconnect"
+  }
+}

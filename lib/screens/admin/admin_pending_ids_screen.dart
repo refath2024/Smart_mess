@@ -50,14 +50,19 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
           final data = doc.data();
           return {
             'id': doc.id,
-            'no': data['no'] ?? '',
+            'ba_no': data['ba_no'] ??
+                data['no'] ??
+                '', // Check both old and new field names
             'rank': data['rank'] ?? '',
             'name': data['name'] ?? '',
             'unit': data['unit'] ?? '',
             'email': data['email'] ?? '',
             'mobile': data['mobile'] ?? '',
             'requestedAt': data['created_at'] is Timestamp
-                ? (data['created_at'] as Timestamp).toDate().toString().split(' ')[0]
+                ? (data['created_at'] as Timestamp)
+                    .toDate()
+                    .toString()
+                    .split(' ')[0]
                 : (data['created_at'] ?? ''),
           };
         }).toList();
@@ -73,13 +78,40 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
     setState(() {
       filteredUsers = pendingUsers.where((user) {
         return user.values.any(
-          (value) => value.toString().toLowerCase().contains(query.toLowerCase()),
+          (value) =>
+              value.toString().toLowerCase().contains(query.toLowerCase()),
         );
       }).toList();
     });
   }
 
   Future<void> _acceptUser(String docId) async {
+    // Show confirmation dialog
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Accept'),
+        content: const Text(
+            'Are you sure you want to accept this user? This action will approve their application and grant them access to the system.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green.shade600,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Accept'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
     try {
       await FirebaseFirestore.instance
           .collection('user_requests')
@@ -98,6 +130,32 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
   }
 
   Future<void> _rejectUser(String docId) async {
+    // Show confirmation dialog
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Reject'),
+        content: const Text(
+            'Are you sure you want to reject this user? This action will deny their application. They will be able to reapply later with updated information.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade600,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Reject'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
     try {
       await FirebaseFirestore.instance
           .collection('user_requests')
@@ -131,7 +189,9 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
         leading: Icon(
           icon,
           color: color ??
-              (selected ? const Color.fromARGB(255, 40, 150, 240) : Colors.black),
+              (selected
+                  ? const Color.fromARGB(255, 40, 150, 240)
+                  : Colors.black),
         ),
         title: Text(title, style: TextStyle(color: color ?? Colors.black)),
       ),
@@ -319,7 +379,8 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => const DiningMemberStatePage()),
+                            builder: (context) =>
+                                const DiningMemberStatePage()),
                       );
                     },
                   ),
@@ -330,7 +391,8 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => const AdminStaffStateScreen()),
+                            builder: (context) =>
+                                const AdminStaffStateScreen()),
                       );
                     },
                   ),
@@ -424,7 +486,7 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
                     dividerThickness: 0.5,
                     showBottomBorder: true,
                     columns: const [
-                      DataColumn(label: Text("Officer No")),
+                      DataColumn(label: Text("BA No")),
                       DataColumn(label: Text("Rank")),
                       DataColumn(label: Text("Name")),
                       DataColumn(label: Text("Unit")),
@@ -436,11 +498,12 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
                     rows: filteredUsers.map((user) {
                       final docId = user['id'] as String;
                       return DataRow(
-                        color: MaterialStateProperty.resolveWith<Color?>((states) {
+                        color:
+                            MaterialStateProperty.resolveWith<Color?>((states) {
                           return Colors.grey.shade100;
                         }),
                         cells: [
-                          DataCell(Text(user['no'] ?? '')),
+                          DataCell(Text(user['ba_no'] ?? '')),
                           DataCell(Text(user['rank'] ?? '')),
                           DataCell(Text(user['name'] ?? '')),
                           DataCell(Text(user['unit'] ?? '')),

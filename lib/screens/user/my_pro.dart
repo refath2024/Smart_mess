@@ -62,20 +62,26 @@ class _MyProfilePageState extends State<MyProfilePage> {
       return;
     }
     try {
-      final doc = await FirebaseFirestore.instance.collection('user_requests').doc(user.uid).get();
+      final doc = await FirebaseFirestore.instance
+          .collection('user_requests')
+          .doc(user.uid)
+          .get();
       if (doc.exists) {
         final data = doc.data()!;
         _nameController.text = data['name'] ?? '';
         _emailController.text = data['email'] ?? '';
         _phoneController.text = data['mobile'] ?? '';
-        _noController.text = data['no'] ?? '';
+        _noController.text = data['ba_no'] ??
+            data['no'] ??
+            ''; // Check both field names for backward compatibility
         _rankController.text = data['rank'] ?? '';
         _unitController.text = data['unit'] ?? '';
         _imageUrl = data['image_url'];
       }
     } catch (e) {
       debugPrint('Failed to load profile: $e');
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to load profile: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Failed to load profile: $e')));
     } finally {
       setState(() {
         _isLoading = false;
@@ -97,7 +103,9 @@ class _MyProfilePageState extends State<MyProfilePage> {
         const maxSizeInBytes = 5 * 1024 * 1024; // 5 MB limit
         if (bytes > maxSizeInBytes) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Image size exceeds 5 MB, please select smaller one.")),
+            const SnackBar(
+                content: Text(
+                    "Image size exceeds 5 MB, please select smaller one.")),
           );
           return;
         }
@@ -108,7 +116,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
     } catch (e) {
       debugPrint('Image picking failed: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to pick image: $e')),
+        SnackBar(content: Text('Failed to pick image: $e')),
       );
     }
   }
@@ -161,11 +169,14 @@ class _MyProfilePageState extends State<MyProfilePage> {
     }
 
     try {
-      await FirebaseFirestore.instance.collection('user_requests').doc(user.uid).update({
+      await FirebaseFirestore.instance
+          .collection('user_requests')
+          .doc(user.uid)
+          .update({
         'name': _nameController.text.trim(),
         'email': _emailController.text.trim(),
         'mobile': _phoneController.text.trim(),
-        'no': _noController.text.trim(),
+        'ba_no': _noController.text.trim(), // Use the correct field name
         'rank': _rankController.text.trim(),
         'unit': _unitController.text.trim(),
         if (uploadedImageUrl != null) 'image_url': uploadedImageUrl,
@@ -240,9 +251,11 @@ class _MyProfilePageState extends State<MyProfilePage> {
                 ? const SizedBox(
                     width: 24,
                     height: 24,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    child: CircularProgressIndicator(
+                        color: Colors.white, strokeWidth: 2),
                   )
-                : Icon(_isEditing ? Icons.check : Icons.edit, color: Colors.white),
+                : Icon(_isEditing ? Icons.check : Icons.edit,
+                    color: Colors.white),
             onPressed: _isSaving
                 ? null
                 : () {
@@ -272,7 +285,8 @@ class _MyProfilePageState extends State<MyProfilePage> {
                           ? FileImage(_imageFile!)
                           : (_imageUrl != null && _imageUrl!.isNotEmpty)
                               ? NetworkImage(_imageUrl!)
-                              : const AssetImage('assets/pro.png') as ImageProvider,
+                              : const AssetImage('assets/pro.png')
+                                  as ImageProvider,
                       backgroundColor: Colors.grey.shade300,
                     ),
                     if (_isEditing)
@@ -297,7 +311,9 @@ class _MyProfilePageState extends State<MyProfilePage> {
                 label: "Name *",
                 controller: _nameController,
                 enabled: _isEditing,
-                validator: (val) => val == null || val.trim().isEmpty ? 'Please enter your name' : null,
+                validator: (val) => val == null || val.trim().isEmpty
+                    ? 'Please enter your name'
+                    : null,
               ),
               _buildTextField(
                 label: "Email *",
@@ -305,9 +321,11 @@ class _MyProfilePageState extends State<MyProfilePage> {
                 enabled: _isEditing,
                 keyboardType: TextInputType.emailAddress,
                 validator: (val) {
-                  if (val == null || val.isEmpty) return 'Please enter your email';
+                  if (val == null || val.isEmpty)
+                    return 'Please enter your email';
                   final regex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-                  if (!regex.hasMatch(val)) return 'Enter a valid email address';
+                  if (!regex.hasMatch(val))
+                    return 'Enter a valid email address';
                   return null;
                 },
               ),
@@ -317,9 +335,12 @@ class _MyProfilePageState extends State<MyProfilePage> {
                 enabled: _isEditing,
                 keyboardType: TextInputType.phone,
                 validator: (val) {
-                  if (val == null || val.isEmpty) return 'Please enter your mobile number';
-                  if (!RegExp(r'^\d+$').hasMatch(val)) return 'Mobile number must contain only digits';
-                  if (val.length < 11) return 'Mobile number must be at least 11 digits';
+                  if (val == null || val.isEmpty)
+                    return 'Please enter your mobile number';
+                  if (!RegExp(r'^\d+$').hasMatch(val))
+                    return 'Mobile number must contain only digits';
+                  if (val.length < 11)
+                    return 'Mobile number must be at least 11 digits';
                   return null;
                 },
               ),
@@ -327,7 +348,9 @@ class _MyProfilePageState extends State<MyProfilePage> {
                 label: "BA No *",
                 controller: _noController,
                 enabled: _isEditing,
-                validator: (val) => val == null || val.trim().isEmpty ? 'Please enter your BA No' : null,
+                validator: (val) => val == null || val.trim().isEmpty
+                    ? 'Please enter your BA No'
+                    : null,
               ),
               _buildTextField(
                 label: "Rank *",
