@@ -13,6 +13,7 @@ import 'admin_monthly_menu_screen.dart';
 import 'admin_menu_vote_screen.dart';
 import 'admin_meal_state_screen.dart';
 import 'admin_login_screen.dart';
+import '../../services/admin_auth_service.dart';
 
 class AdminUsersScreen extends StatefulWidget {
   const AdminUsersScreen({super.key});
@@ -22,7 +23,65 @@ class AdminUsersScreen extends StatefulWidget {
 }
 
 class _AdminUsersScreenState extends State<AdminUsersScreen> {
+  final AdminAuthService _adminAuthService = AdminAuthService();
+
+  bool _isLoading = true;
+  String _currentUserName = "Admin User";
+  Map<String, dynamic>? _currentUserData;
+
   final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAuthentication();
+    filteredUsers = List.from(users);
+  }
+
+  Future<void> _checkAuthentication() async {
+    try {
+      final isLoggedIn = await _adminAuthService.isAdminLoggedIn();
+
+      if (!isLoggedIn) {
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+            (route) => false,
+          );
+        }
+        return;
+      }
+
+      // Get current admin data
+      final userData = await _adminAuthService.getCurrentAdminData();
+      if (userData != null) {
+        setState(() {
+          _currentUserData = userData;
+          _currentUserName = userData['name'] ?? 'Admin User';
+          _isLoading = false;
+        });
+      } else {
+        // User data not found, redirect to login
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+            (route) => false,
+          );
+        }
+      }
+    } catch (e) {
+      // Authentication error, redirect to login
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+          (route) => false,
+        );
+      }
+    }
+  }
 
   // Improved type safety with custom type
   final List<Map<String, dynamic>> users = [
@@ -201,12 +260,6 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   List<Map<String, dynamic>> filteredUsers = [];
 
   @override
-  void initState() {
-    super.initState();
-    filteredUsers = List.from(users);
-  }
-
-  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
@@ -329,7 +382,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: Row(
         children: [
-          Expanded(child: Text(user['no'].toString() ?? '')),
+          Expanded(child: Text(user['no'].toString())),
           Expanded(child: Text(user['rank'] ?? '')),
           Expanded(child: Text(user['name'] ?? '')),
           Expanded(child: Text(user['unit'] ?? '')),
@@ -389,12 +442,23 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     );
   }
 
-  void _logout() {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
-      (route) => false,
-    );
+  Future<void> _logout() async {
+    try {
+      await _adminAuthService.logoutAdmin();
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Logout failed: $e')),
+        );
+      }
+    }
   }
 
   Widget _buildSidebarTile({
@@ -441,6 +505,15 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Show loading screen while authenticating
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     return Scaffold(
       drawer: Drawer(
         child: Column(
@@ -454,20 +527,43 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 ),
               ),
               child: Row(
-                children: const [
-                  CircleAvatar(
+                children: [
+                  const CircleAvatar(
                     backgroundImage: AssetImage('assets/me.png'),
                     radius: 30,
                   ),
-                  SizedBox(width: 10),
+                  const SizedBox(width: 10),
                   Flexible(
-                    child: Text(
-                      "Shoaib Ahmed Sami",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          _currentUserName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (_currentUserData != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            _currentUserData!['role'] ?? '',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                          Text(
+                            'BA: ${_currentUserData!['ba_no'] ?? ''}',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ],

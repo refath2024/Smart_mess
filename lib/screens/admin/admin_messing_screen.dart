@@ -17,6 +17,7 @@ import 'add_indl_entry.dart';
 import 'add_misc_entry.dart';
 import 'add_messing.dart';
 import 'admin_login_screen.dart';
+import '../../services/admin_auth_service.dart';
 
 class AdminMessingScreen extends StatefulWidget {
   const AdminMessingScreen({super.key});
@@ -26,6 +27,12 @@ class AdminMessingScreen extends StatefulWidget {
 }
 
 class _AdminMessingScreenState extends State<AdminMessingScreen> {
+  final AdminAuthService _adminAuthService = AdminAuthService();
+
+  bool _isLoading = true;
+  String _currentUserName = "Admin User";
+  Map<String, dynamic>? _currentUserData;
+
   TextEditingController searchController = TextEditingController();
   String currentDay = "";
   String userName = "Admin";
@@ -39,6 +46,59 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
   List<TextEditingController> breakfastControllers = [];
   List<TextEditingController> lunchControllers = [];
   List<TextEditingController> dinnerControllers = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAuthentication();
+    _fetchCurrentDay();
+    _initControllers();
+  }
+
+  Future<void> _checkAuthentication() async {
+    try {
+      final isLoggedIn = await _adminAuthService.isAdminLoggedIn();
+
+      if (!isLoggedIn) {
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+            (route) => false,
+          );
+        }
+        return;
+      }
+
+      // Get current admin data
+      final userData = await _adminAuthService.getCurrentAdminData();
+      if (userData != null) {
+        setState(() {
+          _currentUserData = userData;
+          _currentUserName = userData['name'] ?? 'Admin User';
+          _isLoading = false;
+        });
+      } else {
+        // User data not found, redirect to login
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+            (route) => false,
+          );
+        }
+      }
+    } catch (e) {
+      // Authentication error, redirect to login
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+          (route) => false,
+        );
+      }
+    }
+  }
 
   List<Map<String, dynamic>> breakfastEntries = [
     {
@@ -71,13 +131,6 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
     },
   ];
 
-  @override
-  void initState() {
-    super.initState();
-    _fetchCurrentDay();
-    _initControllers();
-  }
-
   void _initControllers() {
     breakfastControllers = List.generate(
       breakfastEntries.length,
@@ -109,12 +162,23 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
     });
   }
 
-  void _logout() {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
-      (route) => false,
-    );
+  Future<void> _logout() async {
+    try {
+      await _adminAuthService.logoutAdmin();
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Logout failed: $e')),
+        );
+      }
+    }
   }
 
   Widget _buildSidebarTile({
@@ -683,6 +747,15 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Show loading screen while authenticating
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     return Scaffold(
       drawer: Drawer(
         child: Column(
@@ -696,20 +769,43 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                 ),
               ),
               child: Row(
-                children: const [
-                  CircleAvatar(
+                children: [
+                  const CircleAvatar(
                     backgroundImage: AssetImage('assets/me.png'),
                     radius: 30,
                   ),
-                  SizedBox(width: 10),
+                  const SizedBox(width: 10),
                   Flexible(
-                    child: Text(
-                      "Shoaib Ahmed Sami",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          _currentUserName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (_currentUserData != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            _currentUserData!['role'] ?? '',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                          Text(
+                            'BA: ${_currentUserData!['ba_no'] ?? ''}',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:smart_mess/screens/admin/admin_login_screen.dart';
+import 'package:smart_mess/services/admin_auth_service.dart';
 
 import 'admin_home_screen.dart';
 import 'admin_payment_history.dart';
@@ -27,7 +28,50 @@ class AdminShoppingHistoryScreen extends StatefulWidget {
 
 class _AdminShoppingHistoryScreenState
     extends State<AdminShoppingHistoryScreen> {
+  final AdminAuthService _adminAuthService = AdminAuthService();
+  bool _isLoading = true;
+  String _currentUserName = "Loading...";
+  Map<String, dynamic>? _currentUserData;
+
   final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    filteredData = List.from(shoppingData);
+    _checkAuthentication();
+  }
+
+  Future<void> _checkAuthentication() async {
+    try {
+      final isLoggedIn = await _adminAuthService.isAdminLoggedIn();
+      if (!isLoggedIn) {
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+          );
+        }
+        return;
+      }
+
+      final userData = await _adminAuthService.getCurrentAdminData();
+      if (mounted) {
+        setState(() {
+          _currentUserData = userData;
+          _currentUserName = userData?['name'] ?? 'Admin';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+        );
+      }
+    }
+  }
 
   Widget _editableTextField({
     required String initialValue,
@@ -120,12 +164,6 @@ class _AdminShoppingHistoryScreenState
 
   List<Map<String, dynamic>> filteredData = [];
 
-  @override
-  void initState() {
-    super.initState();
-    filteredData = List.from(shoppingData);
-  }
-
   void _search(String query) {
     setState(() {
       filteredData = shoppingData.where((entry) {
@@ -137,12 +175,23 @@ class _AdminShoppingHistoryScreenState
     });
   }
 
-  void _logout() {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
-      (route) => false,
-    );
+  Future<void> _logout() async {
+    try {
+      await _adminAuthService.logoutAdmin();
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Logout failed: $e')),
+        );
+      }
+    }
   }
 
   void _startEdit(int index) {
@@ -244,6 +293,14 @@ class _AdminShoppingHistoryScreenState
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     return Scaffold(
       drawer: Drawer(
         child: Column(
@@ -257,20 +314,43 @@ class _AdminShoppingHistoryScreenState
                 ),
               ),
               child: Row(
-                children: const [
-                  CircleAvatar(
+                children: [
+                  const CircleAvatar(
                     backgroundImage: AssetImage('assets/me.png'),
                     radius: 30,
                   ),
-                  SizedBox(width: 10),
+                  const SizedBox(width: 10),
                   Flexible(
-                    child: Text(
-                      "Shoaib Ahmed Sami",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          _currentUserName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (_currentUserData != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            _currentUserData!['role'] ?? '',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                          Text(
+                            'BA: ${_currentUserData!['ba_no'] ?? ''}',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ],

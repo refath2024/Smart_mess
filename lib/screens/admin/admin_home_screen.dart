@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../login_screen.dart';
+import 'admin_login_screen.dart';
 import 'admin_users_screen.dart';
 import 'admin_pending_ids_screen.dart';
 import 'admin_shopping_history.dart';
@@ -13,6 +13,7 @@ import 'admin_meal_state_screen.dart';
 import 'admin_bill_screen.dart';
 import 'admin_monthly_menu_screen.dart';
 import 'admin_menu_vote_screen.dart';
+import '../../services/admin_auth_service.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -22,12 +23,82 @@ class AdminHomeScreen extends StatefulWidget {
 }
 
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
-  void _logout() {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
-      (route) => false,
-    );
+  final AdminAuthService _adminAuthService = AdminAuthService();
+
+  bool _isLoading = true;
+  bool _isAuthenticated = false;
+  String _currentUserName = "Admin User";
+  Map<String, dynamic>? _currentUserData;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAuthentication();
+  }
+
+  Future<void> _checkAuthentication() async {
+    try {
+      final isLoggedIn = await _adminAuthService.isAdminLoggedIn();
+
+      if (!isLoggedIn) {
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+            (route) => false,
+          );
+        }
+        return;
+      }
+
+      // Get current admin data
+      final userData = await _adminAuthService.getCurrentAdminData();
+      if (userData != null) {
+        setState(() {
+          _currentUserData = userData;
+          _currentUserName = userData['name'] ?? 'Admin User';
+          _isAuthenticated = true;
+          _isLoading = false;
+        });
+      } else {
+        // User data not found, redirect to login
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+            (route) => false,
+          );
+        }
+      }
+    } catch (e) {
+      // Authentication error, redirect to login
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+          (route) => false,
+        );
+      }
+    }
+  }
+
+  Future<void> _logout() async {
+    try {
+      await _adminAuthService.logoutAdmin();
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Logout failed: $e')),
+        );
+      }
+    }
   }
 
   Widget _buildSidebarTile({
@@ -174,6 +245,22 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (!_isAuthenticated) {
+      return const Scaffold(
+        body: Center(
+          child: Text('Authentication required'),
+        ),
+      );
+    }
+
     return Scaffold(
       drawer: Drawer(
         child: Column(
@@ -187,20 +274,43 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 ),
               ),
               child: Row(
-                children: const [
-                  CircleAvatar(
+                children: [
+                  const CircleAvatar(
                     backgroundImage: AssetImage('assets/me.png'),
                     radius: 30,
                   ),
-                  SizedBox(width: 10),
+                  const SizedBox(width: 10),
                   Flexible(
-                    child: Text(
-                      "Shoaib Ahmed Sami",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          _currentUserName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (_currentUserData != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            _currentUserData!['role'] ?? '',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                          Text(
+                            'BA: ${_currentUserData!['ba_no'] ?? ''}',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ],

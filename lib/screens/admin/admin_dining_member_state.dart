@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'admin_home_screen.dart';
 import 'admin_users_screen.dart';
 import 'admin_pending_ids_screen.dart';
@@ -15,6 +15,7 @@ import 'admin_menu_vote_screen.dart';
 import 'admin_bill_screen.dart';
 import 'add_dining_member.dart';
 import 'admin_login_screen.dart';
+import '../../services/admin_auth_service.dart';
 
 class DiningMemberStatePage extends StatefulWidget {
   const DiningMemberStatePage({super.key});
@@ -24,53 +25,13 @@ class DiningMemberStatePage extends StatefulWidget {
 }
 
 class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
-  void _logout() {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
-      (route) => false,
-    );
-  }
+  final AdminAuthService _adminAuthService = AdminAuthService();
 
-  final List<Map<String, dynamic>> members = [
-    {
-      'no': 'BA-10234',
-      'rank': 'Major',
-      'name': 'Maj Ahmed Khan',
-      'unit': '10 Signal Battalion',
-      'mobile': '+880 1700-000001',
-      'email': 'ahmed.khan@army.mil.bd',
-      'role': 'Dining Member',
-      'status': 'Active',
-      'isEditing': false,
-      'original': {},
-    },
-    {
-      'no': 'BA-10235',
-      'rank': 'Captain',
-      'name': 'Capt Fatima Rahman',
-      'unit': 'Engineering Corps',
-      'mobile': '+880 1700-000002',
-      'email': 'fatima.r@army.mil.bd',
-      'role': 'Dining Member',
-      'status': 'Active',
-      'isEditing': false,
-      'original': {},
-    },
-    {
-      'no': 'BA-10236',
-      'rank': 'Lieutenant',
-      'name': 'Lt Karim Ali',
-      'unit': 'Infantry Regiment',
-      'mobile': '+880 1700-000003',
-      'email': 'karim.ali@army.mil.bd',
-      'role': 'Dining Member',
-      'status': 'Inactive',
-      'isEditing': false,
-      'original': {},
-    },
-  ];
+  bool _isLoading = true;
+  String _currentUserName = "Admin User";
+  Map<String, dynamic>? _currentUserData;
 
+  List<Map<String, dynamic>> members = [];
   String searchTerm = '';
   final _searchController = TextEditingController();
   List<Map<String, dynamic>> filtered = [];
@@ -78,7 +39,114 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
   @override
   void initState() {
     super.initState();
-    filtered = List.from(members);
+    _checkAuthentication();
+  }
+
+  Future<void> _checkAuthentication() async {
+    try {
+      final isLoggedIn = await _adminAuthService.isAdminLoggedIn();
+
+      if (!isLoggedIn) {
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+            (route) => false,
+          );
+        }
+        return;
+      }
+
+      // Get current admin data
+      final userData = await _adminAuthService.getCurrentAdminData();
+      if (userData != null) {
+        setState(() {
+          _currentUserData = userData;
+          _currentUserName = userData['name'] ?? 'Admin User';
+          _isLoading = false;
+        });
+
+        // After authentication is confirmed, fetch users from Firestore
+        await _fetchUsersFromFirestore();
+      } else {
+        // User data not found, redirect to login
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+            (route) => false,
+          );
+        }
+      }
+    } catch (e) {
+      // Authentication error, redirect to login
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+          (route) => false,
+        );
+      }
+    }
+  }
+
+  Future<void> _fetchUsersFromFirestore() async {
+    try {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('user_requests')
+          .where('rejected', isEqualTo: false)
+          .get();
+
+      final List<Map<String, dynamic>> fetchedUsers = [];
+
+      for (var doc in querySnapshot.docs) {
+        final data = doc.data();
+        fetchedUsers.add({
+          'id': doc.id,
+          'no': data['ba_no'] ?? '',
+          'rank': data['rank'] ?? '',
+          'name': data['name'] ?? '',
+          'unit': data['unit'] ?? '',
+          'mobile': data['mobile'] ?? '',
+          'email': data['email'] ?? '',
+          'role': 'Dining Member',
+          'status': data['dining_status'] ??
+              'Active', // Use dining_status field for Active/Inactive
+          'isEditing': false,
+          'original': {},
+        });
+      }
+
+      setState(() {
+        members = fetchedUsers;
+        filtered = List.from(members);
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to fetch users: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _logout() async {
+    try {
+      await _adminAuthService.logoutAdmin();
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Logout failed: $e')),
+        );
+      }
+    }
   }
 
   void _startEdit(Map<String, dynamic> row) {
@@ -125,15 +193,31 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
     );
 
     if (confirm == true) {
-      setState(() {
-        members.remove(row);
-        filtered = List.from(members);
-      });
+      try {
+        // Delete from Firestore
+        if (row['id'] != null) {
+          await FirebaseFirestore.instance
+              .collection('user_requests')
+              .doc(row['id'])
+              .delete();
+        }
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Member deleted successfully')),
-        );
+        setState(() {
+          members.remove(row);
+          filtered = List.from(members);
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Member deleted successfully')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to delete member: $e')),
+          );
+        }
       }
     }
   }
@@ -161,14 +245,39 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
     );
 
     if (confirm == true) {
-      setState(() {
-        row['isEditing'] = false;
-      });
+      try {
+        // Update in Firestore
+        if (row['id'] != null) {
+          await FirebaseFirestore.instance
+              .collection('user_requests')
+              .doc(row['id'])
+              .update({
+            'ba_no': row['no'],
+            'rank': row['rank'],
+            'name': row['name'],
+            'unit': row['unit'],
+            'mobile': row['mobile'],
+            'email': row['email'],
+            'dining_status':
+                row['status'], // Save dining member status (Active/Inactive)
+          });
+        }
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Changes saved successfully')),
-        );
+        setState(() {
+          row['isEditing'] = false;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Changes saved successfully')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to save changes: $e')),
+          );
+        }
       }
     }
   }
@@ -202,6 +311,15 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
 
   @override
   Widget build(BuildContext context) {
+    // Show loading screen while checking authentication
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     return Scaffold(
       drawer: Drawer(
         child: Column(
@@ -215,20 +333,43 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                 ),
               ),
               child: Row(
-                children: const [
-                  CircleAvatar(
+                children: [
+                  const CircleAvatar(
                     backgroundImage: AssetImage('assets/me.png'),
                     radius: 30,
                   ),
-                  SizedBox(width: 10),
+                  const SizedBox(width: 10),
                   Flexible(
-                    child: Text(
-                      "Shoaib Ahmed Sami",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          _currentUserName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (_currentUserData != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            _currentUserData!['role'] ?? '',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                          Text(
+                            'BA: ${_currentUserData!['ba_no'] ?? ''}',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ],
@@ -533,36 +674,42 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                           ? TextField(
                               controller:
                                   TextEditingController(text: row['no']),
+                              onChanged: (value) => row['no'] = value,
                             )
                           : Text(row['no'] ?? '')),
                       DataCell(isEditing
                           ? TextField(
                               controller:
                                   TextEditingController(text: row['rank']),
+                              onChanged: (value) => row['rank'] = value,
                             )
                           : Text(row['rank'] ?? '')),
                       DataCell(isEditing
                           ? TextField(
                               controller:
                                   TextEditingController(text: row['name']),
+                              onChanged: (value) => row['name'] = value,
                             )
                           : Text(row['name'] ?? '')),
                       DataCell(isEditing
                           ? TextField(
                               controller:
                                   TextEditingController(text: row['unit']),
+                              onChanged: (value) => row['unit'] = value,
                             )
                           : Text(row['unit'] ?? '')),
                       DataCell(isEditing
                           ? TextField(
                               controller:
                                   TextEditingController(text: row['mobile']),
+                              onChanged: (value) => row['mobile'] = value,
                             )
                           : Text(row['mobile'] ?? '')),
                       DataCell(isEditing
                           ? TextField(
                               controller:
                                   TextEditingController(text: row['email']),
+                              onChanged: (value) => row['email'] = value,
                             )
                           : Text(row['email'] ?? '')),
                       DataCell(Text('Dining Member')),

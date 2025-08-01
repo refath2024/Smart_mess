@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../login_screen.dart';
 import 'admin_home_screen.dart';
 import 'admin_users_screen.dart';
 import 'admin_pending_ids_screen.dart';
@@ -14,6 +13,8 @@ import 'admin_meal_state_screen.dart';
 import 'admin_monthly_menu_screen.dart';
 import 'admin_bill_screen.dart';
 import 'add_menu_set.dart';
+import 'admin_login_screen.dart';
+import '../../services/admin_auth_service.dart';
 
 class MenuVoteScreen extends StatefulWidget {
   const MenuVoteScreen({super.key});
@@ -23,8 +24,67 @@ class MenuVoteScreen extends StatefulWidget {
 }
 
 class _MenuVoteScreenState extends State<MenuVoteScreen> {
+  final AdminAuthService _adminAuthService = AdminAuthService();
+
+  bool _isLoading = true;
+  String _currentUserName = "Admin User";
+  Map<String, dynamic>? _currentUserData;
+
   final TextEditingController _searchController = TextEditingController();
   String selectedDay = 'Sunday';
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAuthentication();
+    _filteredMealData = Map.from(mealData); // Initialize filtered data
+    _updateRemarks(); // Initial update for remarks instantly
+  }
+
+  Future<void> _checkAuthentication() async {
+    try {
+      final isLoggedIn = await _adminAuthService.isAdminLoggedIn();
+
+      if (!isLoggedIn) {
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+            (route) => false,
+          );
+        }
+        return;
+      }
+
+      // Get current admin data
+      final userData = await _adminAuthService.getCurrentAdminData();
+      if (userData != null) {
+        setState(() {
+          _currentUserData = userData;
+          _currentUserName = userData['name'] ?? 'Admin User';
+          _isLoading = false;
+        });
+      } else {
+        // User data not found, redirect to login
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+            (route) => false,
+          );
+        }
+      }
+    } catch (e) {
+      // Authentication error, redirect to login
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+          (route) => false,
+        );
+      }
+    }
+  }
 
   // Dummy data structure for meal votes
   Map<String, Map<String, List<Map<String, dynamic>>>> mealData = {
@@ -165,13 +225,6 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
   // Remarks data - this will be dynamically populated
   List<String> dynamicRemarks = [];
 
-  @override
-  void initState() {
-    super.initState();
-    _filteredMealData = Map.from(mealData); // Initialize filtered data
-    _updateRemarks(); // Initial update for remarks instantly
-  }
-
   // Search functionality implementation
   void _filterRecords(String query) {
     setState(() {
@@ -278,18 +331,30 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
     );
   }
 
-  void _logout() {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
-      (route) => false,
-    );
+  Future<void> _logout() async {
+    try {
+      await _adminAuthService.logoutAdmin();
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Logout failed: $e')),
+        );
+      }
+    }
   }
 
   // Helper widget to build meal vote list with progress indicators
   Widget _buildMealVoteList(List<Map<String, dynamic>> meals) {
     // Sort meals by percentage in descending order
-    meals.sort((a, b) => (b['percentage'] as int).compareTo(a['percentage'] as int));
+    meals.sort(
+        (a, b) => (b['percentage'] as int).compareTo(a['percentage'] as int));
 
     return Column(
       children: meals.map((meal) {
@@ -301,7 +366,8 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
             children: [
               Text(
                 '${meal['name']} (${meal['percentage']}%)',
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                style:
+                    const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 4),
               ClipRRect(
@@ -310,7 +376,8 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                   value: percent,
                   minHeight: 12,
                   backgroundColor: Colors.grey.shade300,
-                  valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                      Theme.of(context).primaryColor),
                 ),
               ),
             ],
@@ -322,6 +389,15 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Show loading screen while authenticating
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     final displayedMeals = _filteredMealData[selectedDay];
 
     return Scaffold(
@@ -337,20 +413,43 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                 ),
               ),
               child: Row(
-                children: const [
-                  CircleAvatar(
+                children: [
+                  const CircleAvatar(
                     backgroundImage: AssetImage('assets/me.png'),
                     radius: 30,
                   ),
-                  SizedBox(width: 10),
+                  const SizedBox(width: 10),
                   Flexible(
-                    child: Text(
-                      "Shoaib Ahmed Sami",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          _currentUserName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (_currentUserData != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            _currentUserData!['role'] ?? '',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                          Text(
+                            'BA: ${_currentUserData!['ba_no'] ?? ''}',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ],
@@ -561,7 +660,8 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
           ),
         ),
       ),
-      body: SingleChildScrollView( // Changed to SingleChildScrollView
+      body: SingleChildScrollView(
+        // Changed to SingleChildScrollView
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -622,7 +722,8 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
               const SizedBox(height: 20),
               // Day selection dropdown
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.grey.shade300),
                   borderRadius: BorderRadius.circular(8),
@@ -639,7 +740,8 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                       child: DropdownButton<String>(
                         value: selectedDay,
                         icon: const Icon(Icons.arrow_drop_down),
-                        style: const TextStyle(color: Colors.black, fontSize: 14),
+                        style:
+                            const TextStyle(color: Colors.black, fontSize: 14),
                         items: days.map((String day) {
                           return DropdownMenuItem<String>(
                             value: day,
@@ -665,10 +767,12 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
               // Meal Vote Statistics Section
               if (displayedMeals != null && displayedMeals.isNotEmpty) ...[
                 const Text("Meal Vote Statistics",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 10),
                 // Removed Expanded from here to allow natural scrolling
-                Column( // Use a Column instead of ListView directly if content is not too long, or a ListView with shrinkWrap: true
+                Column(
+                  // Use a Column instead of ListView directly if content is not too long, or a ListView with shrinkWrap: true
                   children: displayedMeals.entries.map((entry) {
                     return Card(
                       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -743,8 +847,8 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                             children: dynamicRemarks
                                 .map(
                                   (remark) => Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 4),
+                                    padding:
+                                        const EdgeInsets.symmetric(vertical: 4),
                                     child: Row(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
@@ -755,8 +859,8 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                                         Expanded(
                                           child: Text(
                                             remark,
-                                            style: const TextStyle(
-                                                fontSize: 14),
+                                            style:
+                                                const TextStyle(fontSize: 14),
                                           ),
                                         ),
                                       ],

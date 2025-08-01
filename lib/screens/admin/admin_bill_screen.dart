@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'admin_home_screen.dart';
 import 'admin_users_screen.dart';
 import 'admin_pending_ids_screen.dart';
@@ -13,12 +12,11 @@ import 'admin_payment_history.dart';
 import 'admin_meal_state_screen.dart';
 import 'admin_monthly_menu_screen.dart';
 import 'admin_menu_vote_screen.dart';
-
-// Add these imports:
+import 'admin_login_screen.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-import 'admin_login_screen.dart';
+import '../../services/admin_auth_service.dart';
 
 class AdminBillScreen extends StatefulWidget {
   const AdminBillScreen({Key? key}) : super(key: key);
@@ -28,13 +26,11 @@ class AdminBillScreen extends StatefulWidget {
 }
 
 class _AdminBillScreenState extends State<AdminBillScreen> {
-  void _logout() {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
-      (route) => false,
-    );
-  }
+  final AdminAuthService _adminAuthService = AdminAuthService();
+
+  bool _isLoading = true;
+  String _currentUserName = "Admin User";
+  Map<String, dynamic>? _currentUserData;
 
   List<Map<String, dynamic>> bills = []; // will hold bill data
   List<Map<String, dynamic>> filteredBills = [];
@@ -43,6 +39,79 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
   final TextEditingController _previousArrearController =
       TextEditingController();
   final TextEditingController _currentBillController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAuthentication();
+  }
+
+  Future<void> _checkAuthentication() async {
+    try {
+      final isLoggedIn = await _adminAuthService.isAdminLoggedIn();
+
+      if (!isLoggedIn) {
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+            (route) => false,
+          );
+        }
+        return;
+      }
+
+      // Get current admin data
+      final userData = await _adminAuthService.getCurrentAdminData();
+      if (userData != null) {
+        setState(() {
+          _currentUserData = userData;
+          _currentUserName = userData['name'] ?? 'Admin User';
+          _isLoading = false;
+        });
+
+        // After authentication is confirmed, fetch bills
+        fetchBills();
+      } else {
+        // User data not found, redirect to login
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+            (route) => false,
+          );
+        }
+      }
+    } catch (e) {
+      // Authentication error, redirect to login
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+          (route) => false,
+        );
+      }
+    }
+  }
+
+  Future<void> _logout() async {
+    try {
+      await _adminAuthService.logoutAdmin();
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Logout failed: $e')),
+        );
+      }
+    }
+  }
 
   Widget _buildSidebarTile({
     required IconData icon,
@@ -61,12 +130,6 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
       title: Text(title, style: TextStyle(color: color ?? Colors.black)),
       onTap: onTap,
     );
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    fetchBills(); // Simulated fetch
   }
 
   void _filterBills(String query) {
@@ -250,6 +313,15 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Show loading screen while checking authentication
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     final filteredBills = bills.where((bill) {
       final combined =
           (bill['ba_no'] + bill['rank'] + bill['name']).toLowerCase();
@@ -269,20 +341,43 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                 ),
               ),
               child: Row(
-                children: const [
-                  CircleAvatar(
+                children: [
+                  const CircleAvatar(
                     backgroundImage: AssetImage('assets/me.png'),
                     radius: 30,
                   ),
-                  SizedBox(width: 10),
+                  const SizedBox(width: 10),
                   Flexible(
-                    child: Text(
-                      "Shoaib Ahmed Sami",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          _currentUserName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (_currentUserData != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            _currentUserData!['role'] ?? '',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                          Text(
+                            'BA: ${_currentUserData!['ba_no'] ?? ''}',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ],

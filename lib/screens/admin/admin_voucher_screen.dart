@@ -1,5 +1,6 @@
 // admin_voucher_screen.dart
 import 'package:flutter/material.dart';
+import 'package:smart_mess/services/admin_auth_service.dart';
 
 import 'admin_home_screen.dart';
 import 'admin_users_screen.dart';
@@ -25,6 +26,49 @@ class AdminVoucherScreen extends StatefulWidget {
 }
 
 class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
+  final AdminAuthService _adminAuthService = AdminAuthService();
+  bool _isLoading = true;
+  String _currentUserName = "Loading...";
+  Map<String, dynamic>? _currentUserData;
+
+  @override
+  void initState() {
+    super.initState();
+    filteredData = List.from(voucherData);
+    _checkAuthentication();
+  }
+
+  Future<void> _checkAuthentication() async {
+    try {
+      final isLoggedIn = await _adminAuthService.isAdminLoggedIn();
+      if (!isLoggedIn) {
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+          );
+        }
+        return;
+      }
+
+      final userData = await _adminAuthService.getCurrentAdminData();
+      if (mounted) {
+        setState(() {
+          _currentUserData = userData;
+          _currentUserName = userData?['name'] ?? 'Admin';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+        );
+      }
+    }
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -53,12 +97,6 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
   ];
 
   List<Map<String, dynamic>> filteredData = [];
-
-  @override
-  void initState() {
-    super.initState();
-    filteredData = List.from(voucherData);
-  }
 
   void _startEdit(int index) {
     setState(() {
@@ -196,16 +234,35 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
     );
   }
 
-  void _logout() {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
-      (route) => false,
-    );
+  Future<void> _logout() async {
+    try {
+      await _adminAuthService.logoutAdmin();
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Logout failed: $e')),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     return Scaffold(
       drawer: Drawer(
         child: Column(
@@ -219,20 +276,43 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                 ),
               ),
               child: Row(
-                children: const [
-                  CircleAvatar(
+                children: [
+                  const CircleAvatar(
                     backgroundImage: AssetImage('assets/me.png'),
                     radius: 30,
                   ),
-                  SizedBox(width: 10),
+                  const SizedBox(width: 10),
                   Flexible(
-                    child: Text(
-                      "Shoaib Ahmed Sami",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          _currentUserName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (_currentUserData != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            _currentUserData!['role'] ?? '',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                          Text(
+                            'BA: ${_currentUserData!['ba_no'] ?? ''}',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ],

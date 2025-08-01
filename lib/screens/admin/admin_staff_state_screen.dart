@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import '../../services/admin_auth_service.dart';
 import 'add_staff.dart';
 import 'admin_home_screen.dart';
 import 'admin_users_screen.dart';
@@ -26,19 +26,67 @@ class AdminStaffStateScreen extends StatefulWidget {
 }
 
 class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final AdminAuthService _adminAuthService = AdminAuthService();
 
   bool _isLoading = true;
+  String _currentUserName = "Admin User";
+  Map<String, dynamic>? _currentUserData;
+
   List<Map<String, dynamic>> staffData = [];
   String searchTerm = '';
-  String _currentUserName = 'Admin User';
 
   @override
   void initState() {
     super.initState();
-    _loadStaffData();
-    _loadCurrentUserInfo();
+    _checkAuthentication();
+  }
+
+  Future<void> _checkAuthentication() async {
+    try {
+      final isLoggedIn = await _adminAuthService.isAdminLoggedIn();
+
+      if (!isLoggedIn) {
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+            (route) => false,
+          );
+        }
+        return;
+      }
+
+      // Get current admin data
+      final userData = await _adminAuthService.getCurrentAdminData();
+      if (userData != null) {
+        setState(() {
+          _currentUserData = userData;
+          _currentUserName = userData['name'] ?? 'Admin User';
+          _isLoading = false;
+        });
+
+        // After authentication is confirmed, fetch staff data from Firestore
+        await _loadStaffData();
+      } else {
+        // User data not found, redirect to login
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+            (route) => false,
+          );
+        }
+      }
+    } catch (e) {
+      // Authentication error, redirect to login
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+          (route) => false,
+        );
+      }
+    }
   }
 
   Future<void> _loadStaffData() async {
@@ -47,8 +95,10 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
         _isLoading = true;
       });
 
-      final QuerySnapshot snapshot =
-          await _firestore.collection('staff_state').orderBy('ba_no').get();
+      final QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('staff_state')
+          .orderBy('ba_no')
+          .get();
 
       setState(() {
         staffData = snapshot.docs.map((doc) {
@@ -81,25 +131,6 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
     }
   }
 
-  Future<void> _loadCurrentUserInfo() async {
-    try {
-      final User? user = _auth.currentUser;
-      if (user != null) {
-        final DocumentSnapshot doc =
-            await _firestore.collection('staff_state').doc(user.uid).get();
-
-        if (doc.exists) {
-          final data = doc.data() as Map<String, dynamic>;
-          setState(() {
-            _currentUserName = data['name'] ?? 'Admin User';
-          });
-        }
-      }
-    } catch (e) {
-      debugPrint('Failed to load current user info: $e');
-    }
-  }
-
   final List<String> _roles = [
     'PMC',
     'G2 (Mess)',
@@ -116,9 +147,9 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
     'NC(E)',
   ];
 
-  void _logout() async {
+  Future<void> _logout() async {
     try {
-      await _auth.signOut();
+      await _adminAuthService.logoutAdmin();
       if (mounted) {
         Navigator.pushAndRemoveUntil(
           context,
@@ -129,7 +160,7 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to logout: $e')),
+          SnackBar(content: Text('Logout failed: $e')),
         );
       }
     }
@@ -180,7 +211,10 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
 
     if (confirm == true) {
       try {
-        await _firestore.collection('staff_state').doc(row['id']).update({
+        await FirebaseFirestore.instance
+            .collection('staff_state')
+            .doc(row['id'])
+            .update({
           'ba_no': row['ba_no'],
           'rank': row['rank'],
           'name': row['name'],
@@ -235,7 +269,10 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
 
     if (confirm == true) {
       try {
-        await _firestore.collection('staff_state').doc(row['id']).delete();
+        await FirebaseFirestore.instance
+            .collection('staff_state')
+            .doc(row['id'])
+            .delete();
 
         setState(() {
           staffData.remove(row);
@@ -287,6 +324,15 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Show loading screen while checking authentication
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     final filteredData = staffData.where((row) {
       return row.values
           .any((value) => value.toLowerCase().contains(searchTerm));
@@ -325,13 +371,36 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                   ),
                   const SizedBox(width: 10),
                   Flexible(
-                    child: Text(
-                      _currentUserName,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          _currentUserName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (_currentUserData != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            _currentUserData!['role'] ?? '',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                          Text(
+                            'BA: ${_currentUserData!['ba_no'] ?? ''}',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ],
@@ -574,8 +643,8 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: DataTable(
-                          headingRowColor: MaterialStateProperty.all(
-                              const Color(0xFF1A4D8F)),
+                          headingRowColor:
+                              WidgetStateProperty.all(const Color(0xFF1A4D8F)),
                           columns: const [
                             DataColumn(
                                 label: Text('BA/ID No',
