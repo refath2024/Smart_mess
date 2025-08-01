@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'admin/admin_login_screen.dart';
 import 'forgot_password_screen.dart';
 import 'register_screen.dart';
 import 'user/user_home_screen.dart';
+import '../services/user_auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,11 +17,10 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final UserAuthService _userAuthService = UserAuthService();
   String _division = "MIST";
   bool _obscurePassword = true;
   bool _isLoading = false;
-
-  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   @override
   void initState() {
@@ -61,82 +59,26 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      // Sign in with Firebase Authentication
-      UserCredential userCredential =
-          await _auth.signInWithEmailAndPassword(email: email, password: password);
-      final user = userCredential.user;
+      final result = await _userAuthService.loginUser(email, password);
 
-      if (user == null) {
-        throw FirebaseAuthException(
-            code: 'user-null', message: 'User is null after sign in.');
-      }
-
-      // Check approval status in Firestore
-      final userDoc = await FirebaseFirestore.instance
-          .collection('user_requests')
-          .doc(user.uid)
-          .get();
-
-      if (!userDoc.exists) {
-        // User record not found (maybe not registered properly)
-        await _auth.signOut();
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Your registration record was not found.')),
-        );
-        return;
-      }
-
-      final data = userDoc.data()!;
-      final approved = data['approved'] ?? false;
-      final rejected = data['rejected'] ?? false;
-      final status = data['status'] ?? '';
-
-      if (approved == true) {
-        // Approved user - proceed to home
-        if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const UserHomeScreen()),
-        );
-      } else if (rejected == true) {
-        // Rejected user - sign out and show message
-        await _auth.signOut();
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text(
-                  'Your registration has been rejected. Please contact admin.')),
-        );
+      if (result != null && result['success'] == true) {
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const UserHomeScreen()),
+          );
+        }
       } else {
-        // Not yet approved - sign out and info message
-        await _auth.signOut();
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text(
-                  'Your application is pending approval. Please wait for admin approval.')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(result?['error'] ?? 'Login failed')),
+          );
+        }
       }
-    } on FirebaseAuthException catch (e) {
-      String errorMessage = 'Login failed';
-      if (e.code == 'user-not-found') {
-        errorMessage = 'No user found for that email.';
-      } else if (e.code == 'wrong-password') {
-        errorMessage = 'Wrong password provided.';
-      } else if (e.message != null) {
-        errorMessage = e.message!;
-      }
-
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage)),
-        );
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('An unexpected error occurred.')),
+          SnackBar(content: Text('Login error: $e')),
         );
       }
     } finally {
@@ -202,7 +144,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                            _obscurePassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
                             color: Colors.grey,
                           ),
                           onPressed: () {
@@ -218,7 +162,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       value: _division,
                       items: ['MIST', 'Other']
                           .map(
-                            (div) => DropdownMenuItem(value: div, child: Text(div)),
+                            (div) =>
+                                DropdownMenuItem(value: div, child: Text(div)),
                           )
                           .toList(),
                       onChanged: (val) => setState(() => _division = val!),
@@ -256,7 +201,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
+                          MaterialPageRoute(
+                              builder: (context) =>
+                                  const ForgotPasswordScreen()),
                         );
                       },
                       child: const Text("Forgot Password?"),
@@ -265,7 +212,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: () {
                         Navigator.pushReplacement(
                           context,
-                          MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+                          MaterialPageRoute(
+                              builder: (context) => const AdminLoginScreen()),
                         );
                       },
                       child: const Text("← Go to Admin Portal"),
@@ -274,7 +222,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const RegisterScreen()),
+                          MaterialPageRoute(
+                              builder: (context) => const RegisterScreen()),
                         );
                       },
                       child: const Text("Don't have an account? Register here"),

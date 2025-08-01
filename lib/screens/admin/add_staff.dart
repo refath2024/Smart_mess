@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'admin_staff_state_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AddNewUserForm extends StatefulWidget {
   const AddNewUserForm({super.key});
@@ -20,10 +19,52 @@ class _AddNewUserFormState extends State<AddNewUserForm> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   String? _selectedRole;
+  String? _selectedRank;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _passwordsMatch = false;
   String _confirmPasswordError = '';
+  bool _isLoading = false;
+
+  // Military ranks organized by service branch
+  final List<String> _armyRanks = [
+    'General',
+    'Lieutenant General',
+    'Major General',
+    'Brigadier General',
+    'Colonel',
+    'Lieutenant Colonel',
+    'Major',
+    'Captain',
+    'Lieutenant',
+    'Second Lieutenant',
+  ];
+
+  final List<String> _navyRanks = [
+    'Admiral',
+    'Vice Admiral',
+    'Rear Admiral',
+    'Commodore',
+    'Captain (Navy)',
+    'Commander',
+    'Lieutenant Commander',
+    'Lieutenant (Navy)',
+    'Sub-Lieutenant',
+    'Acting Sub-Lieutenant',
+  ];
+
+  final List<String> _airForceRanks = [
+    'Air Chief Marshal',
+    'Air Marshal',
+    'Air Vice Marshal',
+    'Air Commodore',
+    'Group Captain',
+    'Wing Commander',
+    'Squadron Leader',
+    'Flight Lieutenant',
+    'Flying Officer',
+    'Pilot Officer',
+  ];
 
   final List<String> _roles = [
     'PMC',
@@ -41,55 +82,147 @@ class _AddNewUserFormState extends State<AddNewUserForm> {
     'NC(E)',
   ];
 
-  Future<void> _submitForm() async {
-    if (_formKey.currentState!.validate()) {
-      final confirm = await showDialog<bool>(
+  Future<bool> _checkEmailExists() async {
+    try {
+      // Check if email exists in staff_state collection
+      final existingStaffQuery = await FirebaseFirestore.instance
+          .collection('staff_state')
+          .where('email', isEqualTo: _emailController.text.trim())
+          .get();
+
+      if (existingStaffQuery.docs.isNotEmpty) {
+        await showDialog<void>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Email Already Exists'),
+            content: const Text(
+              'This email is already registered for a staff member. Please use a different email address.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+        return false;
+      }
+
+      return true; // Email doesn't exist, can proceed
+    } catch (e) {
+      await showDialog<void>(
         context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('Confirm Submission'),
-          content:
-              Text('Are you sure you want to add ${_nameController.text}?'),
+        builder: (context) => AlertDialog(
+          title: const Text('Error'),
+          content: Text('Failed to check email: $e'),
           actions: [
             TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel')),
-            ElevatedButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Confirm')),
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
           ],
         ),
       );
+      return false;
+    }
+  }
 
-      if (confirm != true) return;
+  Future<void> _submitForm() async {
+    if (!_formKey.currentState!.validate()) return;
 
-      final response = await http.post(
-        Uri.parse('https://your-domain.com/add_staffs.php'),
-        body: {
-          'ba_no': _baNoController.text,
-          'rank': _rankController.text,
-          'name': _nameController.text,
-          'unit': _unitController.text,
-          'mobile_no': _mobileController.text,
-          'email': _emailController.text,
-          'password': _passwordController.text,
-          'role': _selectedRole,
-        },
+    setState(() => _isLoading = true);
+
+    // Check if email already exists
+    final canProceed = await _checkEmailExists();
+    if (!canProceed) {
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Confirm Submission'),
+        content: Text('Are you sure you want to add ${_nameController.text}?'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel')),
+          ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Confirm')),
+        ],
+      ),
+    );
+
+    if (confirm != true) {
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    try {
+      // Generate a temporary document ID for Firestore
+      String staffId =
+          FirebaseFirestore.instance.collection('staff_state').doc().id;
+
+      // Save staff info to Firestore under 'staff_state' collection
+      // Note: We don't create Firebase Auth user here to avoid interfering with admin's session
+      await FirebaseFirestore.instance
+          .collection('staff_state')
+          .doc(staffId)
+          .set({
+        'ba_no': _baNoController.text.trim(),
+        'rank': _rankController.text.trim(),
+        'name': _nameController.text.trim(),
+        'unit': _unitController.text.trim(),
+        'email': _emailController.text.trim(),
+        'mobile': _mobileController.text.trim(),
+        'password': _passwordController.text
+            .trim(), // Store temporarily for first login
+        'role': _selectedRole,
+        'status': 'Active', // Set as active staff member
+        'created_at': FieldValue.serverTimestamp(),
+        'staff_id': staffId,
+        'created_by_admin': true,
+        'firebase_auth_created':
+            false, // Flag to indicate Auth user not yet created
+      });
+
+      // Success dialog
+      await showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Success'),
+          content: Text(
+            '${_nameController.text} has been successfully registered as a staff member.\n\nThey can now log in using their email and password.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close dialog
+                Navigator.of(context).pop(); // Return to staff state page
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        ),
       );
-
-      if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('User added successfully!')),
-        );
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-              builder: (context) => const AdminStaffStateScreen()),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to add user.')),
-        );
-      }
+    } catch (e) {
+      await showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Error'),
+          content: Text('Failed to add staff member: $e'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK')),
+          ],
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -141,10 +274,88 @@ class _AddNewUserFormState extends State<AddNewUserForm> {
     super.dispose();
   }
 
+  Widget _buildRankDropdown() {
+    // Combine all ranks with service branch headers
+    List<DropdownMenuItem<String>> allRanks = [];
+
+    // Army ranks
+    allRanks.add(const DropdownMenuItem<String>(
+      enabled: false,
+      value: null,
+      child: Text(
+        'Bangladesh Army',
+        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+      ),
+    ));
+    allRanks.addAll(_armyRanks.map((rank) => DropdownMenuItem<String>(
+          value: rank,
+          child: Text('  $rank'),
+        )));
+
+    // Navy ranks
+    allRanks.add(const DropdownMenuItem<String>(
+      enabled: false,
+      value: null,
+      child: Text(
+        'Bangladesh Navy',
+        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+      ),
+    ));
+    allRanks.addAll(_navyRanks.map((rank) => DropdownMenuItem<String>(
+          value: rank,
+          child: Text('  $rank'),
+        )));
+
+    // Air Force ranks
+    allRanks.add(const DropdownMenuItem<String>(
+      enabled: false,
+      value: null,
+      child: Text(
+        'Bangladesh Air Force',
+        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+      ),
+    ));
+    allRanks.addAll(_airForceRanks.map((rank) => DropdownMenuItem<String>(
+          value: rank,
+          child: Text('  $rank'),
+        )));
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: DropdownButtonFormField<String>(
+        value: _selectedRank,
+        decoration: const InputDecoration(
+          labelText: 'Rank *',
+          border: OutlineInputBorder(),
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        ),
+        items: allRanks,
+        onChanged: (String? newValue) {
+          setState(() {
+            _selectedRank = newValue;
+            _rankController.text = newValue ?? '';
+          });
+        },
+        validator: (value) =>
+            value == null || value.isEmpty ? 'Please select rank' : null,
+        hint: const Text('Select rank'),
+        isExpanded: true,
+        menuMaxHeight: 300,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: _onWillPop,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final shouldPop = await _onWillPop();
+        if (shouldPop && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
       child: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: Scaffold(
@@ -180,7 +391,7 @@ class _AddNewUserFormState extends State<AddNewUserForm> {
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
+                      color: Colors.black.withValues(alpha: 0.08),
                       blurRadius: 20,
                       offset: const Offset(0, 4),
                     ),
@@ -192,7 +403,7 @@ class _AddNewUserFormState extends State<AddNewUserForm> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Text(
-                        'Add New User',
+                        'Add New Staff Member',
                         style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -204,11 +415,7 @@ class _AddNewUserFormState extends State<AddNewUserForm> {
                         'BA/ID No',
                         isRequired: true,
                       ),
-                      buildInputField(
-                        _rankController,
-                        'Rank',
-                        isRequired: true,
-                      ),
+                      _buildRankDropdown(),
                       buildInputField(
                         _nameController,
                         'Name',
@@ -221,21 +428,53 @@ class _AddNewUserFormState extends State<AddNewUserForm> {
                       ),
                       buildInputField(
                         _mobileController,
-                        'Mobile No',
+                        'Mobile No (at least 11 digits)',
                         inputType: TextInputType.phone,
                         isRequired: true,
+                        validator: (val) {
+                          if (val == null || val.isEmpty) {
+                            return 'Please enter mobile number';
+                          }
+                          if (!RegExp(r'^\d+$').hasMatch(val)) {
+                            return 'Mobile number must contain only digits';
+                          }
+                          if (val.length < 11) {
+                            return 'Mobile number must be at least 11 digits';
+                          }
+                          return null;
+                        },
                       ),
                       buildInputField(
                         _emailController,
                         'E-Mail',
                         inputType: TextInputType.emailAddress,
                         isRequired: true,
+                        validator: (val) {
+                          if (val == null || val.isEmpty) {
+                            return 'Please enter email';
+                          }
+                          final emailRegex =
+                              RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+                          if (!emailRegex.hasMatch(val)) {
+                            return 'Enter a valid email address';
+                          }
+                          return null;
+                        },
                       ),
                       buildInputField(
                         _passwordController,
                         'Password',
                         isRequired: true,
                         obscure: _obscurePassword,
+                        validator: (val) {
+                          if (val == null || val.isEmpty) {
+                            return 'Please enter password';
+                          }
+                          if (val.length < 6) {
+                            return 'Password must be at least 6 characters';
+                          }
+                          return null;
+                        },
                         onChanged: (value) {
                           if (_confirmPasswordController.text.isNotEmpty) {
                             setState(() {
@@ -367,7 +606,7 @@ class _AddNewUserFormState extends State<AddNewUserForm> {
                         children: [
                           Expanded(
                             child: ElevatedButton.icon(
-                              onPressed: _submitForm,
+                              onPressed: _isLoading ? null : _submitForm,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF0052CC),
                                 foregroundColor: Colors.white,
@@ -377,46 +616,53 @@ class _AddNewUserFormState extends State<AddNewUserForm> {
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
-                              icon: const Icon(Icons.save),
-                              label: const Text('Submit'),
+                              icon: _isLoading
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(Icons.save),
+                              label:
+                                  Text(_isLoading ? 'Submitting...' : 'Submit'),
                             ),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
                             child: ElevatedButton.icon(
-                              onPressed: () async {
-                                final confirm = await showDialog<bool>(
-                                  context: context,
-                                  builder: (_) => AlertDialog(
-                                    title: const Text('Confirm Cancel'),
-                                    content: const Text(
-                                        'Are you sure you want to cancel? All changes will be lost.'),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () =>
-                                            Navigator.pop(context, false),
-                                        child: const Text('No'),
-                                      ),
-                                      TextButton(
-                                        onPressed: () =>
-                                            Navigator.pop(context, true),
-                                        style: TextButton.styleFrom(
-                                            foregroundColor: Colors.red),
-                                        child: const Text('Yes'),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                                if (confirm == true) {
-                                  Navigator.pushReplacement(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          const AdminStaffStateScreen(),
-                                    ),
-                                  );
-                                }
-                              },
+                              onPressed: _isLoading
+                                  ? null
+                                  : () async {
+                                      final confirm = await showDialog<bool>(
+                                        context: context,
+                                        builder: (_) => AlertDialog(
+                                          title: const Text('Confirm Cancel'),
+                                          content: const Text(
+                                              'Are you sure you want to cancel? All changes will be lost.'),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(context, false),
+                                              child: const Text('No'),
+                                            ),
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(context, true),
+                                              style: TextButton.styleFrom(
+                                                  foregroundColor: Colors.red),
+                                              child: const Text('Yes'),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                      if (confirm == true) {
+                                        Navigator.of(context)
+                                            .pop(); // Return to staff state page
+                                      }
+                                    },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.red,
                                 foregroundColor: Colors.white,

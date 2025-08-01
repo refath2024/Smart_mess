@@ -293,11 +293,16 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
     }
   }
 
-  void _navigateToAddStaff() {
-    Navigator.push(
+  void _navigateToAddStaff() async {
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const AddNewUserForm()),
     );
+
+    // Refresh data when returning from add form
+    if (result == true || result == null) {
+      await _loadStaffData();
+    }
   }
 
   Widget _buildSidebarTile({

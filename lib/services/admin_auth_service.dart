@@ -8,14 +8,107 @@ class AdminAuthService {
   Future<Map<String, dynamic>?> loginAdmin(
       String email, String password) async {
     try {
-      // First, authenticate with Firebase Auth
+      // First, check if user exists in staff_state collection
+      final QuerySnapshot staffQuery = await _firestore
+          .collection('staff_state')
+          .where('email', isEqualTo: email)
+          .get();
+
+      if (staffQuery.docs.isEmpty) {
+        return {
+          'success': false,
+          'error': 'No staff member found with this email.',
+        };
+      }
+
+      final DocumentSnapshot staffDoc = staffQuery.docs.first;
+      final data = staffDoc.data() as Map<String, dynamic>;
+
+      // Check if staff member is active
+      if (data['status'] != 'Active') {
+        return {
+          'success': false,
+          'error':
+              'Your account is inactive. Please contact system administrator.',
+        };
+      }
+
+      // Check if this is first time login (Firebase Auth not created yet)
+      if (data['firebase_auth_created'] != true) {
+        // Verify the stored password
+        if (data['password'] != password) {
+          return {
+            'success': false,
+            'error': 'Incorrect password.',
+          };
+        }
+
+        try {
+          // Create Firebase Auth account for first-time login
+          final UserCredential userCredential =
+              await _auth.createUserWithEmailAndPassword(
+            email: email,
+            password: password,
+          );
+
+          // Update the document ID to match Firebase Auth UID and mark as created
+          await _firestore
+              .collection('staff_state')
+              .doc(userCredential.user!.uid)
+              .set({
+            ...data,
+            'firebase_auth_created': true,
+            'first_login_at': FieldValue.serverTimestamp(),
+            'user_id': userCredential.user!.uid,
+          });
+
+          // Delete the old document if it has a different ID
+          if (staffDoc.id != userCredential.user!.uid) {
+            await _firestore
+                .collection('staff_state')
+                .doc(staffDoc.id)
+                .delete();
+          }
+
+          return {
+            'success': true,
+            'data': data,
+            'uid': userCredential.user!.uid,
+            'first_login': true,
+          };
+        } on FirebaseAuthException catch (e) {
+          if (e.code == 'email-already-in-use') {
+            // If email already exists in Firebase Auth, try to sign in normally
+            return await _signInExistingUser(email, password, data);
+          } else {
+            return {
+              'success': false,
+              'error': 'Failed to create account: ${e.message}',
+            };
+          }
+        }
+      } else {
+        // Firebase Auth account already exists, sign in normally
+        return await _signInExistingUser(email, password, data);
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'An unexpected error occurred: $e',
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>?> _signInExistingUser(
+      String email, String password, Map<String, dynamic> staffData) async {
+    try {
       final UserCredential userCredential =
           await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      // Check if the user exists in staff_state collection
+      // Verify user still exists in staff_state collection with correct UID
       final DocumentSnapshot staffDoc = await _firestore
           .collection('staff_state')
           .doc(userCredential.user!.uid)
@@ -23,8 +116,6 @@ class AdminAuthService {
 
       if (staffDoc.exists) {
         final data = staffDoc.data() as Map<String, dynamic>;
-
-        // Check if the staff member is active
         if (data['status'] == 'Active') {
           return {
             'success': true,
@@ -32,7 +123,6 @@ class AdminAuthService {
             'uid': userCredential.user!.uid,
           };
         } else {
-          // Sign out if inactive
           await _auth.signOut();
           return {
             'success': false,
@@ -41,11 +131,10 @@ class AdminAuthService {
           };
         }
       } else {
-        // Sign out if not a staff member
         await _auth.signOut();
         return {
           'success': false,
-          'error': 'You are not authorized to access admin panel.',
+          'error': 'Staff data not found. Please contact system administrator.',
         };
       }
     } on FirebaseAuthException catch (e) {
@@ -55,7 +144,7 @@ class AdminAuthService {
           errorMessage = 'No user found with this email.';
           break;
         case 'wrong-password':
-          errorMessage = 'Wrong password provided.';
+          errorMessage = 'Incorrect password.';
           break;
         case 'invalid-email':
           errorMessage = 'Invalid email address.';
@@ -69,11 +158,6 @@ class AdminAuthService {
       return {
         'success': false,
         'error': errorMessage,
-      };
-    } catch (e) {
-      return {
-        'success': false,
-        'error': 'An unexpected error occurred: $e',
       };
     }
   }

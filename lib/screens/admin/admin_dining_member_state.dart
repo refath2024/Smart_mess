@@ -593,11 +593,16 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                 ),
                 const SizedBox(width: 16),
                 ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
+                  onPressed: () async {
+                    final result = await Navigator.push(
                         context,
                         MaterialPageRoute(
                             builder: (_) => const AddDiningMemberForm()));
+
+                    // Refresh data when returning from add form
+                    if (result == true || result == null) {
+                      await _fetchUsersFromFirestore();
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF0052CC),
@@ -619,7 +624,7 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                 scrollDirection: Axis.horizontal,
                 child: DataTable(
                   headingRowColor:
-                      MaterialStateProperty.all(const Color(0xFF1A4D8F)),
+                      WidgetStateProperty.all(const Color(0xFF1A4D8F)),
                   columns: const [
                     DataColumn(
                         label: Text('BA No',

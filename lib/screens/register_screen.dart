@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -234,18 +233,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
       bool isReapplication = false;
 
       if (existingUserQuery.docs.isNotEmpty) {
-        // This is a reapplication, use existing document
+        // This is a reapplication, use existing document ID
         final existingDoc = existingUserQuery.docs.first;
         userid = existingDoc.id;
         isReapplication = true;
       } else {
-        // New application, create new Firebase Auth user
-        UserCredential userCredential =
-            await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
-        );
-        userid = userCredential.user!.uid;
+        // New application, generate a temporary user ID for Firestore document
+        // Note: We don't create Firebase Auth user here to avoid session conflicts
+        // The user will be created in Firebase Auth when they first try to log in
+        userid =
+            FirebaseFirestore.instance.collection('user_requests').doc().id;
       }
 
       // Save/Update user info to Firestore under 'user_requests' collection
@@ -259,12 +256,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
         'unit': _unitController.text.trim(),
         'email': _emailController.text.trim(),
         'mobile': _mobileController.text.trim(),
-        'approved': false,
+        'password': _passwordController.text
+            .trim(), // Store temporarily for first login
+        'approved': false, // User registration needs approval
         'rejected': false,
-        'status': 'pending',
+        'status': 'pending', // Status is pending for user registrations
+        'dining_status': 'Pending', // Will be set to Active when approved
         'created_at': FieldValue.serverTimestamp(),
         'user_id': userid,
+        'approved_by_admin': false, // This is user self-registration
         'application_date': DateTime.now().toIso8601String(),
+        'firebase_auth_created':
+            false, // Flag to indicate Auth user not yet created
         'reapplication': isReapplication,
         'updated_at': isReapplication ? FieldValue.serverTimestamp() : null,
       });
@@ -295,25 +298,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ],
         ),
       );
-    } on FirebaseAuthException catch (e) {
-      await showDialog<void>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Registration Error'),
-          content: Text(e.message ?? 'An unexpected error occurred.'),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('OK')),
-          ],
-        ),
-      );
     } catch (e) {
       await showDialog<void>(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Error'),
-          content: Text(e.toString()),
+          content: Text('Failed to submit application: $e'),
           actions: [
             TextButton(
                 onPressed: () => Navigator.of(context).pop(),
