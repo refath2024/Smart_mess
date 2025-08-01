@@ -462,7 +462,7 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
                     final newTransaction = await Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => InsertTransactionScreen(),
+                        builder: (context) => const InsertTransactionScreen(),
                       ),
                     );
 
@@ -502,7 +502,7 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
                   scrollDirection: Axis.horizontal,
                   child: DataTable(
                     headingRowColor:
-                        MaterialStateProperty.all(const Color(0xFFF4F4F4)),
+                        WidgetStateProperty.all(const Color(0xFFF4F4F4)),
                     columns: const [
                       DataColumn(
                           label: Text('Payment Amount (BDT)',

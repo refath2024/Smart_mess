@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class MealStateRecordScreen extends StatefulWidget {
-  const MealStateRecordScreen({Key? key}) : super(key: key);
+  const MealStateRecordScreen({super.key});
 
   @override
   State<MealStateRecordScreen> createState() => _MealStateRecordScreenState();
@@ -306,7 +306,7 @@ class _MealStateRecordScreenState extends State<MealStateRecordScreen> {
                 scrollDirection: Axis.horizontal,
                 child: SingleChildScrollView(
                   child: DataTable(
-                    headingRowColor: MaterialStateProperty.all(
+                    headingRowColor: WidgetStateProperty.all(
                       const Color(0xFF1A4D8F),
                     ),
                     columns: const [

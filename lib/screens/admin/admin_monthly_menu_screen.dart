@@ -703,7 +703,7 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                           scrollDirection: Axis.vertical,
                           child: DataTable(
                             headingRowColor:
-                                MaterialStateProperty.all(Colors.grey[50]),
+                                WidgetStateProperty.all(Colors.grey[50]),
                             dataRowMaxHeight: 80,
                             columnSpacing: 40,
                             horizontalMargin: 24,

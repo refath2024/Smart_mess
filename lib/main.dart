@@ -25,7 +25,7 @@ class MyApp extends StatelessWidget {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
           title: 'Smart Mess',
-          home: SplashScreen(),
+          home: const SplashScreen(),
           themeMode: themeNotifier.currentTheme,
           theme: ThemeData.light(),
           darkTheme: ThemeData.dark(),

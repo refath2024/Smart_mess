@@ -362,10 +362,10 @@ class HomeContent extends StatelessWidget {
                   children: [
                     const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 32),
                     const SizedBox(width: 16),
-                    Expanded(
+                    const Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
+                        children: [
                           Text("Total Due",
                               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.red)),
                           SizedBox(height: 4),

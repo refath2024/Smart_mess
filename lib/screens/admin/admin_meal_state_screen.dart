@@ -18,7 +18,7 @@ import 'admin_login_screen.dart';
 import '../../services/admin_auth_service.dart';
 
 class AdminMealStateScreen extends StatefulWidget {
-  const AdminMealStateScreen({Key? key}) : super(key: key);
+  const AdminMealStateScreen({super.key});
 
   @override
   State<AdminMealStateScreen> createState() => _AdminMealStateScreenState();
@@ -623,7 +623,7 @@ class _AdminMealStateScreenState extends State<AdminMealStateScreen> {
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: DataTable(
-                  headingRowColor: MaterialStateProperty.all(
+                  headingRowColor: WidgetStateProperty.all(
                     const Color(0xFF1A4D8F),
                   ),
                   columns: const [

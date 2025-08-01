@@ -224,7 +224,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         SizedBox(
           width: 80,
           child: Text(
-            mealTime + ":",
+            "$mealTime:",
             style: const TextStyle(
               fontWeight: FontWeight.w600,
               color: Color(0xFF1A4D8F),

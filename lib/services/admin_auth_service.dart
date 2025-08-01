@@ -8,6 +8,18 @@ class AdminAuthService {
   Future<Map<String, dynamic>?> loginAdmin(
       String email, String password) async {
     try {
+      final QuerySnapshot staffQuery = await _firestore
+          .collection('staff_state')
+          .where('email', isEqualTo: email)
+          .get();
+
+      if (staffQuery.docs.isEmpty) {
+        return {
+          'success': false,
+          'error': 'No staff member found with this email.',
+        };
+      }
+
       final credential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,

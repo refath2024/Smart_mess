@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AddMenuSetScreen extends StatefulWidget {
-  const AddMenuSetScreen({Key? key}) : super(key: key);
+  const AddMenuSetScreen({super.key});
 
   @override
   State<AddMenuSetScreen> createState() => _AddMenuSetScreenState();

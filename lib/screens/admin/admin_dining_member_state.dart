@@ -717,7 +717,7 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                               onChanged: (value) => row['email'] = value,
                             )
                           : Text(row['email'] ?? '')),
-                      DataCell(Text('Dining Member')),
+                      const DataCell(Text('Dining Member')),
                       DataCell(
                         isEditing
                             ? DropdownButton<String>(

@@ -321,11 +321,13 @@ class _MyProfilePageState extends State<MyProfilePage> {
                 enabled: _isEditing,
                 keyboardType: TextInputType.emailAddress,
                 validator: (val) {
-                  if (val == null || val.isEmpty)
+                  if (val == null || val.isEmpty) {
                     return 'Please enter your email';
+                  }
                   final regex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-                  if (!regex.hasMatch(val))
+                  if (!regex.hasMatch(val)) {
                     return 'Enter a valid email address';
+                  }
                   return null;
                 },
               ),
@@ -335,12 +337,15 @@ class _MyProfilePageState extends State<MyProfilePage> {
                 enabled: _isEditing,
                 keyboardType: TextInputType.phone,
                 validator: (val) {
-                  if (val == null || val.isEmpty)
+                  if (val == null || val.isEmpty) {
                     return 'Please enter your mobile number';
-                  if (!RegExp(r'^\d+$').hasMatch(val))
+                  }
+                  if (!RegExp(r'^\d+$').hasMatch(val)) {
                     return 'Mobile number must contain only digits';
-                  if (val.length < 11)
+                  }
+                  if (val.length < 11) {
                     return 'Mobile number must be at least 11 digits';
+                  }
                   return null;
                 },
               ),

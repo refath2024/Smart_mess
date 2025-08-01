@@ -81,6 +81,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           child: Container(
+            width: 400,
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: Colors.white,

@@ -301,7 +301,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
         ];
       } else {
         dynamicRemarks = [
-          'No specific remarks available for ${selectedDay} yet.',
+          'No specific remarks available for $selectedDay yet.',
           'Data collection is ongoing; encourage more members to vote to gather comprehensive insights.'
         ];
       }

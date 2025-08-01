@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'login_screen.dart';
 
@@ -238,11 +239,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
         userid = existingDoc.id;
         isReapplication = true;
       } else {
+        final credential = await FirebaseAuth.instance
+            .createUserWithEmailAndPassword(
+                email: _emailController.text.trim(),
+                password: _passwordController.text.trim());
         // New application, generate a temporary user ID for Firestore document
         // Note: We don't create Firebase Auth user here to avoid session conflicts
         // The user will be created in Firebase Auth when they first try to log in
-        userid =
-            FirebaseFirestore.instance.collection('user_requests').doc().id;
+        userid = credential.user!.uid; // Use Firebase Auth user ID
       }
 
       // Save/Update user info to Firestore under 'user_requests' collection
@@ -256,8 +260,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
         'unit': _unitController.text.trim(),
         'email': _emailController.text.trim(),
         'mobile': _mobileController.text.trim(),
-        'password': _passwordController.text
-            .trim(), // Store temporarily for first login
         'approved': false, // User registration needs approval
         'rejected': false,
         'status': 'pending', // Status is pending for user registrations
@@ -517,12 +519,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         _emailController,
                         type: TextInputType.emailAddress,
                         validator: (val) {
-                          if (val == null || val.isEmpty)
+                          if (val == null || val.isEmpty) {
                             return 'Please enter your email';
+                          }
                           final emailRegex =
                               RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-                          if (!emailRegex.hasMatch(val))
+                          if (!emailRegex.hasMatch(val)) {
                             return 'Enter a valid email address';
+                          }
                           return null;
                         },
                       ),
@@ -531,12 +535,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         _mobileController,
                         type: TextInputType.phone,
                         validator: (val) {
-                          if (val == null || val.isEmpty)
+                          if (val == null || val.isEmpty) {
                             return 'Please enter your mobile number';
-                          if (!RegExp(r'^\d+$').hasMatch(val))
+                          }
+                          if (!RegExp(r'^\d+$').hasMatch(val)) {
                             return 'Mobile number must contain only digits';
-                          if (val.length < 11)
+                          }
+                          if (val.length < 11) {
                             return 'Mobile number must be at least 11 digits';
+                          }
                           return null;
                         },
                       ),
@@ -544,10 +551,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         controller: _passwordController,
                         obscureText: !_passwordVisible,
                         validator: (val) {
-                          if (val == null || val.isEmpty)
+                          if (val == null || val.isEmpty) {
                             return 'Please enter a password';
-                          if (val.length < 6)
+                          }
+                          if (val.length < 6) {
                             return 'Password must be at least 6 characters';
+                          }
                           return null;
                         },
                         decoration: InputDecoration(

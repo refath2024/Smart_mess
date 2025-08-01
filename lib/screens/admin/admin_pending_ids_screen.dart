@@ -566,7 +566,7 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
                     headingRowHeight: 50,
                     dataRowHeight: 60,
                     headingRowColor:
-                        MaterialStateProperty.all(const Color(0xFF1A4D8F)),
+                        WidgetStateProperty.all(const Color(0xFF1A4D8F)),
                     headingTextStyle: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
@@ -594,7 +594,7 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
                       final docId = user['id'] as String;
                       return DataRow(
                         color:
-                            MaterialStateProperty.resolveWith<Color?>((states) {
+                            WidgetStateProperty.resolveWith<Color?>((states) {
                           return Colors.grey.shade100;
                         }),
                         cells: [

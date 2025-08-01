@@ -117,15 +117,15 @@ class _BillingScreenState extends State<BillingScreen> {
                   color: Colors.green.shade50,
                   margin: const EdgeInsets.only(bottom: 20),
                   child: const Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.all(16),
                     child: Row(
                       children: [
-                        const Icon(Icons.check_circle, color: Colors.green),
-                        const SizedBox(width: 10),
+                        Icon(Icons.check_circle, color: Colors.green),
+                        SizedBox(width: 10),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
+                            children: [
                               Text("Payment Successful!",
                                   style:
                                       TextStyle(fontWeight: FontWeight.bold)),
@@ -144,15 +144,15 @@ class _BillingScreenState extends State<BillingScreen> {
                     borderRadius: BorderRadius.circular(12)),
                 child: const Padding(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                      EdgeInsets.symmetric(horizontal: 18, vertical: 16),
                   child: Row(
                     children: [
-                      const Icon(Icons.receipt, color: Colors.red, size: 32),
-                      const SizedBox(width: 16),
+                      Icon(Icons.receipt, color: Colors.red, size: 32),
+                      SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
+                          children: [
                             Text("Total Due",
                                 style: TextStyle(
                                     fontSize: 18,

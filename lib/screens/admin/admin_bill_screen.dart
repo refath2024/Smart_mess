@@ -19,7 +19,7 @@ import 'package:printing/printing.dart';
 import '../../services/admin_auth_service.dart';
 
 class AdminBillScreen extends StatefulWidget {
-  const AdminBillScreen({Key? key}) : super(key: key);
+  const AdminBillScreen({super.key});
 
   @override
   State<AdminBillScreen> createState() => _AdminBillScreenState();
@@ -297,8 +297,8 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                     ])
                 .toList(),
             headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-            cellStyle: pw.TextStyle(fontSize: 12),
-            headerDecoration: pw.BoxDecoration(color: PdfColors.blue50),
+            cellStyle: const pw.TextStyle(fontSize: 12),
+            headerDecoration: const pw.BoxDecoration(color: PdfColors.blue50),
             cellAlignment: pw.Alignment.centerLeft,
             border: pw.TableBorder.all(),
           ),
@@ -653,7 +653,7 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: DataTable(
-                  headingRowColor: MaterialStateProperty.all(
+                  headingRowColor: WidgetStateProperty.all(
                     const Color(0xFF1A4D8F),
                   ),
                   columns: const [

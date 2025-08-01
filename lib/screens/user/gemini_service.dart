@@ -35,7 +35,7 @@ User: $prompt
       ]
     }
   ]
-};;
+};
 
     final response = await http.post(
       Uri.parse(_apiUrl),
