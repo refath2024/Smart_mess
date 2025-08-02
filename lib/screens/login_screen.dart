@@ -22,7 +22,7 @@ class _LoginScreenState extends State<LoginScreen> {
   String _division = "MIST";
   bool _obscurePassword = true;
   bool _isLoading = false;
-  
+
   // Email suggestions
   List<String> _emailSuggestions = [];
   bool _showSuggestions = false;
@@ -59,20 +59,20 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       List<String> emailHistory = prefs.getStringList('email_history') ?? [];
-      
+
       // Remove email if it already exists to avoid duplicates
       emailHistory.remove(email);
-      
+
       // Add email to the beginning of the list
       emailHistory.insert(0, email);
-      
+
       // Keep only the last 5 emails
       if (emailHistory.length > 5) {
         emailHistory = emailHistory.take(5).toList();
       }
-      
+
       await prefs.setStringList('email_history', emailHistory);
-      
+
       setState(() {
         _emailSuggestions = emailHistory;
       });
@@ -95,7 +95,7 @@ class _LoginScreenState extends State<LoginScreen> {
         .toList();
 
     setState(() {
-      _showSuggestions = filteredSuggestions.isNotEmpty && query.length > 0;
+      _showSuggestions = filteredSuggestions.isNotEmpty && query.isNotEmpty;
     });
   }
 
@@ -135,7 +135,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (result != null && result['success'] == true) {
         // Save email to history on successful login
         await _saveEmailToHistory(email);
-        
+
         if (mounted) {
           Navigator.pushReplacement(
             context,
@@ -244,16 +244,18 @@ class _LoginScreenState extends State<LoginScreen> {
                               itemCount: _emailSuggestions
                                   .where((email) => email
                                       .toLowerCase()
-                                      .contains(_emailController.text.toLowerCase()))
+                                      .contains(
+                                          _emailController.text.toLowerCase()))
                                   .length,
                               itemBuilder: (context, index) {
                                 final filteredEmails = _emailSuggestions
                                     .where((email) => email
                                         .toLowerCase()
-                                        .contains(_emailController.text.toLowerCase()))
+                                        .contains(_emailController.text
+                                            .toLowerCase()))
                                     .toList();
                                 final email = filteredEmails[index];
-                                
+
                                 return ListTile(
                                   dense: true,
                                   leading: const Icon(Icons.history, size: 16),

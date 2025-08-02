@@ -10,10 +10,12 @@ class ChangePasswordScreen extends StatefulWidget {
 
 class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _currentPasswordController = TextEditingController();
+  final TextEditingController _currentPasswordController =
+      TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
-  
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
+
   bool _obscureCurrentPassword = true;
   bool _obscureNewPassword = true;
   bool _obscureConfirmPassword = true;
@@ -84,18 +86,18 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        
+
         // Clear form
         _currentPasswordController.clear();
         _newPasswordController.clear();
         _confirmPasswordController.clear();
-        
+
         // Go back to previous screen
         Navigator.pop(context);
       }
     } catch (e) {
       String errorMessage = 'Failed to change password';
-      
+
       if (e is FirebaseAuthException) {
         switch (e.code) {
           case 'wrong-password':
@@ -105,7 +107,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             errorMessage = 'New password is too weak';
             break;
           case 'requires-recent-login':
-            errorMessage = 'Please log out and log in again before changing password';
+            errorMessage =
+                'Please log out and log in again before changing password';
             break;
           default:
             errorMessage = e.message ?? 'Failed to change password';
@@ -227,10 +230,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   ),
                   child: Column(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.lock_reset,
                         size: 60,
-                        color: const Color(0xFF002B5B),
+                        color: Color(0xFF002B5B),
                       ),
                       const SizedBox(height: 12),
                       const Text(
@@ -253,9 +256,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // Form Section
                 Container(
                   width: double.infinity,
@@ -283,7 +286,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      
+
                       // Current Password
                       _buildPasswordField(
                         controller: _currentPasswordController,
@@ -296,9 +299,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         },
                         validator: _validateCurrentPassword,
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // New Password
                       _buildPasswordField(
                         controller: _newPasswordController,
@@ -311,9 +314,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         },
                         validator: _validateNewPassword,
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // Confirm New Password
                       _buildPasswordField(
                         controller: _confirmPasswordController,
@@ -329,9 +332,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Password Requirements
                 Container(
                   width: double.infinity,
@@ -362,17 +365,14 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         ],
                       ),
                       const SizedBox(height: 6),
-                      Text(
-                        '• At least 6 characters long\n'
-                        '• Different from your current password\n'
-                       
-                      ),
+                      const Text('• At least 6 characters long\n'
+                          '• Different from your current password\n'),
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // Submit Button
                 SizedBox(
                   width: double.infinity,
@@ -405,9 +405,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                           ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Cancel Button
                 SizedBox(
                   width: double.infinity,

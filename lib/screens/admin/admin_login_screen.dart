@@ -19,7 +19,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   String _division = "MIST";
   bool _obscurePassword = true; // 👁️ password visibility toggle
   bool _isLoading = false;
-  
+
   // Email suggestions
   List<String> _emailSuggestions = [];
   bool _showSuggestions = false;
@@ -34,7 +34,8 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   Future<void> _loadAdminEmailHistory() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final adminEmailHistory = prefs.getStringList('admin_email_history') ?? [];
+      final adminEmailHistory =
+          prefs.getStringList('admin_email_history') ?? [];
       setState(() {
         _emailSuggestions = adminEmailHistory;
       });
@@ -46,21 +47,22 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   Future<void> _saveAdminEmailToHistory(String email) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      List<String> adminEmailHistory = prefs.getStringList('admin_email_history') ?? [];
-      
+      List<String> adminEmailHistory =
+          prefs.getStringList('admin_email_history') ?? [];
+
       // Remove email if it already exists to avoid duplicates
       adminEmailHistory.remove(email);
-      
+
       // Add email to the beginning of the list
       adminEmailHistory.insert(0, email);
-      
+
       // Keep only the last 5 emails
       if (adminEmailHistory.length > 5) {
         adminEmailHistory = adminEmailHistory.take(5).toList();
       }
-      
+
       await prefs.setStringList('admin_email_history', adminEmailHistory);
-      
+
       setState(() {
         _emailSuggestions = adminEmailHistory;
       });
@@ -83,7 +85,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
         .toList();
 
     setState(() {
-      _showSuggestions = filteredSuggestions.isNotEmpty && query.length > 0;
+      _showSuggestions = filteredSuggestions.isNotEmpty && query.isNotEmpty;
     });
   }
 
@@ -123,7 +125,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
       if (result != null && result['success'] == true) {
         // Save admin email to history on successful login
         await _saveAdminEmailToHistory(email);
-        
+
         if (mounted) {
           Navigator.pushReplacement(
             context,
@@ -228,21 +230,20 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                         child: ListView.builder(
                           shrinkWrap: true,
                           itemCount: _emailSuggestions
-                              .where((email) => email
-                                  .toLowerCase()
-                                  .contains(_emailController.text.toLowerCase()))
+                              .where((email) => email.toLowerCase().contains(
+                                  _emailController.text.toLowerCase()))
                               .length,
                           itemBuilder: (context, index) {
                             final filteredEmails = _emailSuggestions
-                                .where((email) => email
-                                    .toLowerCase()
-                                    .contains(_emailController.text.toLowerCase()))
+                                .where((email) => email.toLowerCase().contains(
+                                    _emailController.text.toLowerCase()))
                                 .toList();
                             final email = filteredEmails[index];
-                            
+
                             return ListTile(
                               dense: true,
-                              leading: const Icon(Icons.admin_panel_settings, size: 16, color: Colors.blue),
+                              leading: const Icon(Icons.admin_panel_settings,
+                                  size: 16, color: Colors.blue),
                               title: Text(
                                 email,
                                 style: const TextStyle(fontSize: 14),
