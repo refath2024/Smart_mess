@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MessingScreen extends StatefulWidget {
   const MessingScreen({super.key});
@@ -10,6 +12,7 @@ class MessingScreen extends StatefulWidget {
 
 class _MessingScreenState extends State<MessingScreen> {
   String _viewType = "Overview";
+  bool _isLoading = false;
 
   final List<String> _months = List.generate(
     12,
@@ -22,8 +25,11 @@ class _MessingScreenState extends State<MessingScreen> {
   late String _tempSelectedMonth;
   late int _tempSelectedYear;
 
-  // Demo data: last 5 days previous month + first 5 days current month
-  late final List<Map<String, dynamic>> demoData;
+  // Real messing data from Firebase
+  List<Map<String, dynamic>> messingData = [];
+  double totalMonthlyMessing = 0.0; // Total of all meals for the month
+  double totalExtraChitMessing = 0.0;
+  double totalExtraChitBar = 0.0;
 
   @override
   void initState() {
@@ -36,37 +42,101 @@ class _MessingScreenState extends State<MessingScreen> {
     _tempSelectedMonth = _selectedMonth;
     _tempSelectedYear = _selectedYear;
 
-    demoData = [];
+    _fetchMessingData();
+  }
 
-    // Previous month details
-    int prevMonth = now.month == 1 ? 12 : now.month - 1;
-    int prevYear = now.month == 1 ? now.year - 1 : now.year;
-    int prevMonthLastDay = DateTime(prevYear, prevMonth + 1, 0).day;
+  Future<void> _fetchMessingData() async {
+    setState(() {
+      _isLoading = true;
+    });
 
-    // Add last 5 days of previous month
-    for (int i = prevMonthLastDay - 4; i <= prevMonthLastDay; i++) {
-      DateTime date = DateTime(prevYear, prevMonth, i);
-      demoData.add({
-        'date': date,
-        'breakfast': 30.0 + i,
-        'lunch': 50.0 + i * 0.5,
-        'dinner': 45.0 + i * 0.7,
-        'extras': 8.0 + i * 0.2,
-        'bar': 4.0 + i * 0.1,
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      // Fetch all user data and filter locally to avoid composite index requirement
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('messing_data')
+          .where('userId', isEqualTo: user.uid)
+          .get();
+
+      // Calculate selected month index for filtering
+      final selectedMonthIndex = _months.indexOf(_selectedMonth) + 1;
+
+      List<Map<String, dynamic>> fetchedData = [];
+      double monthlyMessingTotal = 0.0; // Total of all meals taken in the month
+
+      for (var doc in querySnapshot.docs) {
+        final data = doc.data();
+        final dateStr = data['date'] as String?;
+        
+        if (dateStr == null) continue;
+        
+        try {
+          final docDate = DateTime.parse(dateStr);
+          
+          // Filter by selected month and year locally
+          if (docDate.month == selectedMonthIndex && docDate.year == _selectedYear) {
+            final meals = data['meals'] as List<dynamic>? ?? [];
+            
+            double dayTotal = 0.0;
+            for (var meal in meals) {
+              dayTotal += (meal['price'] as num?)?.toDouble() ?? 0.0;
+            }
+            
+            fetchedData.add({
+              'date': docDate,
+              'meals': meals,
+              'totalCost': data['totalCost'] ?? dayTotal,
+              'disposal': data['disposal'] ?? false,
+              'disposalType': data['disposalType'] ?? 'No',
+            });
+
+            // Add to monthly total only if not on disposal
+            if (!(data['disposal'] ?? false)) {
+              monthlyMessingTotal += dayTotal;
+            }
+          }
+        } catch (e) {
+          print('Error parsing date: $dateStr');
+          continue;
+        }
+      }
+
+      // Fetch extra chit data (these will be updated by admin)
+      final extraChitDoc = await FirebaseFirestore.instance
+          .collection('extra_chits')
+          .doc('${user.uid}_${_selectedMonth}_$_selectedYear')
+          .get();
+
+      double extraMessing = 0.0;
+      double extraBar = 0.0;
+
+      if (extraChitDoc.exists) {
+        final extraData = extraChitDoc.data()!;
+        extraMessing = (extraData['extra_messing'] as num?)?.toDouble() ?? 0.0;
+        extraBar = (extraData['extra_bar'] as num?)?.toDouble() ?? 0.0;
+      }
+
+      setState(() {
+        messingData = fetchedData;
+        totalMonthlyMessing = monthlyMessingTotal; // This is now the total for the whole month
+        totalExtraChitMessing = extraMessing;
+        totalExtraChitBar = extraBar;
+        _isLoading = false;
       });
-    }
 
-    // Add first 5 days of current month
-    for (int i = 1; i <= 5; i++) {
-      DateTime date = DateTime(now.year, now.month, i);
-      demoData.add({
-        'date': date,
-        'breakfast': 40.0 + i,
-        'lunch': 60.0 + i * 0.5,
-        'dinner': 55.0 + i * 0.7,
-        'extras': 10.0 + i * 0.2,
-        'bar': 5.0 + i * 0.1,
+    } catch (e) {
+      print('Error fetching messing data: $e');
+      setState(() {
+        _isLoading = false;
       });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading data: $e')),
+        );
+      }
     }
   }
 
@@ -75,9 +145,10 @@ class _MessingScreenState extends State<MessingScreen> {
       _selectedMonth = _tempSelectedMonth;
       _selectedYear = _tempSelectedYear;
     });
+    _fetchMessingData(); // Fetch new data for selected month/year
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Showing data for $_selectedMonth $_selectedYear'),
+        content: Text('Loading data for $_selectedMonth $_selectedYear'),
       ),
     );
   }
@@ -132,29 +203,28 @@ class _MessingScreenState extends State<MessingScreen> {
   }
 
   Widget _buildOverviewTables() {
-    final filteredData = demoData.where((entry) {
-      final date = entry['date'] as DateTime;
-      return date.month == _months.indexOf(_selectedMonth) + 1 &&
-          date.year == _selectedYear;
-    }).toList();
+    if (_isLoading) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Loading messing data...'),
+          ],
+        ),
+      );
+    }
 
-    double totalMessing = 0;
-    double totalExtras = 0;
-    double totalBar = 0;
-    // Fixed dummy subscription, cutting, misc amounts
+    // Calculate messing totals from Firebase data
+    double currentMessBill = totalMonthlyMessing + totalExtraChitMessing + totalExtraChitBar;
+    
+    // Fixed amounts (as per requirement)
     double totalSubscriptions = 300.00;
     double totalCuttings = 100.00;
     double totalMisc = 120.00;
-
-    for (var entry in filteredData) {
-      totalMessing +=
-          (entry['breakfast'] + entry['lunch'] + entry['dinner']) as double;
-      totalExtras += entry['extras'] as double;
-      totalBar += entry['bar'] as double;
-    }
-
-    double currentMessBill = totalMessing + totalExtras + totalBar;
     double arrears = 150.00;
+    
     double totalPayable = currentMessBill +
         totalSubscriptions +
         totalCuttings +
@@ -166,9 +236,9 @@ class _MessingScreenState extends State<MessingScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSimpleTable('Messing', {
-            'Daily Messing': totalMessing.toStringAsFixed(2),
-            'Extra Chit (Messing)': totalExtras.toStringAsFixed(2),
-            'Extra Chit (Bar)': totalBar.toStringAsFixed(2),
+            'Monthly Messing Total': totalMonthlyMessing.toStringAsFixed(2),
+            'Extra Chit (Messing)': totalExtraChitMessing.toStringAsFixed(2),
+            'Extra Chit (Bar)': totalExtraChitBar.toStringAsFixed(2),
             'Total Bill': currentMessBill.toStringAsFixed(2),
           }),
           const SizedBox(height: 12),
@@ -213,28 +283,65 @@ class _MessingScreenState extends State<MessingScreen> {
   }
 
   Widget _buildDetailTable() {
-    final filteredData = demoData.where((entry) {
-      final date = entry['date'] as DateTime;
-      return date.month == _months.indexOf(_selectedMonth) + 1 &&
-          date.year == _selectedYear;
-    }).toList();
+    if (_isLoading) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Loading detailed data...'),
+          ],
+        ),
+      );
+    }
 
-    filteredData.sort(
+    // Sort messing data by date
+    messingData.sort(
       (a, b) => (a['date'] as DateTime).compareTo(b['date'] as DateTime),
     );
 
     double totalBreakfast = 0,
         totalLunch = 0,
-        totalDinner = 0,
-        totalExtras = 0,
-        totalBar = 0;
+        totalDinner = 0;
 
-    for (var row in filteredData) {
-      totalBreakfast += row['breakfast'] as double;
-      totalLunch += row['lunch'] as double;
-      totalDinner += row['dinner'] as double;
-      totalExtras += row['extras'] as double;
-      totalBar += row['bar'] as double;
+    // Process each day's data to extract meal costs
+    List<Map<String, dynamic>> processedData = [];
+    for (var dayData in messingData) {
+      double breakfast = 0, lunch = 0, dinner = 0;
+      
+      final meals = dayData['meals'] as List<dynamic>? ?? [];
+      for (var meal in meals) {
+        final mealType = meal['mealType'] as String? ?? '';
+        final price = (meal['price'] as num?)?.toDouble() ?? 0.0;
+        
+        switch (mealType.toLowerCase()) {
+          case 'breakfast':
+            breakfast += price;
+            break;
+          case 'lunch':
+            lunch += price;
+            break;
+          case 'dinner':
+            dinner += price;
+            break;
+        }
+      }
+
+      if (!(dayData['disposal'] ?? false)) {
+        totalBreakfast += breakfast;
+        totalLunch += lunch;
+        totalDinner += dinner;
+      }
+
+      processedData.add({
+        'date': dayData['date'],
+        'breakfast': breakfast,
+        'lunch': lunch,
+        'dinner': dinner,
+        'disposal': dayData['disposal'] ?? false,
+        'disposalType': dayData['disposalType'] ?? 'No',
+      });
     }
 
     // Wrap horizontal and vertical scroll to avoid overflow
@@ -249,7 +356,7 @@ class _MessingScreenState extends State<MessingScreen> {
             columns: const [
               DataColumn(
                 label: Text(
-                  'Chit Date',
+                  'Date',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
@@ -273,36 +380,56 @@ class _MessingScreenState extends State<MessingScreen> {
               ),
               DataColumn(
                 label: Text(
-                  'Extras',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-              DataColumn(
-                label: Text(
-                  'Bar',
+                  'Status',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
             ],
             rows: [
-              ...filteredData.map((entry) {
+              ...processedData.map((entry) {
                 final date = entry['date'] as DateTime;
+                final isDisposal = entry['disposal'] as bool;
+                final disposalType = entry['disposalType'] as String;
+                
                 return DataRow(
+                  color: isDisposal 
+                    ? WidgetStateProperty.all(Colors.red.shade50)
+                    : null,
                   cells: [
                     DataCell(Text(DateFormat('dd-MM-yyyy').format(date))),
                     DataCell(
-                      Text((entry['breakfast'] as double).toStringAsFixed(2)),
+                      Text(
+                        isDisposal ? '-' : (entry['breakfast'] as double).toStringAsFixed(2),
+                        style: TextStyle(
+                          color: isDisposal ? Colors.red : Colors.black,
+                        ),
+                      ),
                     ),
                     DataCell(
-                      Text((entry['lunch'] as double).toStringAsFixed(2)),
+                      Text(
+                        isDisposal ? '-' : (entry['lunch'] as double).toStringAsFixed(2),
+                        style: TextStyle(
+                          color: isDisposal ? Colors.red : Colors.black,
+                        ),
+                      ),
                     ),
                     DataCell(
-                      Text((entry['dinner'] as double).toStringAsFixed(2)),
+                      Text(
+                        isDisposal ? '-' : (entry['dinner'] as double).toStringAsFixed(2),
+                        style: TextStyle(
+                          color: isDisposal ? Colors.red : Colors.black,
+                        ),
+                      ),
                     ),
                     DataCell(
-                      Text((entry['extras'] as double).toStringAsFixed(2)),
+                      Text(
+                        isDisposal ? disposalType : 'Active',
+                        style: TextStyle(
+                          color: isDisposal ? Colors.red : Colors.green,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ),
-                    DataCell(Text((entry['bar'] as double).toStringAsFixed(2))),
                   ],
                 );
               }),
@@ -334,16 +461,10 @@ class _MessingScreenState extends State<MessingScreen> {
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
-                  DataCell(
+                  const DataCell(
                     Text(
-                      totalExtras.toStringAsFixed(2),
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  DataCell(
-                    Text(
-                      totalBar.toStringAsFixed(2),
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      'Active Days',
+                      style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],

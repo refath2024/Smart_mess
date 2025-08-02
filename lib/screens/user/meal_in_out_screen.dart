@@ -71,10 +71,53 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
       return;
     }
 
+    // Get meal details with prices
+    final meals = [
+      {
+        'label': 'Breakfast',
+        'image': 'assets/1.png',
+        'name': 'Bhuna Khichuri with Egg',
+        'price': '৳ 30',
+        'priceValue': 30.0
+      },
+      {
+        'label': 'Lunch',
+        'image': 'assets/2.png',
+        'name': 'Luchi with alur dom',
+        'price': '৳ 150',
+        'priceValue': 150.0
+      },
+      {
+        'label': 'Dinner',
+        'image': 'assets/3.png',
+        'name': 'Luchi with dal curry',
+        'price': '৳ 80',
+        'priceValue': 80.0
+      },
+    ];
+
+    // Calculate selected meals with details and total cost
+    final selectedMealDetails = _selectedMeals.map((index) {
+      final meal = meals[index];
+      return {
+        'mealType': meal['label'] as String,
+        'mealName': meal['name'] as String,
+        'price': meal['priceValue'] as double,
+        'priceDisplay': meal['price'] as String,
+      };
+    }).toList();
+
+    final totalCost = selectedMealDetails.fold<double>(
+      0.0, 
+      (sum, meal) => sum + (meal['price'] as double)
+    );
+
     final data = {
       'userId': user.uid,
       'date': _mealDate,
       'selectedMeals': _selectedMeals.toList(),
+      'selectedMealDetails': selectedMealDetails,
+      'totalCost': totalCost,
       'remarks': _remarksController.text.trim(),
       'disposal': _disposalYes,
       'disposalType': _disposalYes ? _disposalType : 'No',
@@ -87,14 +130,31 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
       _isSubmitting = true;
     });
     try {
+      // Store in the main meals collection
       await FirebaseFirestore.instance
           .collection('meals')
           .doc(user.uid)
           .collection('entries')
           .add(data);
 
+      // Also store in a separate collection for easy messing calculations
+      await FirebaseFirestore.instance
+          .collection('messing_data')
+          .doc('${user.uid}_$_mealDate')
+          .set({
+        'userId': user.uid,
+        'date': _mealDate,
+        'meals': selectedMealDetails,
+        'totalCost': totalCost,
+        'timestamp': FieldValue.serverTimestamp(),
+        'disposal': _disposalYes,
+        'disposalType': _disposalYes ? _disposalType : 'No',
+        'disposalFrom': _disposalYes ? _fromDate?.toIso8601String() : null,
+        'disposalTo': _disposalYes ? _toDate?.toIso8601String() : null,
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Meal selection submitted')),
+        SnackBar(content: Text('Meal selection submitted (Total: ৳${totalCost.toStringAsFixed(0)})')),
       );
       setState(() {
         _selectedMeals.clear();
@@ -119,6 +179,34 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
     super.dispose();
   }
 
+  // Helper method to get meal-specific colors
+  Color _getMealColor(String mealType) {
+    switch (mealType.toLowerCase()) {
+      case 'breakfast':
+        return Colors.orange;
+      case 'lunch':
+        return Colors.green;
+      case 'dinner':
+        return Colors.purple;
+      default:
+        return Colors.blue;
+    }
+  }
+
+  // Helper method to get meal-specific icons
+  IconData _getMealIcon(String mealType) {
+    switch (mealType.toLowerCase()) {
+      case 'breakfast':
+        return Icons.free_breakfast;
+      case 'lunch':
+        return Icons.lunch_dining;
+      case 'dinner':
+        return Icons.dinner_dining;
+      default:
+        return Icons.restaurant;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
@@ -127,19 +215,22 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
         'label': 'Breakfast',
         'image': 'assets/1.png',
         'name': 'Bhuna Khichuri with Egg',
-        'price': '৳ 30'
+        'price': '৳ 30',
+        'priceValue': 30.0
       },
       {
         'label': 'Lunch',
         'image': 'assets/2.png',
         'name': 'Luchi with alur dom',
-        'price': '৳ 150'
+        'price': '৳ 150',
+        'priceValue': 150.0
       },
       {
         'label': 'Dinner',
         'image': 'assets/3.png',
         'name': 'Luchi with dal curry',
-        'price': '৳ 80'
+        'price': '৳ 80',
+        'priceValue': 80.0
       },
     ];
 
@@ -234,10 +325,32 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
                             borderRadius:
                                 const BorderRadius.vertical(top: Radius.circular(15)),
                             child: Image.asset(
-                              meal['image']!,
+                              meal['image']! as String,
                               height: 100,
                               width: double.infinity,
                               fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                // Fallback when image is not found
+                                return Container(
+                                  height: 100,
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        _getMealColor(meal['label']! as String).withOpacity(0.7),
+                                        _getMealColor(meal['label']! as String),
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    _getMealIcon(meal['label']! as String),
+                                    size: 40,
+                                    color: Colors.white,
+                                  ),
+                                );
+                              },
                             ),
                           ),
                           Padding(
@@ -247,21 +360,21 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  meal['label']!,
+                                  meal['label']! as String,
                                   style: const TextStyle(
                                       fontWeight: FontWeight.bold, fontSize: 16),
                                   textAlign: TextAlign.center,
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  meal['name']!,
+                                  meal['name']! as String,
                                   style: TextStyle(
                                       fontSize: 13, color: Colors.grey.shade700),
                                   textAlign: TextAlign.center,
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  meal['price']!,
+                                  meal['price']! as String,
                                   style: const TextStyle(
                                       color: Colors.green,
                                       fontWeight: FontWeight.w600),
