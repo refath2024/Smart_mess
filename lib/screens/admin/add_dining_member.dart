@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../services/admin_auth_service.dart';
 
 class AddDiningMemberForm extends StatefulWidget {
   const AddDiningMemberForm({super.key});
@@ -26,6 +27,9 @@ class _AddDiningMemberFormState extends State<AddDiningMemberForm> {
   bool _passwordsMatch = false;
   String _confirmPasswordError = '';
   bool _isLoading = false;
+
+  final AdminAuthService _adminAuthService = AdminAuthService();
+  Map<String, dynamic>? _currentAdminData;
 
   // Military ranks organized by service branch
   final List<String> _armyRanks = [
@@ -70,6 +74,23 @@ class _AddDiningMemberFormState extends State<AddDiningMemberForm> {
   final List<String> _roles = [
     'Dining Member',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentAdminData();
+  }
+
+  Future<void> _loadCurrentAdminData() async {
+    try {
+      final adminData = await _adminAuthService.getCurrentAdminData();
+      setState(() {
+        _currentAdminData = adminData;
+      });
+    } catch (e) {
+      debugPrint('Failed to load admin data: $e');
+    }
+  }
 
   Future<bool> _checkEmailExists() async {
     try {
@@ -198,15 +219,13 @@ class _AddDiningMemberFormState extends State<AddDiningMemberForm> {
         'mobile': _mobileController.text.trim(),
         'approved': true, // Admin is directly approving
         'rejected': false,
-        'status': 'approved',
-        'dining_status': 'Active', // Set as active dining member
+        'status': 'active',
         'created_at': FieldValue.serverTimestamp(),
         'approved_at': FieldValue.serverTimestamp(),
         'user_id': userid,
         'approved_by_admin': true,
+        'approved_by': _currentAdminData?['name'] ?? 'Admin',
         'application_date': DateTime.now().toIso8601String(),
-        'firebase_auth_created':
-            false, // Flag to indicate Auth user not yet created
       });
 
       if (context.mounted) {
@@ -216,7 +235,7 @@ class _AddDiningMemberFormState extends State<AddDiningMemberForm> {
           builder: (context) => AlertDialog(
             title: const Text('Success'),
             content: Text(
-              '${_nameController.text} has been successfully registered as a dining member.\n\nThey can now log in using their email and password.',
+              '${_nameController.text} has been successfully registered as a dining member.\n\nApproved by: ${_currentAdminData?['name'] ?? 'Admin'}\n\nThey can now log in using their email and password.',
             ),
             actions: [
               TextButton(

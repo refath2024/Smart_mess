@@ -112,6 +112,7 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
           'mobile': data['mobile'] ?? '',
           'email': data['email'] ?? '',
           'status': data['status'] ?? 'active', // Get current status
+          'approved_by': data['approved_by'] ?? 'Admin', // Get who approved
           'role': 'Dining Member',
           'isEditing': false,
           'original': {},
@@ -742,6 +743,12 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                                     fontWeight: FontWeight.bold,
                                     fontSize: 12))),
                         DataColumn(
+                            label: Text('Approved By',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12))),
+                        DataColumn(
                             label: Text('Action',
                                 style: TextStyle(
                                     color: Colors.white,
@@ -924,6 +931,16 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                                         ),
                                       ),
                                     ),
+                            ),
+                          ),
+                          DataCell(
+                            SizedBox(
+                              width: 100,
+                              child: Text(
+                                row['approved_by'] ?? 'Admin',
+                                style: const TextStyle(fontSize: 12),
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ),
                           DataCell(
