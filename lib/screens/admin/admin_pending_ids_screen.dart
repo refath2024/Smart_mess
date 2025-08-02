@@ -166,13 +166,33 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
     if (confirm != true) return;
 
     try {
+      // Check if user document exists
+      final userDoc = await FirebaseFirestore.instance
+          .collection('user_requests')
+          .doc(docId)
+          .get();
+
+      if (!userDoc.exists) {
+        throw Exception('User document not found');
+      }
+
+      // Update user document to approved status
       await FirebaseFirestore.instance
           .collection('user_requests')
           .doc(docId)
-          .update({'approved': true, 'status': "active"});
+          .update({
+        'approved': true,
+        'status': "active",
+        'approved_at': FieldValue.serverTimestamp(),
+        'approved_by': _currentUserData?['name'] ?? 'Admin',
+      });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("User has been accepted.")),
+        const SnackBar(
+          content:
+              Text("User has been accepted and can now log in to the system."),
+          duration: Duration(seconds: 4),
+        ),
       );
       await _fetchPendingUsers();
     } catch (e) {

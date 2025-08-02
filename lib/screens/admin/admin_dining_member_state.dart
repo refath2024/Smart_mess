@@ -33,6 +33,7 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
 
   List<Map<String, dynamic>> members = [];
   String searchTerm = '';
+  String statusFilter = 'all'; // Add status filter
   final _searchController = TextEditingController();
   List<Map<String, dynamic>> filtered = [];
 
@@ -94,6 +95,7 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
     try {
       final querySnapshot = await FirebaseFirestore.instance
           .collection('user_requests')
+          .where('approved', isEqualTo: true)
           .where('rejected', isEqualTo: false)
           .get();
 
@@ -109,9 +111,8 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
           'unit': data['unit'] ?? '',
           'mobile': data['mobile'] ?? '',
           'email': data['email'] ?? '',
+          'status': data['status'] ?? 'active', // Get current status
           'role': 'Dining Member',
-          'status': data['dining_status'] ??
-              'Active', // Use dining_status field for Active/Inactive
           'isEditing': false,
           'original': {},
         });
@@ -119,7 +120,7 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
 
       setState(() {
         members = fetchedUsers;
-        filtered = List.from(members);
+        _applyFilters(); // Use the new filter method
       });
     } catch (e) {
       if (mounted) {
@@ -164,8 +165,8 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
       row['unit'] = row['original']['unit'];
       row['mobile'] = row['original']['mobile'];
       row['email'] = row['original']['email'];
-      row['role'] = row['original']['role'];
       row['status'] = row['original']['status'];
+      row['role'] = row['original']['role'];
       row['isEditing'] = false;
     });
   }
@@ -204,7 +205,7 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
 
         setState(() {
           members.remove(row);
-          filtered = List.from(members);
+          _applyFilters(); // Use the new filter method
         });
 
         if (mounted) {
@@ -258,8 +259,7 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
             'unit': row['unit'],
             'mobile': row['mobile'],
             'email': row['email'],
-            'dining_status':
-                row['status'], // Save dining member status (Active/Inactive)
+            'status': row['status'],
           });
         }
 
@@ -285,10 +285,24 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
   void _search(String query) {
     setState(() {
       searchTerm = query.toLowerCase();
-      filtered = members
-          .where((m) => m.values.any(
-              (value) => value.toString().toLowerCase().contains(searchTerm)))
-          .toList();
+      _applyFilters();
+    });
+  }
+
+  void _applyFilters() {
+    setState(() {
+      filtered = members.where((m) {
+        // Search filter
+        final matchesSearch = searchTerm.isEmpty ||
+            m.values.any(
+                (value) => value.toString().toLowerCase().contains(searchTerm));
+
+        // Status filter
+        final matchesStatus =
+            statusFilter == 'all' || m['status'] == statusFilter;
+
+        return matchesSearch && matchesStatus;
+      }).toList();
     });
   }
 
@@ -578,9 +592,11 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
+            // First row with search and filter
             Row(
               children: [
                 Expanded(
+                  flex: 3,
                   child: TextField(
                     controller: _searchController,
                     onChanged: _search,
@@ -588,10 +604,53 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                       labelText: 'Search All Text Columns',
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.search),
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 2,
+                  child: DropdownButtonFormField<String>(
+                    value: statusFilter,
+                    decoration: const InputDecoration(
+                      labelText: 'Filter by Status',
+                      border: OutlineInputBorder(),
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'all',
+                        child: Text('All Status'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'active',
+                        child: Text('Active Only'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'inactive',
+                        child: Text('Inactive Only'),
+                      ),
+                    ],
+                    onChanged: (String? newValue) {
+                      if (newValue != null) {
+                        setState(() {
+                          statusFilter = newValue;
+                          _applyFilters();
+                        });
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            // Second row with add button
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
                 ElevatedButton.icon(
                   onPressed: () async {
                     final result = await Navigator.push(
@@ -608,166 +667,318 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                     backgroundColor: const Color(0xFF0052CC),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 12),
+                        horizontal: 16, vertical: 10),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  icon: const Icon(Icons.add),
-                  label: const Text("Add Dining Member"),
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text("Add Dining Member",
+                      style: TextStyle(fontSize: 14)),
                 ),
               ],
             ),
             const SizedBox(height: 16),
             Expanded(
               child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DataTable(
-                  headingRowColor:
-                      WidgetStateProperty.all(const Color(0xFF1A4D8F)),
-                  columns: const [
-                    DataColumn(
-                        label: Text('BA No',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold))),
-                    DataColumn(
-                        label: Text('Rank',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold))),
-                    DataColumn(
-                        label: Text('Name',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold))),
-                    DataColumn(
-                        label: Text('Unit',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold))),
-                    DataColumn(
-                        label: Text('Mobile No',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold))),
-                    DataColumn(
-                        label: Text('Email',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold))),
-                    DataColumn(
-                        label: Text('Role',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold))),
-                    DataColumn(
-                        label: Text('Status',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold))),
-                    DataColumn(
-                        label: Text('Action',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold))),
-                  ],
-                  rows: filtered.map((row) {
-                    final bool isEditing = row['isEditing'] ?? false;
-                    return DataRow(cells: [
-                      DataCell(isEditing
-                          ? TextField(
-                              controller:
-                                  TextEditingController(text: row['no']),
-                              onChanged: (value) => row['no'] = value,
-                            )
-                          : Text(row['no'] ?? '')),
-                      DataCell(isEditing
-                          ? TextField(
-                              controller:
-                                  TextEditingController(text: row['rank']),
-                              onChanged: (value) => row['rank'] = value,
-                            )
-                          : Text(row['rank'] ?? '')),
-                      DataCell(isEditing
-                          ? TextField(
-                              controller:
-                                  TextEditingController(text: row['name']),
-                              onChanged: (value) => row['name'] = value,
-                            )
-                          : Text(row['name'] ?? '')),
-                      DataCell(isEditing
-                          ? TextField(
-                              controller:
-                                  TextEditingController(text: row['unit']),
-                              onChanged: (value) => row['unit'] = value,
-                            )
-                          : Text(row['unit'] ?? '')),
-                      DataCell(isEditing
-                          ? TextField(
-                              controller:
-                                  TextEditingController(text: row['mobile']),
-                              onChanged: (value) => row['mobile'] = value,
-                            )
-                          : Text(row['mobile'] ?? '')),
-                      DataCell(isEditing
-                          ? TextField(
-                              controller:
-                                  TextEditingController(text: row['email']),
-                              onChanged: (value) => row['email'] = value,
-                            )
-                          : Text(row['email'] ?? '')),
-                      const DataCell(Text('Dining Member')),
-                      DataCell(
-                        isEditing
-                            ? DropdownButton<String>(
-                                value: row['status'],
-                                items: const [
-                                  DropdownMenuItem(
-                                      value: 'Active', child: Text('Active')),
-                                  DropdownMenuItem(
-                                      value: 'Inactive',
-                                      child: Text('Inactive')),
+                scrollDirection: Axis.vertical,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minWidth: MediaQuery.of(context).size.width - 32,
+                    ),
+                    child: DataTable(
+                      columnSpacing: 12, // Reduced column spacing
+                      headingRowColor:
+                          WidgetStateProperty.all(const Color(0xFF1A4D8F)),
+                      columns: const [
+                        DataColumn(
+                            label: Text('BA No',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12))),
+                        DataColumn(
+                            label: Text('Rank',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12))),
+                        DataColumn(
+                            label: Text('Name',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12))),
+                        DataColumn(
+                            label: Text('Unit',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12))),
+                        DataColumn(
+                            label: Text('Mobile',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12))),
+                        DataColumn(
+                            label: Text('Email',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12))),
+                        DataColumn(
+                            label: Text('Role',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12))),
+                        DataColumn(
+                            label: Text('Status',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12))),
+                        DataColumn(
+                            label: Text('Action',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12))),
+                      ],
+                      rows: filtered.map((row) {
+                        final bool isEditing = row['isEditing'] ?? false;
+                        return DataRow(cells: [
+                          DataCell(
+                            SizedBox(
+                              width: 80,
+                              child: isEditing
+                                  ? TextField(
+                                      controller: TextEditingController(
+                                          text: row['no']),
+                                      onChanged: (value) => row['no'] = value,
+                                      style: const TextStyle(fontSize: 12),
+                                      decoration: const InputDecoration(
+                                        border: InputBorder.none,
+                                        contentPadding: EdgeInsets.all(4),
+                                      ),
+                                    )
+                                  : Text(row['no'] ?? '',
+                                      style: const TextStyle(fontSize: 12)),
+                            ),
+                          ),
+                          DataCell(
+                            SizedBox(
+                              width: 100,
+                              child: isEditing
+                                  ? TextField(
+                                      controller: TextEditingController(
+                                          text: row['rank']),
+                                      onChanged: (value) => row['rank'] = value,
+                                      style: const TextStyle(fontSize: 12),
+                                      decoration: const InputDecoration(
+                                        border: InputBorder.none,
+                                        contentPadding: EdgeInsets.all(4),
+                                      ),
+                                    )
+                                  : Text(row['rank'] ?? '',
+                                      style: const TextStyle(fontSize: 12)),
+                            ),
+                          ),
+                          DataCell(
+                            SizedBox(
+                              width: 120,
+                              child: isEditing
+                                  ? TextField(
+                                      controller: TextEditingController(
+                                          text: row['name']),
+                                      onChanged: (value) => row['name'] = value,
+                                      style: const TextStyle(fontSize: 12),
+                                      decoration: const InputDecoration(
+                                        border: InputBorder.none,
+                                        contentPadding: EdgeInsets.all(4),
+                                      ),
+                                    )
+                                  : Text(row['name'] ?? '',
+                                      style: const TextStyle(fontSize: 12)),
+                            ),
+                          ),
+                          DataCell(
+                            SizedBox(
+                              width: 100,
+                              child: isEditing
+                                  ? TextField(
+                                      controller: TextEditingController(
+                                          text: row['unit']),
+                                      onChanged: (value) => row['unit'] = value,
+                                      style: const TextStyle(fontSize: 12),
+                                      decoration: const InputDecoration(
+                                        border: InputBorder.none,
+                                        contentPadding: EdgeInsets.all(4),
+                                      ),
+                                    )
+                                  : Text(row['unit'] ?? '',
+                                      style: const TextStyle(fontSize: 12)),
+                            ),
+                          ),
+                          DataCell(
+                            SizedBox(
+                              width: 100,
+                              child: isEditing
+                                  ? TextField(
+                                      controller: TextEditingController(
+                                          text: row['mobile']),
+                                      onChanged: (value) =>
+                                          row['mobile'] = value,
+                                      style: const TextStyle(fontSize: 12),
+                                      decoration: const InputDecoration(
+                                        border: InputBorder.none,
+                                        contentPadding: EdgeInsets.all(4),
+                                      ),
+                                    )
+                                  : Text(row['mobile'] ?? '',
+                                      style: const TextStyle(fontSize: 12)),
+                            ),
+                          ),
+                          DataCell(
+                            SizedBox(
+                              width: 150,
+                              child: isEditing
+                                  ? TextField(
+                                      controller: TextEditingController(
+                                          text: row['email']),
+                                      onChanged: (value) =>
+                                          row['email'] = value,
+                                      style: const TextStyle(fontSize: 12),
+                                      decoration: const InputDecoration(
+                                        border: InputBorder.none,
+                                        contentPadding: EdgeInsets.all(4),
+                                      ),
+                                    )
+                                  : Text(row['email'] ?? '',
+                                      style: const TextStyle(fontSize: 12),
+                                      overflow: TextOverflow.ellipsis),
+                            ),
+                          ),
+                          const DataCell(
+                            SizedBox(
+                              width: 100,
+                              child: Text('Dining Member',
+                                  style: TextStyle(fontSize: 12)),
+                            ),
+                          ),
+                          DataCell(
+                            SizedBox(
+                              width: 90,
+                              child: isEditing
+                                  ? DropdownButton<String>(
+                                      value: row['status'],
+                                      isExpanded: true,
+                                      items: const [
+                                        DropdownMenuItem(
+                                          value: 'active',
+                                          child: Text('Active',
+                                              style: TextStyle(fontSize: 12)),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'inactive',
+                                          child: Text('Inactive',
+                                              style: TextStyle(fontSize: 12)),
+                                        ),
+                                      ],
+                                      onChanged: (String? newValue) {
+                                        if (newValue != null) {
+                                          setState(() {
+                                            row['status'] = newValue;
+                                          });
+                                        }
+                                      },
+                                      underline: Container(),
+                                    )
+                                  : Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: row['status'] == 'active'
+                                            ? Colors.green.shade100
+                                            : Colors.orange.shade100,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: row['status'] == 'active'
+                                              ? Colors.green
+                                              : Colors.orange,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        row['status'] == 'active'
+                                            ? 'Active'
+                                            : 'Inactive',
+                                        style: TextStyle(
+                                          color: row['status'] == 'active'
+                                              ? Colors.green.shade800
+                                              : Colors.orange.shade800,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ),
+                            ),
+                          ),
+                          DataCell(
+                            SizedBox(
+                              width: 100,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (isEditing) ...[
+                                    IconButton(
+                                      icon: const Icon(Icons.save, size: 18),
+                                      color: Colors.green,
+                                      onPressed: () => _saveEdit(row),
+                                      tooltip: 'Save',
+                                      padding: const EdgeInsets.all(4),
+                                      constraints: const BoxConstraints(
+                                          minWidth: 32, minHeight: 32),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.cancel, size: 18),
+                                      color: Colors.red,
+                                      onPressed: () => _cancelEdit(row),
+                                      tooltip: 'Cancel',
+                                      padding: const EdgeInsets.all(4),
+                                      constraints: const BoxConstraints(
+                                          minWidth: 32, minHeight: 32),
+                                    )
+                                  ] else ...[
+                                    IconButton(
+                                      icon: const Icon(Icons.edit, size: 18),
+                                      color: Colors.blue,
+                                      onPressed: () => _startEdit(row),
+                                      tooltip: 'Edit',
+                                      padding: const EdgeInsets.all(4),
+                                      constraints: const BoxConstraints(
+                                          minWidth: 32, minHeight: 32),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete, size: 18),
+                                      color: Colors.red,
+                                      onPressed: () => _deleteStaff(row),
+                                      tooltip: 'Delete',
+                                      padding: const EdgeInsets.all(4),
+                                      constraints: const BoxConstraints(
+                                          minWidth: 32, minHeight: 32),
+                                    ),
+                                  ]
                                 ],
-                                onChanged: (val) =>
-                                    setState(() => row['status'] = val!),
-                              )
-                            : Text(row['status'] ?? ''),
-                      ),
-                      DataCell(Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (isEditing) ...[
-                            IconButton(
-                              icon: const Icon(Icons.save),
-                              color: Colors.green,
-                              onPressed: () => _saveEdit(row),
-                              tooltip: 'Save',
+                              ),
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.cancel),
-                              color: Colors.red,
-                              onPressed: () => _cancelEdit(row),
-                              tooltip: 'Cancel',
-                            )
-                          ] else ...[
-                            IconButton(
-                              icon: const Icon(Icons.edit),
-                              color: Colors.blue,
-                              onPressed: () => _startEdit(row),
-                              tooltip: 'Edit',
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete),
-                              color: Colors.red,
-                              onPressed: () => _deleteStaff(row),
-                              tooltip: 'Delete',
-                            ),
-                          ]
-                        ],
-                      ))
-                    ]);
-                  }).toList(),
+                          )
+                        ]);
+                      }).toList(),
+                    ),
+                  ),
                 ),
               ),
             )

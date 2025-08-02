@@ -239,14 +239,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
         userid = existingDoc.id;
         isReapplication = true;
       } else {
-        final credential = await FirebaseAuth.instance
-            .createUserWithEmailAndPassword(
-                email: _emailController.text.trim(),
-                password: _passwordController.text.trim());
-        // New application, generate a temporary user ID for Firestore document
-        // Note: We don't create Firebase Auth user here to avoid session conflicts
-        // The user will be created in Firebase Auth when they first try to log in
-        userid = credential.user!.uid; // Use Firebase Auth user ID
+        // Create Firebase Auth user first to get UID
+        final userCredential =
+            await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
+        userid = userCredential.user!.uid;
+
+        // Update the user's display name
+        await userCredential.user
+            ?.updateDisplayName(_nameController.text.trim());
       }
 
       // Save/Update user info to Firestore under 'user_requests' collection
@@ -263,13 +266,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
         'approved': false, // User registration needs approval
         'rejected': false,
         'status': 'pending', // Status is pending for user registrations
-        'dining_status': 'Pending', // Will be set to Active when approved
         'created_at': FieldValue.serverTimestamp(),
         'user_id': userid,
         'approved_by_admin': false, // This is user self-registration
         'application_date': DateTime.now().toIso8601String(),
-        'firebase_auth_created':
-            false, // Flag to indicate Auth user not yet created
         'reapplication': isReapplication,
         'updated_at': isReapplication ? FieldValue.serverTimestamp() : null,
       });

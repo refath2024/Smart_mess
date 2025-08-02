@@ -10,7 +10,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  http: ^0.13.6   
+  http: ^1.4.0   
   shared_preferences: ^2.0.0
   provider: ^6.1.1
   pdf: ^3.10.7     # or latest
@@ -27,6 +27,7 @@ dependencies:
   firebase_auth: ^5.0.0     # For authentication
   cloud_firestore: ^5.0.0   # For Firestore database
   firebase_storage: ^12.4.10 # For file uploads (optional)
+  firebase_data_connect: any  # For Firebase Data Connect
   
 dev_dependencies:
   flutter_test:
