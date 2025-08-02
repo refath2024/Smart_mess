@@ -55,15 +55,15 @@ class HelpScreen extends StatelessWidget {
           _buildContactTile(
             icon: Icons.web,
             title: "Visit Website",
-            subtitle: "https://mist-mess.vercel.com",
-            onTap: () => _launchWeb("https://mist-mess.vercel.com"),
+            subtitle: "https://mist-mess.vercel.app",
+            onTap: () => _launchWeb("https://mist-mess.vercel.app"),
           ),
           _buildContactTile(
             icon: Icons.location_on,
             title: "Office Address",
             subtitle: "Smart Mess HQ, Cantonment, Dhaka",
             onTap: () => _launchMapWithCoordinates(
-                23.8283, 90.3915), // Dhaka Cantonment coordinates
+                23.8387308,90.3570171), // Dhaka Cantonment coordinates
           ),
 
           const Divider(height: 32),
