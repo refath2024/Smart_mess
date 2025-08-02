@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../services/admin_auth_service.dart';
 
 class AddNewUserForm extends StatefulWidget {
   const AddNewUserForm({super.key});
@@ -20,52 +21,15 @@ class _AddNewUserFormState extends State<AddNewUserForm> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   String? _selectedRole;
-  String? _selectedRank;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _passwordsMatch = false;
   String _confirmPasswordError = '';
   bool _isLoading = false;
 
-  // Military ranks organized by service branch
-  final List<String> _armyRanks = [
-    'General',
-    'Lieutenant General',
-    'Major General',
-    'Brigadier General',
-    'Colonel',
-    'Lieutenant Colonel',
-    'Major',
-    'Captain',
-    'Lieutenant',
-    'Second Lieutenant',
-  ];
-
-  final List<String> _navyRanks = [
-    'Admiral',
-    'Vice Admiral',
-    'Rear Admiral',
-    'Commodore',
-    'Captain (Navy)',
-    'Commander',
-    'Lieutenant Commander',
-    'Lieutenant (Navy)',
-    'Sub-Lieutenant',
-    'Acting Sub-Lieutenant',
-  ];
-
-  final List<String> _airForceRanks = [
-    'Air Chief Marshal',
-    'Air Marshal',
-    'Air Vice Marshal',
-    'Air Commodore',
-    'Group Captain',
-    'Wing Commander',
-    'Squadron Leader',
-    'Flight Lieutenant',
-    'Flying Officer',
-    'Pilot Officer',
-  ];
+  final AdminAuthService _adminAuthService = AdminAuthService();
+  Map<String, dynamic>? _currentAdminData;
+  List<String> _availableRoles = [];
 
   final List<String> _roles = [
     'PMC',
@@ -82,6 +46,73 @@ class _AddNewUserFormState extends State<AddNewUserForm> {
     'Waiter',
     'NC(E)',
   ];
+
+  // Roles that can only have one person assigned
+  final List<String> _uniqueRoles = [
+    'PMC',
+    'G2 (Mess)',
+    'Mess Secretary',
+    'Asst Mess Secretary',
+    'RP NCO',
+    'Barrack NCO',
+    'Mess Sgt',
+    'Asst Mess Sgt',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentAdminData();
+    _loadAvailableRoles();
+  }
+
+  Future<void> _loadCurrentAdminData() async {
+    try {
+      final adminData = await _adminAuthService.getCurrentAdminData();
+      setState(() {
+        _currentAdminData = adminData;
+      });
+    } catch (e) {
+      debugPrint('Failed to load admin data: $e');
+    }
+  }
+
+  Future<void> _loadAvailableRoles() async {
+    try {
+      // Get all existing staff roles
+      final existingStaff =
+          await FirebaseFirestore.instance.collection('staff_state').get();
+
+      final existingRoles = existingStaff.docs
+          .map((doc) => doc.data()['role'] as String?)
+          .where((role) => role != null)
+          .toSet();
+
+      setState(() {
+        // Filter out unique roles that are already assigned
+        // But allow multiple assignments for non-unique roles
+        _availableRoles = _roles.where((role) {
+          if (_uniqueRoles.contains(role)) {
+            // For unique roles, only show if not already assigned
+            return !existingRoles.contains(role);
+          } else {
+            // For non-unique roles, always show
+            return true;
+          }
+        }).toList();
+      });
+    } catch (e) {
+      debugPrint('Failed to load available roles: $e');
+      // If there's an error, show all roles
+      setState(() {
+        _availableRoles = _roles;
+      });
+    }
+  }
+
+  bool get _hasAvailableUniqueRoles {
+    return _availableRoles.any((role) => _uniqueRoles.contains(role));
+  }
 
   Future<bool> _checkEmailExists() async {
     try {
@@ -171,7 +202,6 @@ class _AddNewUserFormState extends State<AddNewUserForm> {
       final String staffId = credential.user!.uid; // Use Firebase Auth user ID
 
       // Save staff info to Firestore under 'staff_state' collection
-      // Note: We don't create Firebase Auth user here to avoid interfering with admin's session
       await FirebaseFirestore.instance
           .collection('staff_state')
           .doc(staffId)
@@ -185,10 +215,8 @@ class _AddNewUserFormState extends State<AddNewUserForm> {
         'role': _selectedRole,
         'status': 'Active', // Set as active staff member
         'created_at': FieldValue.serverTimestamp(),
-        'staff_id': staffId,
-        'created_by_admin': true,
-        'firebase_auth_created':
-            false, // Flag to indicate Auth user not yet created
+        'user_id': staffId,
+        'created_by': _currentAdminData?['name'] ?? 'Admin',
       });
 
       // Success dialog
@@ -197,7 +225,7 @@ class _AddNewUserFormState extends State<AddNewUserForm> {
         builder: (context) => AlertDialog(
           title: const Text('Success'),
           content: Text(
-            '${_nameController.text} has been successfully registered as a staff member.\n\nThey can now log in using their email and password.',
+            '${_nameController.text} has been successfully registered as a staff member.\n\nCreated by: ${_currentAdminData?['name'] ?? 'Admin'}\n\nThey can now log in using their email and password.',
           ),
           actions: [
             TextButton(
@@ -276,74 +304,11 @@ class _AddNewUserFormState extends State<AddNewUserForm> {
     super.dispose();
   }
 
-  Widget _buildRankDropdown() {
-    // Combine all ranks with service branch headers
-    List<DropdownMenuItem<String>> allRanks = [];
-
-    // Army ranks
-    allRanks.add(const DropdownMenuItem<String>(
-      enabled: false,
-      value: null,
-      child: Text(
-        'Bangladesh Army',
-        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
-      ),
-    ));
-    allRanks.addAll(_armyRanks.map((rank) => DropdownMenuItem<String>(
-          value: rank,
-          child: Text('  $rank'),
-        )));
-
-    // Navy ranks
-    allRanks.add(const DropdownMenuItem<String>(
-      enabled: false,
-      value: null,
-      child: Text(
-        'Bangladesh Navy',
-        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
-      ),
-    ));
-    allRanks.addAll(_navyRanks.map((rank) => DropdownMenuItem<String>(
-          value: rank,
-          child: Text('  $rank'),
-        )));
-
-    // Air Force ranks
-    allRanks.add(const DropdownMenuItem<String>(
-      enabled: false,
-      value: null,
-      child: Text(
-        'Bangladesh Air Force',
-        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
-      ),
-    ));
-    allRanks.addAll(_airForceRanks.map((rank) => DropdownMenuItem<String>(
-          value: rank,
-          child: Text('  $rank'),
-        )));
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: DropdownButtonFormField<String>(
-        value: _selectedRank,
-        decoration: const InputDecoration(
-          labelText: 'Rank *',
-          border: OutlineInputBorder(),
-          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        ),
-        items: allRanks,
-        onChanged: (String? newValue) {
-          setState(() {
-            _selectedRank = newValue;
-            _rankController.text = newValue ?? '';
-          });
-        },
-        validator: (value) =>
-            value == null || value.isEmpty ? 'Please select rank' : null,
-        hint: const Text('Select rank'),
-        isExpanded: true,
-        menuMaxHeight: 300,
-      ),
+  Widget _buildRankField() {
+    return buildInputField(
+      _rankController,
+      'Rank',
+      isRequired: true,
     );
   }
 
@@ -411,13 +376,38 @@ class _AddNewUserFormState extends State<AddNewUserForm> {
                             fontWeight: FontWeight.bold,
                             color: Colors.black87),
                       ),
+                      if (!_hasAvailableUniqueRoles)
+                        Container(
+                          margin: const EdgeInsets.only(top: 16),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade100,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.blue),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.info, color: Colors.blue.shade800),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'All unique staff roles (PMC, G2, Mess Secretary, etc.) are currently assigned. You can still add general staff members like Clerk, Cook, Butler, Waiter.',
+                                  style: TextStyle(
+                                    color: Colors.blue.shade800,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       const SizedBox(height: 24),
                       buildInputField(
                         _baNoController,
                         'BA/ID No',
                         isRequired: true,
                       ),
-                      _buildRankDropdown(),
+                      _buildRankField(),
                       buildInputField(
                         _nameController,
                         'Name',
@@ -591,16 +581,18 @@ class _AddNewUserFormState extends State<AddNewUserForm> {
                               horizontal: 16, vertical: 16),
                         ),
                         value: _selectedRole,
-                        items: _roles.map((String role) {
+                        items: _availableRoles.map((String role) {
                           return DropdownMenuItem<String>(
                             value: role,
                             child: Text(role),
                           );
                         }).toList(),
-                        onChanged: (value) =>
-                            setState(() => _selectedRole = value),
+                        onChanged: _availableRoles.isEmpty
+                            ? null
+                            : (value) => setState(() => _selectedRole = value),
                         validator: (value) =>
                             value == null ? 'Please select a role' : null,
+                        hint: const Text('Select a role'),
                       ),
                       const SizedBox(height: 32),
                       Row(

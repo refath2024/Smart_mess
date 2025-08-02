@@ -147,6 +147,48 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
     'NC(E)',
   ];
 
+  // Roles that can only have one person assigned
+  final List<String> _uniqueRoles = [
+    'PMC',
+    'G2 (Mess)',
+    'Mess Secretary',
+    'Asst Mess Secretary',
+    'RP NCO',
+    'Barrack NCO',
+    'Mess Sgt',
+    'Asst Mess Sgt',
+  ];
+
+  // Get available roles for editing (excluding already assigned unique roles)
+  List<String> _getAvailableRolesForEdit(String currentRole) {
+    final existingUniqueRoles = staffData
+        .where((staff) =>
+            staff['role'] != currentRole &&
+            _uniqueRoles.contains(staff['role']))
+        .map((staff) => staff['role'] as String)
+        .toSet();
+
+    return _roles.where((role) {
+      if (_uniqueRoles.contains(role)) {
+        // For unique roles, only show if not already assigned or if it's the current role
+        return !existingUniqueRoles.contains(role) || role == currentRole;
+      } else {
+        // For non-unique roles, always show
+        return true;
+      }
+    }).toList();
+  }
+
+  // Check if a role can be edited
+  bool _canEditRole(String role) {
+    return role != 'PMC'; // PMC role cannot be edited
+  }
+
+  // Check if status can be edited
+  bool _canEditStatus(String role) {
+    return !_uniqueRoles.contains(role); // Unique roles status cannot be edited
+  }
+
   Future<void> _logout() async {
     try {
       await _adminAuthService.logoutAdmin();
@@ -646,184 +688,382 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                     const SizedBox(height: 16),
                     Expanded(
                       child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: DataTable(
-                          headingRowColor:
-                              WidgetStateProperty.all(const Color(0xFF1A4D8F)),
-                          columns: const [
-                            DataColumn(
-                                label: Text('BA/ID No',
-                                    style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold))),
-                            DataColumn(
-                                label: Text('Rank',
-                                    style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold))),
-                            DataColumn(
-                                label: Text('Name',
-                                    style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold))),
-                            DataColumn(
-                                label: Text('Unit',
-                                    style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold))),
-                            DataColumn(
-                                label: Text('Mobile No',
-                                    style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold))),
-                            DataColumn(
-                                label: Text('Email',
-                                    style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold))),
-                            DataColumn(
-                                label: Text('Role',
-                                    style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold))),
-                            DataColumn(
-                                label: Text('Status',
-                                    style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold))),
-                            DataColumn(
-                                label: Text('Action',
-                                    style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold))),
-                          ],
-                          rows: filteredData.map((row) {
-                            final bool isEditing = row['isEditing'] ?? false;
-                            return DataRow(
-                              cells: [
-                                DataCell(isEditing
-                                    ? TextField(
-                                        controller: TextEditingController(
-                                            text: row['ba_no']),
-                                        onChanged: (val) => row['ba_no'] = val,
-                                      )
-                                    : Text(row['ba_no'] ?? '')),
-                                DataCell(isEditing
-                                    ? TextField(
-                                        controller: TextEditingController(
-                                            text: row['rank']),
-                                        onChanged: (val) => row['rank'] = val,
-                                      )
-                                    : Text(row['rank'] ?? '')),
-                                DataCell(isEditing
-                                    ? TextField(
-                                        controller: TextEditingController(
-                                            text: row['name']),
-                                        onChanged: (val) => row['name'] = val,
-                                      )
-                                    : Text(row['name'] ?? '')),
-                                DataCell(isEditing
-                                    ? TextField(
-                                        controller: TextEditingController(
-                                            text: row['unit']),
-                                        onChanged: (val) => row['unit'] = val,
-                                      )
-                                    : Text(row['unit'] ?? '')),
-                                DataCell(isEditing
-                                    ? TextField(
-                                        controller: TextEditingController(
-                                            text: row['mobile']),
-                                        onChanged: (val) => row['mobile'] = val,
-                                      )
-                                    : Text(row['mobile'] ?? '')),
-                                DataCell(isEditing
-                                    ? TextField(
-                                        controller: TextEditingController(
-                                            text: row['email']),
-                                        onChanged: (val) => row['email'] = val,
-                                      )
-                                    : Text(row['email'] ?? '')),
-                                DataCell(isEditing
-                                    ? Container(
-                                        constraints:
-                                            const BoxConstraints(maxWidth: 200),
-                                        child: DropdownButtonFormField<String>(
-                                          value: _roles.contains(row['role'])
-                                              ? row['role']
-                                              : _roles.first,
-                                          decoration: const InputDecoration(
-                                            contentPadding:
-                                                EdgeInsets.symmetric(
-                                                    horizontal: 10,
-                                                    vertical: 0),
-                                            border: OutlineInputBorder(),
-                                          ),
-                                          items: _roles
-                                              .map((role) => DropdownMenuItem(
-                                                    value: role,
-                                                    child: Text(role),
-                                                  ))
-                                              .toList(),
-                                          onChanged: (value) {
-                                            setState(() {
-                                              row['role'] = value!;
-                                            });
-                                          },
-                                          isExpanded: true,
-                                        ),
-                                      )
-                                    : Text(row['role'] ?? '')),
-                                DataCell(
-                                  isEditing
-                                      ? DropdownButton<String>(
-                                          value: row['status'],
-                                          items: ['Active', 'Inactive']
-                                              .map((status) => DropdownMenuItem(
-                                                    value: status,
-                                                    child: Text(status),
-                                                  ))
-                                              .toList(),
-                                          onChanged: (value) {
-                                            setState(() {
-                                              row['status'] = value!;
-                                            });
-                                          },
-                                        )
-                                      : Text(row['status'] ?? ''),
-                                ),
-                                DataCell(
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      if (!isEditing) ...[
-                                        IconButton(
-                                          icon: const Icon(Icons.edit),
-                                          color: const Color(0xFF1A4D8F),
-                                          onPressed: () => _startEdit(row),
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(Icons.delete),
-                                          color: Colors.red,
-                                          onPressed: () => _deleteStaff(row),
-                                        ),
-                                      ] else ...[
-                                        IconButton(
-                                          icon: const Icon(Icons.save),
-                                          color: Colors.green,
-                                          onPressed: () => _saveEdit(row),
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(Icons.cancel),
-                                          color: Colors.grey,
-                                          onPressed: () => _cancelEdit(row),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                ),
+                        scrollDirection: Axis.vertical,
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minWidth: MediaQuery.of(context).size.width - 32,
+                            ),
+                            child: DataTable(
+                              columnSpacing: 12, // Reduced column spacing
+                              headingRowColor: WidgetStateProperty.all(
+                                  const Color(0xFF1A4D8F)),
+                              columns: const [
+                                DataColumn(
+                                    label: Text('BA/ID No',
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12))),
+                                DataColumn(
+                                    label: Text('Rank',
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12))),
+                                DataColumn(
+                                    label: Text('Name',
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12))),
+                                DataColumn(
+                                    label: Text('Unit',
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12))),
+                                DataColumn(
+                                    label: Text('Mobile',
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12))),
+                                DataColumn(
+                                    label: Text('Email',
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12))),
+                                DataColumn(
+                                    label: Text('Role',
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12))),
+                                DataColumn(
+                                    label: Text('Status',
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12))),
+                                DataColumn(
+                                    label: Text('Action',
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12))),
                               ],
-                            );
-                          }).toList(),
+                              rows: filteredData.map((row) {
+                                final bool isEditing =
+                                    row['isEditing'] ?? false;
+                                final bool canEditRole =
+                                    _canEditRole(row['role']);
+                                final bool canEditStatus =
+                                    _canEditStatus(row['role']);
+
+                                return DataRow(cells: [
+                                  DataCell(
+                                    SizedBox(
+                                      width: 80,
+                                      child: isEditing
+                                          ? TextField(
+                                              controller: TextEditingController(
+                                                  text: row['ba_no']),
+                                              onChanged: (value) =>
+                                                  row['ba_no'] = value,
+                                              style:
+                                                  const TextStyle(fontSize: 12),
+                                              decoration: const InputDecoration(
+                                                border: InputBorder.none,
+                                                contentPadding:
+                                                    EdgeInsets.all(4),
+                                              ),
+                                            )
+                                          : Text(row['ba_no'] ?? '',
+                                              style: const TextStyle(
+                                                  fontSize: 12)),
+                                    ),
+                                  ),
+                                  DataCell(
+                                    SizedBox(
+                                      width: 100,
+                                      child: isEditing
+                                          ? TextField(
+                                              controller: TextEditingController(
+                                                  text: row['rank']),
+                                              onChanged: (value) =>
+                                                  row['rank'] = value,
+                                              style:
+                                                  const TextStyle(fontSize: 12),
+                                              decoration: const InputDecoration(
+                                                border: InputBorder.none,
+                                                contentPadding:
+                                                    EdgeInsets.all(4),
+                                              ),
+                                            )
+                                          : Text(row['rank'] ?? '',
+                                              style: const TextStyle(
+                                                  fontSize: 12)),
+                                    ),
+                                  ),
+                                  DataCell(
+                                    SizedBox(
+                                      width: 120,
+                                      child: isEditing
+                                          ? TextField(
+                                              controller: TextEditingController(
+                                                  text: row['name']),
+                                              onChanged: (value) =>
+                                                  row['name'] = value,
+                                              style:
+                                                  const TextStyle(fontSize: 12),
+                                              decoration: const InputDecoration(
+                                                border: InputBorder.none,
+                                                contentPadding:
+                                                    EdgeInsets.all(4),
+                                              ),
+                                            )
+                                          : Text(row['name'] ?? '',
+                                              style: const TextStyle(
+                                                  fontSize: 12)),
+                                    ),
+                                  ),
+                                  DataCell(
+                                    SizedBox(
+                                      width: 100,
+                                      child: isEditing
+                                          ? TextField(
+                                              controller: TextEditingController(
+                                                  text: row['unit']),
+                                              onChanged: (value) =>
+                                                  row['unit'] = value,
+                                              style:
+                                                  const TextStyle(fontSize: 12),
+                                              decoration: const InputDecoration(
+                                                border: InputBorder.none,
+                                                contentPadding:
+                                                    EdgeInsets.all(4),
+                                              ),
+                                            )
+                                          : Text(row['unit'] ?? '',
+                                              style: const TextStyle(
+                                                  fontSize: 12)),
+                                    ),
+                                  ),
+                                  DataCell(
+                                    SizedBox(
+                                      width: 100,
+                                      child: isEditing
+                                          ? TextField(
+                                              controller: TextEditingController(
+                                                  text: row['mobile']),
+                                              onChanged: (value) =>
+                                                  row['mobile'] = value,
+                                              style:
+                                                  const TextStyle(fontSize: 12),
+                                              decoration: const InputDecoration(
+                                                border: InputBorder.none,
+                                                contentPadding:
+                                                    EdgeInsets.all(4),
+                                              ),
+                                            )
+                                          : Text(row['mobile'] ?? '',
+                                              style: const TextStyle(
+                                                  fontSize: 12)),
+                                    ),
+                                  ),
+                                  DataCell(
+                                    SizedBox(
+                                      width: 150,
+                                      child: isEditing
+                                          ? TextField(
+                                              controller: TextEditingController(
+                                                  text: row['email']),
+                                              onChanged: (value) =>
+                                                  row['email'] = value,
+                                              style:
+                                                  const TextStyle(fontSize: 12),
+                                              decoration: const InputDecoration(
+                                                border: InputBorder.none,
+                                                contentPadding:
+                                                    EdgeInsets.all(4),
+                                              ),
+                                            )
+                                          : Text(row['email'] ?? '',
+                                              style:
+                                                  const TextStyle(fontSize: 12),
+                                              overflow: TextOverflow.ellipsis),
+                                    ),
+                                  ),
+                                  DataCell(
+                                    SizedBox(
+                                      width: 120,
+                                      child: isEditing && canEditRole
+                                          ? DropdownButton<String>(
+                                              value: _getAvailableRolesForEdit(
+                                                          row['role'])
+                                                      .contains(row['role'])
+                                                  ? row['role']
+                                                  : _getAvailableRolesForEdit(
+                                                          row['role'])
+                                                      .first,
+                                              isExpanded: true,
+                                              items: _getAvailableRolesForEdit(
+                                                      row['role'])
+                                                  .map((role) =>
+                                                      DropdownMenuItem(
+                                                        value: role,
+                                                        child: Text(role,
+                                                            style:
+                                                                const TextStyle(
+                                                                    fontSize:
+                                                                        12)),
+                                                      ))
+                                                  .toList(),
+                                              onChanged: (String? newValue) {
+                                                if (newValue != null) {
+                                                  setState(() {
+                                                    row['role'] = newValue;
+                                                  });
+                                                }
+                                              },
+                                              underline: Container(),
+                                            )
+                                          : Text(row['role'] ?? '',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: canEditRole
+                                                    ? Colors.black
+                                                    : Colors.grey,
+                                                fontWeight: _uniqueRoles
+                                                        .contains(row['role'])
+                                                    ? FontWeight.bold
+                                                    : FontWeight.normal,
+                                              )),
+                                    ),
+                                  ),
+                                  DataCell(
+                                    SizedBox(
+                                      width: 90,
+                                      child: isEditing && canEditStatus
+                                          ? DropdownButton<String>(
+                                              value: row['status'],
+                                              isExpanded: true,
+                                              items: const [
+                                                DropdownMenuItem(
+                                                  value: 'Active',
+                                                  child: Text('Active',
+                                                      style: TextStyle(
+                                                          fontSize: 12)),
+                                                ),
+                                                DropdownMenuItem(
+                                                  value: 'Inactive',
+                                                  child: Text('Inactive',
+                                                      style: TextStyle(
+                                                          fontSize: 12)),
+                                                ),
+                                              ],
+                                              onChanged: (String? newValue) {
+                                                if (newValue != null) {
+                                                  setState(() {
+                                                    row['status'] = newValue;
+                                                  });
+                                                }
+                                              },
+                                              underline: Container(),
+                                            )
+                                          : Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 6,
+                                                      vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: row['status'] == 'Active'
+                                                    ? Colors.green.shade100
+                                                    : Colors.orange.shade100,
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                border: Border.all(
+                                                  color:
+                                                      row['status'] == 'Active'
+                                                          ? Colors.green
+                                                          : Colors.orange,
+                                                ),
+                                              ),
+                                              child: Text(
+                                                row['status'] ?? 'Inactive',
+                                                style: TextStyle(
+                                                  color: row['status'] ==
+                                                          'Active'
+                                                      ? Colors.green.shade800
+                                                      : Colors.orange.shade800,
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 11,
+                                                ),
+                                              ),
+                                            ),
+                                    ),
+                                  ),
+                                  DataCell(
+                                    SizedBox(
+                                      width: 100,
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          if (isEditing) ...[
+                                            IconButton(
+                                              icon: const Icon(Icons.save,
+                                                  size: 18),
+                                              color: Colors.green,
+                                              onPressed: () => _saveEdit(row),
+                                              tooltip: 'Save',
+                                              padding: const EdgeInsets.all(4),
+                                              constraints: const BoxConstraints(
+                                                  minWidth: 32, minHeight: 32),
+                                            ),
+                                            IconButton(
+                                              icon: const Icon(Icons.cancel,
+                                                  size: 18),
+                                              color: Colors.red,
+                                              onPressed: () => _cancelEdit(row),
+                                              tooltip: 'Cancel',
+                                              padding: const EdgeInsets.all(4),
+                                              constraints: const BoxConstraints(
+                                                  minWidth: 32, minHeight: 32),
+                                            )
+                                          ] else ...[
+                                            IconButton(
+                                              icon: const Icon(Icons.edit,
+                                                  size: 18),
+                                              color: Colors.blue,
+                                              onPressed: () => _startEdit(row),
+                                              tooltip: 'Edit',
+                                              padding: const EdgeInsets.all(4),
+                                              constraints: const BoxConstraints(
+                                                  minWidth: 32, minHeight: 32),
+                                            ),
+                                            IconButton(
+                                              icon: const Icon(Icons.delete,
+                                                  size: 18),
+                                              color: Colors.red,
+                                              onPressed: () =>
+                                                  _deleteStaff(row),
+                                              tooltip: 'Delete',
+                                              padding: const EdgeInsets.all(4),
+                                              constraints: const BoxConstraints(
+                                                  minWidth: 32, minHeight: 32),
+                                            ),
+                                          ]
+                                        ],
+                                      ),
+                                    ),
+                                  )
+                                ]);
+                              }).toList(),
+                            ),
+                          ),
                         ),
                       ),
                     ),
