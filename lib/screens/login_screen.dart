@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'admin/admin_login_screen.dart';
 import 'forgot_password_screen.dart';
@@ -21,6 +22,10 @@ class _LoginScreenState extends State<LoginScreen> {
   String _division = "MIST";
   bool _obscurePassword = true;
   bool _isLoading = false;
+  
+  // Email suggestions
+  List<String> _emailSuggestions = [];
+  bool _showSuggestions = false;
 
   @override
   void initState() {
@@ -34,10 +39,76 @@ class _LoginScreenState extends State<LoginScreen> {
         systemNavigationBarIconBrightness: Brightness.light,
       ),
     );
+    _loadEmailHistory();
+    _emailController.addListener(_onEmailChanged);
+  }
+
+  Future<void> _loadEmailHistory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final emailHistory = prefs.getStringList('email_history') ?? [];
+      setState(() {
+        _emailSuggestions = emailHistory;
+      });
+    } catch (e) {
+      print('Error loading email history: $e');
+    }
+  }
+
+  Future<void> _saveEmailToHistory(String email) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      List<String> emailHistory = prefs.getStringList('email_history') ?? [];
+      
+      // Remove email if it already exists to avoid duplicates
+      emailHistory.remove(email);
+      
+      // Add email to the beginning of the list
+      emailHistory.insert(0, email);
+      
+      // Keep only the last 5 emails
+      if (emailHistory.length > 5) {
+        emailHistory = emailHistory.take(5).toList();
+      }
+      
+      await prefs.setStringList('email_history', emailHistory);
+      
+      setState(() {
+        _emailSuggestions = emailHistory;
+      });
+    } catch (e) {
+      print('Error saving email history: $e');
+    }
+  }
+
+  void _onEmailChanged() {
+    final query = _emailController.text.toLowerCase();
+    if (query.isEmpty) {
+      setState(() {
+        _showSuggestions = false;
+      });
+      return;
+    }
+
+    final filteredSuggestions = _emailSuggestions
+        .where((email) => email.toLowerCase().contains(query))
+        .toList();
+
+    setState(() {
+      _showSuggestions = filteredSuggestions.isNotEmpty && query.length > 0;
+    });
+  }
+
+  void _selectEmailSuggestion(String email) {
+    _emailController.text = email;
+    setState(() {
+      _showSuggestions = false;
+    });
   }
 
   @override
   void dispose() {
+    _emailController.removeListener(_onEmailChanged);
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -62,6 +133,9 @@ class _LoginScreenState extends State<LoginScreen> {
       final result = await _userAuthService.loginUser(email, password);
 
       if (result != null && result['success'] == true) {
+        // Save email to history on successful login
+        await _saveEmailToHistory(email);
+        
         if (mounted) {
           Navigator.pushReplacement(
             context,
@@ -123,15 +197,76 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    TextField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: InputDecoration(
-                        labelText: 'Email',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
+                    // Email field with suggestions
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        TextField(
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: InputDecoration(
+                            labelText: 'Email',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            suffixIcon: _emailController.text.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear),
+                                    onPressed: () {
+                                      _emailController.clear();
+                                      setState(() {
+                                        _showSuggestions = false;
+                                      });
+                                    },
+                                  )
+                                : null,
+                          ),
                         ),
-                      ),
+                        // Email suggestions dropdown
+                        if (_showSuggestions && _emailSuggestions.isNotEmpty)
+                          Container(
+                            margin: const EdgeInsets.only(top: 4),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey.shade300),
+                              borderRadius: BorderRadius.circular(8),
+                              color: Colors.white,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            constraints: const BoxConstraints(maxHeight: 200),
+                            child: ListView.builder(
+                              shrinkWrap: true,
+                              itemCount: _emailSuggestions
+                                  .where((email) => email
+                                      .toLowerCase()
+                                      .contains(_emailController.text.toLowerCase()))
+                                  .length,
+                              itemBuilder: (context, index) {
+                                final filteredEmails = _emailSuggestions
+                                    .where((email) => email
+                                        .toLowerCase()
+                                        .contains(_emailController.text.toLowerCase()))
+                                    .toList();
+                                final email = filteredEmails[index];
+                                
+                                return ListTile(
+                                  dense: true,
+                                  leading: const Icon(Icons.history, size: 16),
+                                  title: Text(
+                                    email,
+                                    style: const TextStyle(fontSize: 14),
+                                  ),
+                                  onTap: () => _selectEmailSuggestion(email),
+                                );
+                              },
+                            ),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 16),
                     TextField(
