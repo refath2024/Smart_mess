@@ -189,6 +189,12 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
     return !_uniqueRoles.contains(role); // Unique roles status cannot be edited
   }
 
+  // Check if a staff member can be deleted
+  bool _canDeleteStaff(String role) {
+    return role !=
+        'PMC'; // PMC cannot be deleted to prevent losing admin access
+  }
+
   Future<void> _logout() async {
     try {
       await _adminAuthService.logoutAdmin();
@@ -288,12 +294,46 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
   }
 
   Future<void> _deleteStaff(Map<String, dynamic> row) async {
+    // Safety check: Prevent PMC deletion
+    if (row['role'] == 'PMC') {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'PMC account cannot be deleted. It serves as the super admin to maintain system access.'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
+      return;
+    }
+
     final bool? confirm = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Confirm Delete'),
-          content: Text('Are you sure you want to delete "${row['name']}"?'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Are you sure you want to delete "${row['name']}"?'),
+              const SizedBox(height: 8),
+              const Text(
+                'This will permanently delete:',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
+              const Text('• Staff record from database'),
+              const Text('• Associated user account from all collections'),
+              const Text('• Firebase authentication account (automatic)'),
+              const SizedBox(height: 8),
+              const Text(
+                'This action cannot be undone.',
+                style: TextStyle(color: Colors.red, fontSize: 12),
+              ),
+            ],
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -310,23 +350,57 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
     );
 
     if (confirm == true) {
+      // Show loading dialog during deletion
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return const AlertDialog(
+            content: Row(
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(width: 20),
+                Text('Deleting staff member...'),
+              ],
+            ),
+          );
+        },
+      );
+
       try {
+        // Step 1: Delete from staff_state collection
+        // The Cloud Function trigger will automatically handle:
+        // - Firebase Auth user deletion
+        // - User document deletion from 'users' collection
         await FirebaseFirestore.instance
             .collection('staff_state')
             .doc(row['id'])
             .delete();
 
+        // Update local state
         setState(() {
           staffData.remove(row);
         });
 
+        // Close loading dialog
         if (mounted) {
+          Navigator.of(context).pop(); // Close loading dialog
+
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Staff member deleted successfully')),
+            SnackBar(
+              content: Text(
+                'Staff member "${row['name']}" deleted successfully.\n'
+                'Firebase Auth account will be automatically removed.',
+              ),
+              duration: const Duration(seconds: 4),
+              backgroundColor: Colors.green,
+            ),
           );
         }
       } catch (e) {
+        // Close loading dialog
         if (mounted) {
+          Navigator.of(context).pop(); // Close loading dialog
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Failed to delete staff member: $e')),
           );
@@ -1044,17 +1118,36 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                                               constraints: const BoxConstraints(
                                                   minWidth: 32, minHeight: 32),
                                             ),
-                                            IconButton(
-                                              icon: const Icon(Icons.delete,
-                                                  size: 18),
-                                              color: Colors.red,
-                                              onPressed: () =>
-                                                  _deleteStaff(row),
-                                              tooltip: 'Delete',
-                                              padding: const EdgeInsets.all(4),
-                                              constraints: const BoxConstraints(
-                                                  minWidth: 32, minHeight: 32),
-                                            ),
+                                            if (_canDeleteStaff(row['role']))
+                                              IconButton(
+                                                icon: const Icon(Icons.delete,
+                                                    size: 18),
+                                                color: Colors.red,
+                                                onPressed: () =>
+                                                    _deleteStaff(row),
+                                                tooltip: 'Delete',
+                                                padding:
+                                                    const EdgeInsets.all(4),
+                                                constraints:
+                                                    const BoxConstraints(
+                                                        minWidth: 32,
+                                                        minHeight: 32),
+                                              )
+                                            else
+                                              IconButton(
+                                                icon: const Icon(Icons.delete,
+                                                    size: 18),
+                                                color: Colors.grey,
+                                                onPressed: null,
+                                                tooltip:
+                                                    'PMC cannot be deleted (Super Admin protection)',
+                                                padding:
+                                                    const EdgeInsets.all(4),
+                                                constraints:
+                                                    const BoxConstraints(
+                                                        minWidth: 32,
+                                                        minHeight: 32),
+                                              ),
                                           ]
                                         ],
                                       ),
