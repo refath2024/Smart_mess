@@ -5,14 +5,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../theme_provider.dart';
 import '../login_screen.dart';
-import 'meal_in_out_screen.dart';
-import 'messing.dart';
-import 'billing_screen.dart';
-import 'menu_set_screen.dart';
+import 'user_meal_in_out_screen.dart';
+import 'user_messing_screen.dart';
+import 'user_billing_screen.dart';
+import 'user_menu_set_screen.dart';
 import 'notification_page.dart';
-import 'my_pro.dart';
+import 'profile_screen.dart';
 import 'help_screen.dart';
 import 'change_password_screen.dart';
+
 class UserHomeScreen extends StatefulWidget {
   const UserHomeScreen({super.key});
 
@@ -72,7 +73,10 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
         return;
       }
 
-      final doc = await FirebaseFirestore.instance.collection('user_requests').doc(user.uid).get();
+      final doc = await FirebaseFirestore.instance
+          .collection('user_requests')
+          .doc(user.uid)
+          .get();
 
       if (doc.exists) {
         final data = doc.data()!;
@@ -138,7 +142,8 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const NotificationPage()),
+                      MaterialPageRoute(
+                          builder: (_) => const NotificationPage()),
                     );
                   },
                 ),
@@ -189,7 +194,8 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                       Navigator.pop(context);
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const MyProfilePage()),
+                        MaterialPageRoute(
+                            builder: (_) => const MyProfilePage()),
                       );
                     },
                   ),
@@ -204,15 +210,16 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                       );
                     },
                   ),
-                   const Divider(),
-                    ListTile(
+                  const Divider(),
+                  ListTile(
                     leading: const Icon(Icons.help),
                     title: const Text('Change your password'),
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const ChangePasswordScreen()),
+                        MaterialPageRoute(
+                            builder: (_) => const ChangePasswordScreen()),
                       );
                     },
                   ),
@@ -266,8 +273,10 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
           BottomNavigationBarItem(icon: Icon(Icons.fastfood), label: "Meal IN"),
-          BottomNavigationBarItem(icon: Icon(Icons.food_bank), label: "Messing"),
-          BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: "Menu Set"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.food_bank), label: "Messing"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.menu_book), label: "Menu Set"),
           BottomNavigationBarItem(icon: Icon(Icons.receipt), label: "Billing"),
         ],
       ),
@@ -341,11 +350,17 @@ class HomeContent extends StatelessWidget {
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(child: _buildMenuCard("Breakfast", "Alu Paratha with Beef", "2.png")),
+                Expanded(
+                    child: _buildMenuCard(
+                        "Breakfast", "Alu Paratha with Beef", "2.png")),
                 const SizedBox(width: 10),
-                Expanded(child: _buildMenuCard("Lunch", "Khichuri with Chicken", "1.png")),
+                Expanded(
+                    child: _buildMenuCard(
+                        "Lunch", "Khichuri with Chicken", "1.png")),
                 const SizedBox(width: 10),
-                Expanded(child: _buildMenuCard("Dinner", "Ruti with dal and vaji", "3.png")),
+                Expanded(
+                    child: _buildMenuCard(
+                        "Dinner", "Ruti with dal and vaji", "3.png")),
               ],
             ),
             const SizedBox(height: 24),
@@ -356,33 +371,45 @@ class HomeContent extends StatelessWidget {
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(child: _buildMenuCard("Breakfast", "Roti with Beef Curry", "4.png")),
+                Expanded(
+                    child: _buildMenuCard(
+                        "Breakfast", "Roti with Beef Curry", "4.png")),
                 const SizedBox(width: 10),
-                Expanded(child: _buildMenuCard("Lunch", "Rice with Curry", "5.png")),
+                Expanded(
+                    child: _buildMenuCard("Lunch", "Rice with Curry", "5.png")),
                 const SizedBox(width: 10),
-                Expanded(child: _buildMenuCard("Dinner", "Paratha with Chicken", "6.png")),
+                Expanded(
+                    child: _buildMenuCard(
+                        "Dinner", "Paratha with Chicken", "6.png")),
               ],
             ),
             const SizedBox(height: 24),
             Card(
               color: Colors.red.shade50,
               elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
                 child: Row(
                   children: [
-                    const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 32),
+                    const Icon(Icons.warning_amber_rounded,
+                        color: Colors.red, size: 32),
                     const SizedBox(width: 16),
                     const Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text("Total Due",
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.red)),
+                              style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.red)),
                           SizedBox(height: 4),
                           Text("৳ 1000",
-                              style: TextStyle(fontSize: 16, color: Colors.black87)),
+                              style: TextStyle(
+                                  fontSize: 16, color: Colors.black87)),
                         ],
                       ),
                     ),
@@ -390,9 +417,13 @@ class HomeContent extends StatelessWidget {
                       onPressed: onBillingPressed,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
                       ),
-                      child: const Text("Pay Bill", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      child: const Text("Pay Bill",
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold)),
                     )
                   ],
                 ),
