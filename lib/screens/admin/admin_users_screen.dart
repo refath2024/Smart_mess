@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'admin_home_screen.dart';
 import 'admin_pending_ids_screen.dart';
 import 'admin_shopping_history.dart';
@@ -24,6 +25,7 @@ class AdminUsersScreen extends StatefulWidget {
 
 class _AdminUsersScreenState extends State<AdminUsersScreen> {
   final AdminAuthService _adminAuthService = AdminAuthService();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   bool _isLoading = true;
   String _currentUserName = "Admin User";
@@ -31,11 +33,20 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
 
   final TextEditingController _searchController = TextEditingController();
 
+  // Dynamic data lists
+  List<Map<String, dynamic>> _allUsers = [];
+  List<Map<String, dynamic>> _filteredUsers = [];
+
+  // Summary data
+  int _totalMembers = 0;
+  int _totalDiningMembers = 0;
+  int _totalActiveDiningMembers = 0;
+  int _totalStaff = 0;
+
   @override
   void initState() {
     super.initState();
     _checkAuthentication();
-    filteredUsers = List.from(users);
   }
 
   Future<void> _checkAuthentication() async {
@@ -59,6 +70,12 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
         setState(() {
           _currentUserData = userData;
           _currentUserName = userData['name'] ?? 'Admin User';
+        });
+
+        // Load users data after authentication
+        await _loadUsersData();
+
+        setState(() {
           _isLoading = false;
         });
       } else {
@@ -83,181 +100,75 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     }
   }
 
-  // Improved type safety with custom type
-  final List<Map<String, dynamic>> users = [
-    {
-      'no': 101,
-      'rank': 'Lt',
-      'name': 'Sami',
-      'unit': '10 Sig',
-      'mobile': '01700000001',
-      'email': 'sami@army.mil.bd',
-      'role': 'Admin',
-      'status': 'Active',
-    },
-    {
-      'no': 102,
-      'rank': 'Lt',
-      'name': 'Wasifa',
-      'unit': '6 Sig',
-      'mobile': '01700000002',
-      'email': 'wasifa@pharma.bd',
-      'role': 'Dining Member',
-      'status': 'Inactive',
-    },
-    {
-      'no': 103,
-      'rank': 'Capt',
-      'name': 'Tanvir',
-      'unit': '2 Engr',
-      'mobile': '01700000003',
-      'email': 'tanvir@army.bd',
-      'role': 'Cook',
-      'status': 'Active',
-    },
-    {
-      'no': 104,
-      'rank': 'Maj',
-      'name': 'Zubaer',
-      'unit': 'CSE Dept',
-      'mobile': '01700000004',
-      'email': 'zubaer@mist.bd',
-      'role': 'Admin',
-      'status': 'Active',
-    },
-    {
-      'no': 105,
-      'rank': 'Lt',
-      'name': 'Refath',
-      'unit': '86 ISB',
-      'mobile': '01700000005',
-      'email': 'refath@sig.com',
-      'role': 'Dining Member',
-      'status': 'Inactive',
-    },
-    {
-      'no': 106,
-      'rank': 'Lt',
-      'name': 'Tahmid',
-      'unit': '10 Sig',
-      'mobile': '01700000006',
-      'email': 'tahmid@army.mil',
-      'role': 'Dining Member',
-      'status': 'Active',
-    },
-    {
-      'no': 107,
-      'rank': 'Capt',
-      'name': 'Ayon',
-      'unit': '2 Sig',
-      'mobile': '01700000007',
-      'email': 'ayon@army.mil',
-      'role': 'Staff',
-      'status': 'Active',
-    },
-    {
-      'no': 108,
-      'rank': 'Maj',
-      'name': 'Adil',
-      'unit': 'Logistics',
-      'mobile': '01700000008',
-      'email': 'adil@army.mil',
-      'role': 'Staff',
-      'status': 'Inactive',
-    },
-    {
-      'no': 109,
-      'rank': 'Lt Col',
-      'name': 'Minhaz',
-      'unit': 'HQ',
-      'mobile': '01700000009',
-      'email': 'minhaz@hq.army.bd',
-      'role': 'Admin',
-      'status': 'Active',
-    },
-    {
-      'no': 110,
-      'rank': 'Brig Gen',
-      'name': 'Raiyan',
-      'unit': 'Brigade',
-      'mobile': '01700000010',
-      'email': 'raiyan@army.bd',
-      'role': 'Admin',
-      'status': 'Active',
-    },
-    {
-      'no': 111,
-      'rank': 'Capt',
-      'name': 'Tasin',
-      'unit': '4 Engr',
-      'mobile': '01700000011',
-      'email': 'tasin@eng.bd',
-      'role': 'Dining Member',
-      'status': 'Active',
-    },
-    {
-      'no': 112,
-      'rank': 'Lt',
-      'name': 'Pervez',
-      'unit': '3 Sig',
-      'mobile': '01700000012',
-      'email': 'pervez@sig.bd',
-      'role': 'Cook',
-      'status': 'Inactive',
-    },
-    {
-      'no': 113,
-      'rank': 'Lt',
-      'name': 'Nahid',
-      'unit': '10 Sig',
-      'mobile': '01700000013',
-      'email': 'nahid@army.bd',
-      'role': 'Dining Member',
-      'status': 'Active',
-    },
-    {
-      'no': 114,
-      'rank': 'Capt',
-      'name': 'Ahnaf',
-      'unit': '1 Engr',
-      'mobile': '01700000014',
-      'email': 'ahnaf@army.bd',
-      'role': 'Admin',
-      'status': 'Inactive',
-    },
-    {
-      'no': 115,
-      'rank': 'Maj',
-      'name': 'Faiyaz',
-      'unit': '10 Sig',
-      'mobile': '01700000015',
-      'email': 'faiyaz@army.bd',
-      'role': 'Dining Member',
-      'status': 'Active',
-    },
-    {
-      'no': 116,
-      'rank': 'Col',
-      'name': 'Fahim',
-      'unit': 'HQ',
-      'mobile': '01700000016',
-      'email': 'fahim@hq.bd',
-      'role': 'Admin',
-      'status': 'Inactive',
-    },
-    {
-      'no': 117,
-      'rank': 'Lt',
-      'name': 'Shafquat',
-      'unit': '1 Sig',
-      'mobile': '01700000017',
-      'email': 'shafquat@army.mil',
-      'role': 'Cook',
-      'status': 'Active',
-    },
-  ];
+  Future<void> _loadUsersData() async {
+    try {
+      // Fetch staff data from staff_state collection
+      final staffSnapshot = await _firestore.collection('staff_state').get();
 
-  List<Map<String, dynamic>> filteredUsers = [];
+      // Fetch dining members data from user_requests collection
+      final diningSnapshot = await _firestore.collection('user_requests').get();
+
+      List<Map<String, dynamic>> allUsers = [];
+
+      // Process staff data
+      for (var doc in staffSnapshot.docs) {
+        final data = doc.data();
+        allUsers.add({
+          'id': doc.id,
+          'ba_no': data['ba_no'] ?? '',
+          'rank': data['rank'] ?? '',
+          'name': data['name'] ?? '',
+          'unit': data['unit'] ?? '',
+          'mobile': data['mobile'] ?? '',
+          'email': data['email'] ?? '',
+          'role': data['role'] ?? 'Staff',
+          'status': data['status'] ?? 'Active',
+          'type': 'staff',
+        });
+      }
+
+      // Process dining members data
+      for (var doc in diningSnapshot.docs) {
+        final data = doc.data();
+        allUsers.add({
+          'id': doc.id,
+          'ba_no': data['ba_no'] ?? '',
+          'rank': data['rank'] ?? '',
+          'name': data['name'] ?? '',
+          'unit': data['unit'] ?? '',
+          'mobile': data['mobile'] ?? '',
+          'email': data['email'] ?? '',
+          'role': 'Dining Member',
+          'status': data['status'] ?? 'Active',
+          'type': 'dining_member',
+        });
+      }
+
+      // Calculate summary stats
+      _totalMembers = allUsers.length;
+      _totalDiningMembers = diningSnapshot.docs.length;
+      _totalActiveDiningMembers = diningSnapshot.docs
+          .where((doc) =>
+              (doc.data()['status'] ?? 'Active').toString().toLowerCase() ==
+              'active')
+          .length;
+      _totalStaff = staffSnapshot.docs.length;
+
+      setState(() {
+        _allUsers = allUsers;
+        _filteredUsers = List.from(allUsers);
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading users data: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -267,7 +178,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
 
   void _search(String query) {
     setState(() {
-      filteredUsers = users.where((user) {
+      _filteredUsers = _allUsers.where((user) {
         return user.values.any(
           (value) =>
               value.toString().toLowerCase().contains(query.toLowerCase()),
@@ -302,7 +213,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
         children: [
           Expanded(
             child: Text(
-              "ID No",
+              "BA No",
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -382,7 +293,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: Row(
         children: [
-          Expanded(child: Text(user['no'].toString())),
+          Expanded(child: Text(user['ba_no']?.toString() ?? '')),
           Expanded(child: Text(user['rank'] ?? '')),
           Expanded(child: Text(user['name'] ?? '')),
           Expanded(child: Text(user['unit'] ?? '')),
@@ -396,21 +307,6 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   }
 
   Widget _buildStats() {
-    final totalMembers = users.length;
-    final activeMembers =
-        users.where((u) => u['status']!.toLowerCase() == 'active').length;
-    final diningMembers =
-        users.where((u) => u['role']!.toLowerCase() == 'dining member').length;
-    final activeDining = users
-        .where(
-          (u) =>
-              u['role']!.toLowerCase() == 'dining member' &&
-              u['status']!.toLowerCase() == 'active',
-        )
-        .length;
-    final cooks = users.where((u) => u['role']!.toLowerCase() == 'cook').length;
-    final staffsAdmins = totalMembers - diningMembers - cooks;
-
     return Card(
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -430,12 +326,10 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            Text("• Total Members = $totalMembers"),
-            Text("• Total Active Members = $activeMembers"),
-            Text("• Total Dining Members = $diningMembers"),
-            Text("• Total Active Dining Members = $activeDining"),
-            Text("• Total Cooks = $cooks"),
-            Text("• Total Staffs and Admins = $staffsAdmins"),
+            Text("• Total Members = $_totalMembers"),
+            Text("• Total Dining Members = $_totalDiningMembers"),
+            Text("• Total Active Dining Members = $_totalActiveDiningMembers"),
+            Text("• Total Staffs = $_totalStaff"),
           ],
         ),
       ),
@@ -809,7 +703,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                       children: [
                         _buildTableHeader(),
                         const Divider(),
-                        ...filteredUsers.map(_buildUserRow),
+                        ..._filteredUsers.map(_buildUserRow),
                       ],
                     ),
                   ),

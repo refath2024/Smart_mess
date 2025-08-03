@@ -84,11 +84,32 @@ class _AddDiningMemberFormState extends State<AddDiningMemberForm> {
   Future<void> _loadCurrentAdminData() async {
     try {
       final adminData = await _adminAuthService.getCurrentAdminData();
-      setState(() {
-        _currentAdminData = adminData;
-      });
+      if (adminData != null) {
+        setState(() {
+          _currentAdminData = adminData;
+        });
+        debugPrint(
+            'Admin data loaded successfully: ${adminData['name']} (${adminData['email']})');
+      } else {
+        debugPrint('Failed to load admin data: adminData is null');
+        // Set a fallback admin data
+        setState(() {
+          _currentAdminData = {
+            'name': 'System Admin',
+            'email': 'admin@system.com',
+          };
+        });
+        debugPrint('Using fallback admin data');
+      }
     } catch (e) {
       debugPrint('Failed to load admin data: $e');
+      // Set a default admin data to prevent null errors
+      setState(() {
+        _currentAdminData = {
+          'name': 'System Admin',
+          'email': 'admin@system.com',
+        };
+      });
     }
   }
 
@@ -168,6 +189,15 @@ class _AddDiningMemberFormState extends State<AddDiningMemberForm> {
 
     setState(() => _isLoading = true);
 
+    // Load and save admin data BEFORE any operations
+    await _loadCurrentAdminData();
+
+    // Save the current admin info
+    final String approvedByName = _currentAdminData?['name'] ?? 'System Admin';
+    final String adminEmail = _currentAdminData?['email'] ?? 'admin@system.com';
+
+    debugPrint('Admin adding member: $approvedByName ($adminEmail)');
+
     // Check if email already exists
     final canProceed = await _checkEmailExists();
     if (!canProceed) {
@@ -197,16 +227,27 @@ class _AddDiningMemberFormState extends State<AddDiningMemberForm> {
     }
 
     try {
+      // Store current admin's Firebase Auth user info
+      final currentAdminUser = FirebaseAuth.instance.currentUser;
+      final String? adminAuthEmail = currentAdminUser?.email;
+      final String? adminAuthUid = currentAdminUser?.uid;
+
+      debugPrint(
+          'Current admin Firebase user: $adminAuthEmail (UID: $adminAuthUid)');
+
+      // Create Firebase Auth user for the dining member
       final credential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(
               email: _emailController.text.trim(),
               password: _passwordController.text.trim());
-      // Generate a temporary user ID for Firestore document
-      String userid = credential.user!.uid; // Use Firebase Auth user ID
 
-      // Save user info to Firestore under 'user_requests' collection with approved status
-      // Note: We don't create Firebase Auth user here to avoid interfering with admin's session
-      // The user will be created in Firebase Auth when they first try to log in
+      String userid = credential.user!.uid;
+
+      debugPrint(
+          'Created new dining member Firebase Auth: ${credential.user!.email} (UID: $userid)');
+      debugPrint('Using approved_by: $approvedByName');
+
+      // Save dining member info to Firestore
       await FirebaseFirestore.instance
           .collection('user_requests')
           .doc(userid)
@@ -224,18 +265,25 @@ class _AddDiningMemberFormState extends State<AddDiningMemberForm> {
         'approved_at': FieldValue.serverTimestamp(),
         'user_id': userid,
         'approved_by_admin': true,
-        'approved_by': _currentAdminData?['name'] ?? 'Admin',
+        'approved_by': approvedByName, // Use the saved admin name
+        'approved_by_email': adminEmail, // Store admin email for reference
         'application_date': DateTime.now().toIso8601String(),
+        'firebase_auth_created': true, // Firebase Auth account created
       });
 
+      // Sign out the newly created dining member
+      await FirebaseAuth.instance.signOut();
+
+      debugPrint('Signed out dining member, admin session may be affected');
+
       if (context.mounted) {
-        // Success dialog
+        // Success dialog with appropriate message
         await showDialog<void>(
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('Success'),
             content: Text(
-              '${_nameController.text} has been successfully registered as a dining member.\n\nApproved by: ${_currentAdminData?['name'] ?? 'Admin'}\n\nThey can now log in using their email and password.',
+              '${_nameController.text} has been successfully registered as a dining member.\n\nApproved by: $approvedByName\n\nFirebase Auth account created. They can now log in using their email and password.\n\nNote: You may need to log in again as admin if prompted.',
             ),
             actions: [
               TextButton(
