@@ -1760,7 +1760,7 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
         iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
         title: const Text(
-          "Messing of Today",
+          "Messing",
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w600,
