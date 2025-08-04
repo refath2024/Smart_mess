@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'admin_home_screen.dart';
 import 'admin_users_screen.dart';
@@ -32,10 +33,24 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
   bool _isLoading = true;
   String _currentUserName = "Admin User";
   Map<String, dynamic>? _currentUserData;
+  DateTime _selectedDate = DateTime.now();
 
   TextEditingController searchController = TextEditingController();
   String currentDay = "";
   String userName = "Admin";
+
+  // Messing data from Firebase
+  List<Map<String, dynamic>> _breakfastEntries = [];
+  List<Map<String, dynamic>> _lunchEntries = [];
+  List<Map<String, dynamic>> _dinnerEntries = [];
+
+  // Totals
+  double _breakfastTotalExpended = 0.0;
+  double _breakfastTotalPerMember = 0.0;
+  double _lunchTotalExpended = 0.0;
+  double _lunchTotalPerMember = 0.0;
+  double _dinnerTotalExpended = 0.0;
+  double _dinnerTotalPerMember = 0.0;
 
   // Track which row is being edited for each meal
   int? editingBreakfastIndex;
@@ -47,12 +62,23 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
   List<TextEditingController> lunchControllers = [];
   List<TextEditingController> dinnerControllers = [];
 
+  // Editing state
+  Map<String, TextEditingController> _editingControllers = {};
+
   @override
   void initState() {
     super.initState();
+    _selectedDate = DateTime.now();
     _checkAuthentication();
     _fetchCurrentDay();
+    _loadMessingData();
     _initControllers();
+  }
+
+  @override
+  void dispose() {
+    _editingControllers.values.forEach((controller) => controller.dispose());
+    super.dispose();
   }
 
   Future<void> _checkAuthentication() async {
@@ -100,54 +126,296 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
     }
   }
 
-  List<Map<String, dynamic>> breakfastEntries = [
-    {
-      "id": 1,
-      "ingredient_name": "Egg",
-      "amount": 100,
-      "total_prices": 200,
-      "members": 10,
-      "ingredient_price": 20,
-    },
-  ];
-  List<Map<String, dynamic>> lunchEntries = [
-    {
-      "id": 2,
-      "ingredient_name": "Rice",
-      "amount": 500,
-      "total_prices": 400,
-      "members": 10,
-      "ingredient_price": 40,
-    },
-  ];
-  List<Map<String, dynamic>> dinnerEntries = [
-    {
-      "id": 3,
-      "ingredient_name": "Chicken",
-      "amount": 300,
-      "total_prices": 600,
-      "members": 10,
-      "ingredient_price": 60,
-    },
-  ];
+  Future<void> _loadMessingData() async {
+    final dateStr =
+        "${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}";
+
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('messing_data')
+          .doc(dateStr)
+          .get();
+
+      if (!doc.exists) {
+        setState(() {
+          _breakfastEntries = [];
+          _lunchEntries = [];
+          _dinnerEntries = [];
+          _resetTotals();
+        });
+        return;
+      }
+
+      final data = doc.data() as Map<String, dynamic>;
+      _parseMessingData(data);
+    } catch (e) {
+      print('Error loading messing data: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading data: $e')),
+        );
+      }
+    }
+  }
+
+  void _parseMessingData(Map<String, dynamic> data) {
+    List<Map<String, dynamic>> breakfast = [];
+    List<Map<String, dynamic>> lunch = [];
+    List<Map<String, dynamic>> dinner = [];
+
+    // Parse individual entries
+    for (String key in data.keys) {
+      if (key.startsWith('B') && key.contains('_product_name')) {
+        final number = key.split('_')[0].substring(1);
+        breakfast.add(_createEntryFromData(data, 'B$number'));
+      } else if (key.startsWith('L') && key.contains('_product_name')) {
+        final number = key.split('_')[0].substring(1);
+        lunch.add(_createEntryFromData(data, 'L$number'));
+      } else if (key.startsWith('D') && key.contains('_product_name')) {
+        final number = key.split('_')[0].substring(1);
+        dinner.add(_createEntryFromData(data, 'D$number'));
+      }
+    }
+
+    // Get totals
+    final breakfastTotalExpended =
+        data['breakfast_total_price_expended']?.toDouble() ?? 0.0;
+    final breakfastTotalPerMember =
+        data['breakfast_total_price_per_member']?.toDouble() ?? 0.0;
+    final lunchTotalExpended =
+        data['lunch_total_price_expended']?.toDouble() ?? 0.0;
+    final lunchTotalPerMember =
+        data['lunch_total_price_per_member']?.toDouble() ?? 0.0;
+    final dinnerTotalExpended =
+        data['dinner_total_price_expended']?.toDouble() ?? 0.0;
+    final dinnerTotalPerMember =
+        data['dinner_total_price_per_member']?.toDouble() ?? 0.0;
+
+    setState(() {
+      _breakfastEntries = breakfast;
+      _lunchEntries = lunch;
+      _dinnerEntries = dinner;
+      _breakfastTotalExpended = breakfastTotalExpended;
+      _breakfastTotalPerMember = breakfastTotalPerMember;
+      _lunchTotalExpended = lunchTotalExpended;
+      _lunchTotalPerMember = lunchTotalPerMember;
+      _dinnerTotalExpended = dinnerTotalExpended;
+      _dinnerTotalPerMember = dinnerTotalPerMember;
+    });
+  }
+
+  Map<String, dynamic> _createEntryFromData(
+      Map<String, dynamic> data, String prefix) {
+    return {
+      'id': prefix,
+      'ingredient_name': data['${prefix}_product_name'] ?? '',
+      'unit_price': data['${prefix}_unit_price']?.toDouble() ?? 0.0,
+      'amount': data['${prefix}_amount_used']?.toDouble() ?? 0.0,
+      'members': data['${prefix}_dining_members']?.toDouble() ?? 0.0,
+      'total_prices': data['${prefix}_price_expended']?.toDouble() ?? 0.0,
+      'ingredient_price': data['${prefix}_price_per_member']?.toDouble() ?? 0.0,
+      'meal_type': data['${prefix}_meal_type'] ?? '',
+    };
+  }
+
+  void _resetTotals() {
+    _breakfastTotalExpended = 0.0;
+    _breakfastTotalPerMember = 0.0;
+    _lunchTotalExpended = 0.0;
+    _lunchTotalPerMember = 0.0;
+    _dinnerTotalExpended = 0.0;
+    _dinnerTotalPerMember = 0.0;
+  }
+
+  Future<void> _recalculateAndUpdateTotals() async {
+    final dateStr =
+        "${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}";
+
+    try {
+      // Calculate breakfast totals
+      double breakfastTotalExpended = 0.0;
+      double breakfastTotalPerMember = 0.0;
+      for (var entry in _breakfastEntries) {
+        final unitPrice = entry['unit_price']?.toDouble() ?? 0.0;
+        final amount = entry['amount']?.toDouble() ?? 0.0;
+        final members = entry['members']?.toDouble() ?? 0.0;
+        final priceExpended = unitPrice * amount;
+        final pricePerMember = members > 0 ? priceExpended / members : 0.0;
+
+        breakfastTotalExpended += priceExpended;
+        breakfastTotalPerMember += pricePerMember;
+      }
+
+      // Calculate lunch totals
+      double lunchTotalExpended = 0.0;
+      double lunchTotalPerMember = 0.0;
+      for (var entry in _lunchEntries) {
+        final unitPrice = entry['unit_price']?.toDouble() ?? 0.0;
+        final amount = entry['amount']?.toDouble() ?? 0.0;
+        final members = entry['members']?.toDouble() ?? 0.0;
+        final priceExpended = unitPrice * amount;
+        final pricePerMember = members > 0 ? priceExpended / members : 0.0;
+
+        lunchTotalExpended += priceExpended;
+        lunchTotalPerMember += pricePerMember;
+      }
+
+      // Calculate dinner totals
+      double dinnerTotalExpended = 0.0;
+      double dinnerTotalPerMember = 0.0;
+      for (var entry in _dinnerEntries) {
+        final unitPrice = entry['unit_price']?.toDouble() ?? 0.0;
+        final amount = entry['amount']?.toDouble() ?? 0.0;
+        final members = entry['members']?.toDouble() ?? 0.0;
+        final priceExpended = unitPrice * amount;
+        final pricePerMember = members > 0 ? priceExpended / members : 0.0;
+
+        dinnerTotalExpended += priceExpended;
+        dinnerTotalPerMember += pricePerMember;
+      }
+
+      // Update Firebase with new totals
+      await FirebaseFirestore.instance
+          .collection('messing_data')
+          .doc(dateStr)
+          .update({
+        'breakfast_total_price_expended': breakfastTotalExpended,
+        'breakfast_total_price_per_member': breakfastTotalPerMember,
+        'lunch_total_price_expended': lunchTotalExpended,
+        'lunch_total_price_per_member': lunchTotalPerMember,
+        'dinner_total_price_expended': dinnerTotalExpended,
+        'dinner_total_price_per_member': dinnerTotalPerMember,
+      });
+
+      // Update monthly menu prices with actual costs
+      await _updateMonthlyMenuPrices(dateStr, breakfastTotalPerMember,
+          lunchTotalPerMember, dinnerTotalPerMember);
+
+      // Update local state
+      setState(() {
+        _breakfastTotalExpended = breakfastTotalExpended;
+        _breakfastTotalPerMember = breakfastTotalPerMember;
+        _lunchTotalExpended = lunchTotalExpended;
+        _lunchTotalPerMember = lunchTotalPerMember;
+        _dinnerTotalExpended = dinnerTotalExpended;
+        _dinnerTotalPerMember = dinnerTotalPerMember;
+      });
+    } catch (e) {
+      print('Error recalculating totals: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error updating totals: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _updateMonthlyMenuPrices(String dateStr, double breakfastPrice,
+      double lunchPrice, double dinnerPrice) async {
+    try {
+      // Check if monthly menu document exists for this date
+      final monthlyMenuDoc = await FirebaseFirestore.instance
+          .collection('monthly_menu')
+          .doc(dateStr)
+          .get();
+
+      if (monthlyMenuDoc.exists) {
+        // Update existing document with actual prices
+        final currentData = monthlyMenuDoc.data() as Map<String, dynamic>;
+
+        await FirebaseFirestore.instance
+            .collection('monthly_menu')
+            .doc(dateStr)
+            .update({
+          'breakfast': {
+            'item': currentData['breakfast']?['item'] ?? '',
+            'price': breakfastPrice,
+          },
+          'lunch': {
+            'item': currentData['lunch']?['item'] ?? '',
+            'price': lunchPrice,
+          },
+          'dinner': {
+            'item': currentData['dinner']?['item'] ?? '',
+            'price': dinnerPrice,
+          },
+        });
+
+        print('Updated monthly menu prices for $dateStr');
+      } else {
+        // Create new document with actual prices (items will be empty)
+        await FirebaseFirestore.instance
+            .collection('monthly_menu')
+            .doc(dateStr)
+            .set({
+          'date': dateStr,
+          'breakfast': {
+            'item': '',
+            'price': breakfastPrice,
+          },
+          'lunch': {
+            'item': '',
+            'price': lunchPrice,
+          },
+          'dinner': {
+            'item': '',
+            'price': dinnerPrice,
+          },
+        });
+
+        print('Created monthly menu with actual prices for $dateStr');
+      }
+    } catch (e) {
+      print('Error updating monthly menu prices: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error updating monthly menu prices: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _selectDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+      });
+      _loadMessingData();
+      _fetchCurrentDay();
+    }
+  }
+
+  String _getFormattedDate() {
+    return "${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}";
+  }
+
+  List<Map<String, dynamic>> breakfastEntries = [];
+  List<Map<String, dynamic>> lunchEntries = [];
+  List<Map<String, dynamic>> dinnerEntries = [];
 
   void _initControllers() {
     breakfastControllers = List.generate(
-      breakfastEntries.length,
+      _breakfastEntries.length,
       (i) => TextEditingController(),
     );
     lunchControllers = List.generate(
-      lunchEntries.length,
+      _lunchEntries.length,
       (i) => TextEditingController(),
     );
     dinnerControllers = List.generate(
-      dinnerEntries.length,
+      _dinnerEntries.length,
       (i) => TextEditingController(),
     );
   }
 
   void _fetchCurrentDay() {
-    final now = DateTime.now().toUtc().add(const Duration(hours: 6));
+    final now = _selectedDate;
     final weekday = [
       "Monday",
       "Tuesday",
@@ -231,75 +499,225 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: DataTable(
+              headingRowColor: MaterialStateProperty.resolveWith<Color?>(
+                (Set<MaterialState> states) {
+                  return const Color(0xFF1A4D8F); // Blue background for headers
+                },
+              ),
+              headingTextStyle: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+              dataRowColor: MaterialStateProperty.resolveWith<Color?>(
+                (Set<MaterialState> states) {
+                  if (states.contains(MaterialState.hovered)) {
+                    return Colors.blue.shade50;
+                  }
+                  return Colors.white;
+                },
+              ),
               columns: const [
-                DataColumn(label: Text('Product Name')),
-                DataColumn(label: Text('Amount (g)')),
-                DataColumn(label: Text('Price')),
-                DataColumn(label: Text('Members')),
-                DataColumn(label: Text('Unit Price')),
-                DataColumn(label: Text('Actions')),
+                DataColumn(
+                  label: Expanded(
+                    child: Text(
+                      'Name',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+                DataColumn(
+                  label: Expanded(
+                    child: Text(
+                      'Unit Price (L/Kg)',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+                DataColumn(
+                  label: Expanded(
+                    child: Text(
+                      'Amount (L/Kg)',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+                DataColumn(
+                  label: Expanded(
+                    child: Text(
+                      'Price Expended',
+                      style: TextStyle(
+                        color: Colors.yellow,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        shadows: [
+                          Shadow(
+                            offset: Offset(1, 1),
+                            blurRadius: 2,
+                            color: Colors.black26,
+                          ),
+                        ],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+                DataColumn(
+                  label: Expanded(
+                    child: Text(
+                      'Dining Member',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+                DataColumn(
+                  label: Expanded(
+                    child: Text(
+                      'Total Price per Member',
+                      style: TextStyle(
+                        color: Colors.lightGreenAccent,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        shadows: [
+                          Shadow(
+                            offset: Offset(1, 1),
+                            blurRadius: 2,
+                            color: Colors.black26,
+                          ),
+                        ],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+                DataColumn(
+                  label: Expanded(
+                    child: Text(
+                      'Actions',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
               ],
               rows: List.generate(entries.length, (index) {
                 final row = entries[index];
                 final isEditing = editingIndex == index;
-                if (isEditing) {
-                  // Setup controllers for editing
-                  final nameController = TextEditingController(
-                    text: row['ingredient_name'].toString(),
-                  );
-                  final amountController = TextEditingController(
-                    text: row['amount'].toString(),
-                  );
-                  final priceController = TextEditingController(
-                    text: row['total_prices'].toString(),
-                  );
-                  final membersController = TextEditingController(
-                    text: row['members'].toString(),
-                  );
-                  final unitPriceController = TextEditingController(
-                    text: row['ingredient_price'].toString(),
-                  );
-                  controllers.clear();
-                  controllers.addAll([
-                    nameController,
-                    amountController,
-                    priceController,
-                    membersController,
-                    unitPriceController,
-                  ]);
+
+                // Calculate dynamic values
+                final unitPrice = row['unit_price']?.toDouble() ?? 0.0;
+                final amount = row['amount']?.toDouble() ?? 0.0;
+                final members = row['members']?.toDouble() ?? 0.0;
+                final priceExpended = unitPrice * amount;
+                final pricePerMember =
+                    members > 0 ? priceExpended / members : 0.0;
+
+                // For editing mode, calculate dynamic values from controllers
+                double editingPriceExpended = priceExpended;
+                double editingPricePerMember = pricePerMember;
+                if (isEditing && controllers.length >= 4) {
+                  final editingUnitPrice =
+                      double.tryParse(controllers[1].text) ?? 0.0;
+                  final editingAmount =
+                      double.tryParse(controllers[2].text) ?? 0.0;
+                  final editingMembers =
+                      double.tryParse(controllers[3].text) ?? 0.0;
+                  editingPriceExpended = editingUnitPrice * editingAmount;
+                  editingPricePerMember = editingMembers > 0
+                      ? editingPriceExpended / editingMembers
+                      : 0.0;
                 }
+
                 return DataRow(
                   cells: [
+                    // Name
+                    DataCell(
+                      isEditing
+                          ? SizedBox(
+                              width: 120,
+                              child: TextField(
+                                controller: controllers[0],
+                                decoration: const InputDecoration(
+                                  border: OutlineInputBorder(),
+                                  contentPadding: EdgeInsets.all(8),
+                                ),
+                              ),
+                            )
+                          : Text(row['ingredient_name'].toString()),
+                    ),
+                    // Unit Price (L/Kg)
                     DataCell(
                       isEditing
                           ? SizedBox(
                               width: 100,
-                              child: TextField(controller: controllers[0]),
-                            )
-                          : Text(row['ingredient_name'].toString()),
-                    ),
-                    DataCell(
-                      isEditing
-                          ? SizedBox(
-                              width: 80,
                               child: TextField(
                                 controller: controllers[1],
                                 keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(
+                                  border: OutlineInputBorder(),
+                                  contentPadding: EdgeInsets.all(8),
+                                  suffixText: 'BDT',
+                                ),
                               ),
                             )
-                          : Text(row['amount'].toString()),
+                          : Text('${unitPrice.toStringAsFixed(2)} BDT'),
                     ),
+                    // Amount (L/Kg)
                     DataCell(
                       isEditing
                           ? SizedBox(
-                              width: 80,
+                              width: 100,
                               child: TextField(
                                 controller: controllers[2],
                                 keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(
+                                  border: OutlineInputBorder(),
+                                  contentPadding: EdgeInsets.all(8),
+                                ),
                               ),
                             )
-                          : Text(row['total_prices'].toString()),
+                          : Text(amount.toStringAsFixed(2)),
                     ),
+                    // Price Expended (Dynamic, Non-editable)
+                    DataCell(
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          '${(isEditing ? editingPriceExpended : priceExpended).toStringAsFixed(2)} BDT',
+                          style: const TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                    ),
+                    // Dining Member
                     DataCell(
                       isEditing
                           ? SizedBox(
@@ -307,21 +725,34 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                               child: TextField(
                                 controller: controllers[3],
                                 keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(
+                                  border: OutlineInputBorder(),
+                                  contentPadding: EdgeInsets.all(8),
+                                ),
                               ),
                             )
-                          : Text(row['members'].toString()),
+                          : Text(members.toStringAsFixed(0)),
                     ),
+                    // Total Price per Member (Dynamic, Non-editable)
                     DataCell(
-                      isEditing
-                          ? SizedBox(
-                              width: 80,
-                              child: TextField(
-                                controller: controllers[4],
-                                keyboardType: TextInputType.number,
-                              ),
-                            )
-                          : Text(row['ingredient_price'].toString()),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: Colors.blue.shade200),
+                        ),
+                        child: Text(
+                          '${(isEditing ? editingPricePerMember : pricePerMember).toStringAsFixed(2)} BDT',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue.shade700,
+                          ),
+                        ),
+                      ),
                     ),
+                    // Actions
                     DataCell(
                       Row(
                         children: [
@@ -361,18 +792,132 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
   }
 
   void _editBreakfast(int index) {
+    final row = _breakfastEntries[index];
+    final unitPrice = row['unit_price']?.toDouble() ?? 0.0;
+    final amount = row['amount']?.toDouble() ?? 0.0;
+    final members = row['members']?.toDouble() ?? 0.0;
+
+    // Setup controllers for editing
+    final nameController = TextEditingController(
+      text: row['ingredient_name'].toString(),
+    );
+    final unitPriceController = TextEditingController(
+      text: unitPrice.toString(),
+    );
+    final amountController = TextEditingController(
+      text: amount.toString(),
+    );
+    final membersController = TextEditingController(
+      text: members.toString(),
+    );
+
+    breakfastControllers.clear();
+    breakfastControllers.addAll([
+      nameController,
+      unitPriceController,
+      amountController,
+      membersController,
+    ]);
+
+    // Add listeners for dynamic calculations
+    unitPriceController.addListener(() {
+      setState(() {});
+    });
+    amountController.addListener(() {
+      setState(() {});
+    });
+    membersController.addListener(() {
+      setState(() {});
+    });
+
     setState(() {
       editingBreakfastIndex = index;
     });
   }
 
   void _editLunch(int index) {
+    final row = _lunchEntries[index];
+    final unitPrice = row['unit_price']?.toDouble() ?? 0.0;
+    final amount = row['amount']?.toDouble() ?? 0.0;
+    final members = row['members']?.toDouble() ?? 0.0;
+
+    // Setup controllers for editing
+    final nameController = TextEditingController(
+      text: row['ingredient_name'].toString(),
+    );
+    final unitPriceController = TextEditingController(
+      text: unitPrice.toString(),
+    );
+    final amountController = TextEditingController(
+      text: amount.toString(),
+    );
+    final membersController = TextEditingController(
+      text: members.toString(),
+    );
+
+    lunchControllers.clear();
+    lunchControllers.addAll([
+      nameController,
+      unitPriceController,
+      amountController,
+      membersController,
+    ]);
+
+    // Add listeners for dynamic calculations
+    unitPriceController.addListener(() {
+      setState(() {});
+    });
+    amountController.addListener(() {
+      setState(() {});
+    });
+    membersController.addListener(() {
+      setState(() {});
+    });
+
     setState(() {
       editingLunchIndex = index;
     });
   }
 
   void _editDinner(int index) {
+    final row = _dinnerEntries[index];
+    final unitPrice = row['unit_price']?.toDouble() ?? 0.0;
+    final amount = row['amount']?.toDouble() ?? 0.0;
+    final members = row['members']?.toDouble() ?? 0.0;
+
+    // Setup controllers for editing
+    final nameController = TextEditingController(
+      text: row['ingredient_name'].toString(),
+    );
+    final unitPriceController = TextEditingController(
+      text: unitPrice.toString(),
+    );
+    final amountController = TextEditingController(
+      text: amount.toString(),
+    );
+    final membersController = TextEditingController(
+      text: members.toString(),
+    );
+
+    dinnerControllers.clear();
+    dinnerControllers.addAll([
+      nameController,
+      unitPriceController,
+      amountController,
+      membersController,
+    ]);
+
+    // Add listeners for dynamic calculations
+    unitPriceController.addListener(() {
+      setState(() {});
+    });
+    amountController.addListener(() {
+      setState(() {});
+    });
+    membersController.addListener(() {
+      setState(() {});
+    });
+
     setState(() {
       editingDinnerIndex = index;
     });
@@ -402,27 +947,61 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
     );
 
     if (confirm == true) {
-      setState(() {
-        breakfastEntries[index]['ingredient_name'] =
-            breakfastControllers[0].text;
-        breakfastEntries[index]['amount'] =
-            int.tryParse(breakfastControllers[1].text) ??
-                breakfastEntries[index]['amount'];
-        breakfastEntries[index]['total_prices'] =
-            int.tryParse(breakfastControllers[2].text) ??
-                breakfastEntries[index]['total_prices'];
-        breakfastEntries[index]['members'] =
-            int.tryParse(breakfastControllers[3].text) ??
-                breakfastEntries[index]['members'];
-        breakfastEntries[index]['ingredient_price'] =
-            int.tryParse(breakfastControllers[4].text) ??
-                breakfastEntries[index]['ingredient_price'];
-        editingBreakfastIndex = null;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Breakfast entry updated successfully')),
-        );
+      try {
+        final entry = _breakfastEntries[index];
+        final entryId = entry['id'];
+        final dateStr =
+            "${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}";
+
+        // Get values from controllers
+        final productName = breakfastControllers[0].text.trim();
+        final unitPrice = double.tryParse(breakfastControllers[1].text) ??
+            entry['unit_price'];
+        final amountUsed =
+            double.tryParse(breakfastControllers[2].text) ?? entry['amount'];
+        final diningMembers =
+            double.tryParse(breakfastControllers[3].text) ?? entry['members'];
+
+        // Calculate dynamic values
+        final priceExpended = unitPrice * amountUsed;
+        final pricePerMember =
+            diningMembers > 0 ? priceExpended / diningMembers : 0.0;
+
+        // Update Firebase document with correct field names
+        await FirebaseFirestore.instance
+            .collection('messing_data')
+            .doc(dateStr)
+            .update({
+          '${entryId}_product_name': productName,
+          '${entryId}_unit_price': unitPrice,
+          '${entryId}_amount_used': amountUsed,
+          '${entryId}_dining_members': diningMembers,
+          '${entryId}_price_expended': priceExpended,
+          '${entryId}_price_per_member': pricePerMember,
+        });
+
+        // Reload data
+        await _loadMessingData();
+
+        // Recalculate and update totals
+        await _recalculateAndUpdateTotals();
+
+        setState(() {
+          editingBreakfastIndex = null;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text('Breakfast entry updated successfully')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error updating entry: $e')),
+          );
+        }
       }
     }
   }
@@ -451,26 +1030,60 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
     );
 
     if (confirm == true) {
-      setState(() {
-        lunchEntries[index]['ingredient_name'] = lunchControllers[0].text;
-        lunchEntries[index]['amount'] =
-            int.tryParse(lunchControllers[1].text) ??
-                lunchEntries[index]['amount'];
-        lunchEntries[index]['total_prices'] =
-            int.tryParse(lunchControllers[2].text) ??
-                lunchEntries[index]['total_prices'];
-        lunchEntries[index]['members'] =
-            int.tryParse(lunchControllers[3].text) ??
-                lunchEntries[index]['members'];
-        lunchEntries[index]['ingredient_price'] =
-            int.tryParse(lunchControllers[4].text) ??
-                lunchEntries[index]['ingredient_price'];
-        editingLunchIndex = null;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Lunch entry updated successfully')),
-        );
+      try {
+        final entry = _lunchEntries[index];
+        final entryId = entry['id'];
+        final dateStr =
+            "${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}";
+
+        // Get values from controllers
+        final productName = lunchControllers[0].text.trim();
+        final unitPrice =
+            double.tryParse(lunchControllers[1].text) ?? entry['unit_price'];
+        final amountUsed =
+            double.tryParse(lunchControllers[2].text) ?? entry['amount'];
+        final diningMembers =
+            double.tryParse(lunchControllers[3].text) ?? entry['members'];
+
+        // Calculate dynamic values
+        final priceExpended = unitPrice * amountUsed;
+        final pricePerMember =
+            diningMembers > 0 ? priceExpended / diningMembers : 0.0;
+
+        // Update Firebase document with correct field names
+        await FirebaseFirestore.instance
+            .collection('messing_data')
+            .doc(dateStr)
+            .update({
+          '${entryId}_product_name': productName,
+          '${entryId}_unit_price': unitPrice,
+          '${entryId}_amount_used': amountUsed,
+          '${entryId}_dining_members': diningMembers,
+          '${entryId}_price_expended': priceExpended,
+          '${entryId}_price_per_member': pricePerMember,
+        });
+
+        // Reload data
+        await _loadMessingData();
+
+        // Recalculate and update totals
+        await _recalculateAndUpdateTotals();
+
+        setState(() {
+          editingLunchIndex = null;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Lunch entry updated successfully')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error updating entry: $e')),
+          );
+        }
       }
     }
   }
@@ -499,26 +1112,60 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
     );
 
     if (confirm == true) {
-      setState(() {
-        dinnerEntries[index]['ingredient_name'] = dinnerControllers[0].text;
-        dinnerEntries[index]['amount'] =
-            int.tryParse(dinnerControllers[1].text) ??
-                dinnerEntries[index]['amount'];
-        dinnerEntries[index]['total_prices'] =
-            int.tryParse(dinnerControllers[2].text) ??
-                dinnerEntries[index]['total_prices'];
-        dinnerEntries[index]['members'] =
-            int.tryParse(dinnerControllers[3].text) ??
-                dinnerEntries[index]['members'];
-        dinnerEntries[index]['ingredient_price'] =
-            int.tryParse(dinnerControllers[4].text) ??
-                dinnerEntries[index]['ingredient_price'];
-        editingDinnerIndex = null;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Dinner entry updated successfully')),
-        );
+      try {
+        final entry = _dinnerEntries[index];
+        final entryId = entry['id'];
+        final dateStr =
+            "${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}";
+
+        // Get values from controllers
+        final productName = dinnerControllers[0].text.trim();
+        final unitPrice =
+            double.tryParse(dinnerControllers[1].text) ?? entry['unit_price'];
+        final amountUsed =
+            double.tryParse(dinnerControllers[2].text) ?? entry['amount'];
+        final diningMembers =
+            double.tryParse(dinnerControllers[3].text) ?? entry['members'];
+
+        // Calculate dynamic values
+        final priceExpended = unitPrice * amountUsed;
+        final pricePerMember =
+            diningMembers > 0 ? priceExpended / diningMembers : 0.0;
+
+        // Update Firebase document with correct field names
+        await FirebaseFirestore.instance
+            .collection('messing_data')
+            .doc(dateStr)
+            .update({
+          '${entryId}_product_name': productName,
+          '${entryId}_unit_price': unitPrice,
+          '${entryId}_amount_used': amountUsed,
+          '${entryId}_dining_members': diningMembers,
+          '${entryId}_price_expended': priceExpended,
+          '${entryId}_price_per_member': pricePerMember,
+        });
+
+        // Reload data
+        await _loadMessingData();
+
+        // Recalculate and update totals
+        await _recalculateAndUpdateTotals();
+
+        setState(() {
+          editingDinnerIndex = null;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Dinner entry updated successfully')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error updating entry: $e')),
+          );
+        }
       }
     }
   }
@@ -656,15 +1303,50 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
     );
 
     if (confirm == true) {
-      setState(() {
-        breakfastEntries.removeAt(index);
-        editingBreakfastIndex = null;
-        _initControllers();
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Breakfast entry deleted')),
-        );
+      try {
+        final entry = _breakfastEntries[index];
+        final entryId = entry['id'];
+        final dateStr =
+            "${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}";
+
+        // Delete specific entry fields from Firebase document
+        final fieldsToDelete = {
+          '${entryId}_product_name': FieldValue.delete(),
+          '${entryId}_unit_price': FieldValue.delete(),
+          '${entryId}_amount_used': FieldValue.delete(),
+          '${entryId}_dining_members': FieldValue.delete(),
+          '${entryId}_price_expended': FieldValue.delete(),
+          '${entryId}_price_per_member': FieldValue.delete(),
+          '${entryId}_meal_type': FieldValue.delete(),
+          '${entryId}_timestamp': FieldValue.delete(),
+        };
+
+        await FirebaseFirestore.instance
+            .collection('messing_data')
+            .doc(dateStr)
+            .update(fieldsToDelete);
+
+        // Reload data
+        await _loadMessingData();
+
+        // Recalculate and update totals
+        await _recalculateAndUpdateTotals();
+
+        setState(() {
+          editingBreakfastIndex = null;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Breakfast entry deleted')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error deleting entry: $e')),
+          );
+        }
       }
     }
   }
@@ -694,15 +1376,50 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
     );
 
     if (confirm == true) {
-      setState(() {
-        lunchEntries.removeAt(index);
-        editingLunchIndex = null;
-        _initControllers();
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Lunch entry deleted')),
-        );
+      try {
+        final entry = _lunchEntries[index];
+        final entryId = entry['id'];
+        final dateStr =
+            "${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}";
+
+        // Delete specific entry fields from Firebase document
+        final fieldsToDelete = {
+          '${entryId}_product_name': FieldValue.delete(),
+          '${entryId}_unit_price': FieldValue.delete(),
+          '${entryId}_amount_used': FieldValue.delete(),
+          '${entryId}_dining_members': FieldValue.delete(),
+          '${entryId}_price_expended': FieldValue.delete(),
+          '${entryId}_price_per_member': FieldValue.delete(),
+          '${entryId}_meal_type': FieldValue.delete(),
+          '${entryId}_timestamp': FieldValue.delete(),
+        };
+
+        await FirebaseFirestore.instance
+            .collection('messing_data')
+            .doc(dateStr)
+            .update(fieldsToDelete);
+
+        // Reload data
+        await _loadMessingData();
+
+        // Recalculate and update totals
+        await _recalculateAndUpdateTotals();
+
+        setState(() {
+          editingLunchIndex = null;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Lunch entry deleted')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error deleting entry: $e')),
+          );
+        }
       }
     }
   }
@@ -732,15 +1449,50 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
     );
 
     if (confirm == true) {
-      setState(() {
-        dinnerEntries.removeAt(index);
-        editingDinnerIndex = null;
-        _initControllers();
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Dinner entry deleted')),
-        );
+      try {
+        final entry = _dinnerEntries[index];
+        final entryId = entry['id'];
+        final dateStr =
+            "${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}";
+
+        // Delete specific entry fields from Firebase document
+        final fieldsToDelete = {
+          '${entryId}_product_name': FieldValue.delete(),
+          '${entryId}_unit_price': FieldValue.delete(),
+          '${entryId}_amount_used': FieldValue.delete(),
+          '${entryId}_dining_members': FieldValue.delete(),
+          '${entryId}_price_expended': FieldValue.delete(),
+          '${entryId}_price_per_member': FieldValue.delete(),
+          '${entryId}_meal_type': FieldValue.delete(),
+          '${entryId}_timestamp': FieldValue.delete(),
+        };
+
+        await FirebaseFirestore.instance
+            .collection('messing_data')
+            .doc(dateStr)
+            .update(fieldsToDelete);
+
+        // Reload data
+        await _loadMessingData();
+
+        // Recalculate and update totals
+        await _recalculateAndUpdateTotals();
+
+        setState(() {
+          editingDinnerIndex = null;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Dinner entry deleted')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error deleting entry: $e')),
+          );
+        }
       }
     }
   }
@@ -1093,7 +1845,7 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                           MaterialPageRoute(
                             builder: (context) => const AddMessingScreen(),
                           ),
-                        );
+                        ).then((_) => _loadMessingData());
                       },
                       icon: const Icon(Icons.add, color: Colors.white),
                       label: const Text(
@@ -1135,6 +1887,46 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                     // TODO: Implement search logic
                   },
                 ),
+                const SizedBox(height: 16),
+
+                // Date selector
+                Card(
+                  elevation: 4,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Viewing Date:',
+                              style: TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _getFormattedDate(),
+                              style: const TextStyle(
+                                  fontSize: 18, color: Colors.blue),
+                            ),
+                          ],
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: _selectDate,
+                          icon: const Icon(Icons.calendar_today),
+                          label: const Text('Change Date'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF1A4D8F),
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
                 const SizedBox(height: 20),
                 Text(
                   currentDay,
@@ -1145,7 +1937,9 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                 ),
                 _buildTable(
                   "Breakfast Entries",
-                  breakfastEntries,
+                  _breakfastEntries.isNotEmpty
+                      ? _breakfastEntries
+                      : breakfastEntries,
                   editingBreakfastIndex,
                   breakfastControllers,
                   _editBreakfast,
@@ -1153,9 +1947,50 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                   _saveBreakfast,
                   _cancelBreakfast,
                 ),
+                // Breakfast Summary
+                if (_breakfastEntries.isNotEmpty || breakfastEntries.isNotEmpty)
+                  Container(
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue.shade200),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        Column(
+                          children: [
+                            const Text('Total Price Expended',
+                                style: TextStyle(fontWeight: FontWeight.bold)),
+                            Text(
+                                '${_breakfastTotalExpended.toStringAsFixed(2)} BDT',
+                                style: const TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.green,
+                                    fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                        Column(
+                          children: [
+                            const Text('Total Price per Member',
+                                style: TextStyle(fontWeight: FontWeight.bold)),
+                            Text(
+                                '${_breakfastTotalPerMember.toStringAsFixed(2)} BDT',
+                                style: const TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.orange,
+                                    fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
                 _buildTable(
                   "Lunch Entries",
-                  lunchEntries,
+                  _lunchEntries.isNotEmpty ? _lunchEntries : lunchEntries,
                   editingLunchIndex,
                   lunchControllers,
                   _editLunch,
@@ -1163,9 +1998,50 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                   _saveLunch,
                   _cancelLunch,
                 ),
+                // Lunch Summary
+                if (_lunchEntries.isNotEmpty || lunchEntries.isNotEmpty)
+                  Container(
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue.shade200),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        Column(
+                          children: [
+                            const Text('Total Price Expended',
+                                style: TextStyle(fontWeight: FontWeight.bold)),
+                            Text(
+                                '${_lunchTotalExpended.toStringAsFixed(2)} BDT',
+                                style: const TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.green,
+                                    fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                        Column(
+                          children: [
+                            const Text('Total Price per Member',
+                                style: TextStyle(fontWeight: FontWeight.bold)),
+                            Text(
+                                '${_lunchTotalPerMember.toStringAsFixed(2)} BDT',
+                                style: const TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.orange,
+                                    fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
                 _buildTable(
                   "Dinner Entries",
-                  dinnerEntries,
+                  _dinnerEntries.isNotEmpty ? _dinnerEntries : dinnerEntries,
                   editingDinnerIndex,
                   dinnerControllers,
                   _editDinner,
@@ -1173,6 +2049,47 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                   _saveDinner,
                   _cancelDinner,
                 ),
+                // Dinner Summary
+                if (_dinnerEntries.isNotEmpty || dinnerEntries.isNotEmpty)
+                  Container(
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue.shade200),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        Column(
+                          children: [
+                            const Text('Total Price Expended',
+                                style: TextStyle(fontWeight: FontWeight.bold)),
+                            Text(
+                                '${_dinnerTotalExpended.toStringAsFixed(2)} BDT',
+                                style: const TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.green,
+                                    fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                        Column(
+                          children: [
+                            const Text('Total Price per Member',
+                                style: TextStyle(fontWeight: FontWeight.bold)),
+                            Text(
+                                '${_dinnerTotalPerMember.toStringAsFixed(2)} BDT',
+                                style: const TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.orange,
+                                    fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
               ],
             ),
           ),
