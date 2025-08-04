@@ -57,6 +57,88 @@ class _AddMenuListScreenState extends State<AddMenuListScreen>
   }
 
   bool _isLoading = false;
+  bool _isLoadingExistingData = false;
+
+  Future<void> _loadExistingMenuData(DateTime date) async {
+    setState(() {
+      _isLoadingExistingData = true;
+    });
+
+    try {
+      final firestore = FirebaseFirestore.instance;
+      final String dateId =
+          '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
+      final docSnapshot =
+          await firestore.collection('monthly_menu').doc(dateId).get();
+
+      if (docSnapshot.exists) {
+        final data = docSnapshot.data()!;
+
+        // Pre-fill breakfast data
+        if (data['breakfast'] != null) {
+          _breakfastItemController.text = data['breakfast']['item'] ?? '';
+          _breakfastPriceController.text =
+              data['breakfast']['price']?.toString() ?? '';
+        } else {
+          _breakfastItemController.clear();
+          _breakfastPriceController.clear();
+        }
+
+        // Pre-fill lunch data
+        if (data['lunch'] != null) {
+          _lunchItemController.text = data['lunch']['item'] ?? '';
+          _lunchPriceController.text = data['lunch']['price']?.toString() ?? '';
+        } else {
+          _lunchItemController.clear();
+          _lunchPriceController.clear();
+        }
+
+        // Pre-fill dinner data
+        if (data['dinner'] != null) {
+          _dinnerItemController.text = data['dinner']['item'] ?? '';
+          _dinnerPriceController.text =
+              data['dinner']['price']?.toString() ?? '';
+        } else {
+          _dinnerItemController.clear();
+          _dinnerPriceController.clear();
+        }
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                  'Loaded existing menu for ${date.day}/${date.month}/${date.year}'),
+              backgroundColor: Colors.blue,
+            ),
+          );
+        }
+      } else {
+        // No existing data - clear all fields
+        _breakfastItemController.clear();
+        _breakfastPriceController.clear();
+        _lunchItemController.clear();
+        _lunchPriceController.clear();
+        _dinnerItemController.clear();
+        _dinnerPriceController.clear();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading existing data: $e'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingExistingData = false;
+        });
+      }
+    }
+  }
 
   Future<void> _handleSave() async {
     if (_formKey.currentState!.validate()) {
@@ -259,7 +341,7 @@ class _AddMenuListScreenState extends State<AddMenuListScreen>
         iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
         title: const Text(
-          "Create New Meal Entry",
+          "Manage Menu Entry",
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w600,
@@ -290,11 +372,20 @@ class _AddMenuListScreenState extends State<AddMenuListScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              "Create New Meal Entry",
+                              "Manage Menu Entry",
                               style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF002B5B),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              "Select a date to create new menu or edit existing menu",
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -325,6 +416,8 @@ class _AddMenuListScreenState extends State<AddMenuListScreen>
                                       setState(() {
                                         _selectedDate = picked;
                                       });
+                                      // Load existing menu data for the selected date
+                                      await _loadExistingMenuData(picked);
                                     }
                                   },
                                   child: Container(
@@ -344,16 +437,24 @@ class _AddMenuListScreenState extends State<AddMenuListScreen>
                                           size: 20,
                                         ),
                                         const SizedBox(width: 8),
-                                        Text(
-                                          _selectedDate == null
-                                              ? 'Select date'
-                                              : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
-                                          style: TextStyle(
-                                            color: _selectedDate == null
-                                                ? Colors.grey[600]
-                                                : Colors.black,
+                                        if (_isLoadingExistingData)
+                                          const SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(
+                                                strokeWidth: 2),
+                                          )
+                                        else
+                                          Text(
+                                            _selectedDate == null
+                                                ? 'Select date'
+                                                : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
+                                            style: TextStyle(
+                                              color: _selectedDate == null
+                                                  ? Colors.grey[600]
+                                                  : Colors.black,
+                                            ),
                                           ),
-                                        ),
                                       ],
                                     ),
                                   ),
