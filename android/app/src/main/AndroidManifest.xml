@@ -9,7 +9,8 @@
         android:label="Smart Mess"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true"
-        android:requestLegacyExternalStorage="true">
+        android:requestLegacyExternalStorage="true"
+        android:enableOnBackInvokedCallback="true">
         <activity
             android:name="io.flutter.embedding.android.FlutterActivity"
             android:exported="true"

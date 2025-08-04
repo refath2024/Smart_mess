@@ -26,6 +26,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _passwordVisible = false;
   bool _confirmPasswordVisible = false;
   bool _isLoading = false;
+  bool _hasAttemptedSubmit = false;
 
   // Military ranks organized by service branch
   final List<String> _armyRanks = [
@@ -190,7 +191,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _handleApply() async {
-    if (!_formKey.currentState!.validate()) return;
+    setState(() => _hasAttemptedSubmit = true);
+
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
     setState(() => _isLoading = true);
 
@@ -472,7 +477,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 child: Form(
                   key: _formKey,
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  autovalidateMode: _hasAttemptedSubmit
+                      ? AutovalidateMode.onUserInteraction
+                      : AutovalidateMode.disabled,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -582,8 +589,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                         ),
                         onChanged: (_) {
-                          if (_confirmPasswordController.text.isNotEmpty) {
-                            _formKey.currentState?.validate();
+                          // Only validate if form has been submitted once
+                          if (_formKey.currentState?.validate() == false) {
+                            // Form has validation errors, so we can auto-validate
                           }
                         },
                       ),
@@ -649,7 +657,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ),
                           ),
                         ),
-                        onChanged: (_) => _formKey.currentState?.validate(),
+                        onChanged: (_) {
+                          // Update the visual indicator without triggering validation
+                          setState(() {});
+                        },
                       ),
                       const SizedBox(height: 24),
                       Row(

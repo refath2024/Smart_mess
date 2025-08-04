@@ -594,58 +594,120 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
         child: Column(
           children: [
             // First row with search and filter
-            Row(
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: _search,
-                    decoration: const InputDecoration(
-                      labelText: 'Search All Text Columns',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.search),
-                      contentPadding:
-                          EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  flex: 2,
-                  child: DropdownButtonFormField<String>(
-                    value: statusFilter,
-                    decoration: const InputDecoration(
-                      labelText: 'Filter by Status',
-                      border: OutlineInputBorder(),
-                      contentPadding:
-                          EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    ),
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'all',
-                        child: Text('All Status'),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                // Check if we have enough space for side-by-side layout
+                bool isWideScreen = constraints.maxWidth > 600;
+
+                if (isWideScreen) {
+                  return Row(
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: TextField(
+                          controller: _searchController,
+                          onChanged: _search,
+                          decoration: const InputDecoration(
+                            labelText: 'Search All Text Columns',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.search),
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                          ),
+                        ),
                       ),
-                      DropdownMenuItem(
-                        value: 'active',
-                        child: Text('Active Only'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'inactive',
-                        child: Text('Inactive Only'),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        flex: 2,
+                        child: DropdownButtonFormField<String>(
+                          value: statusFilter,
+                          decoration: const InputDecoration(
+                            labelText: 'Filter by Status',
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 8),
+                          ),
+                          style: const TextStyle(fontSize: 14),
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'all',
+                              child: Text('All Status',
+                                  style: TextStyle(fontSize: 14)),
+                            ),
+                            DropdownMenuItem(
+                              value: 'active',
+                              child: Text('Active Only',
+                                  style: TextStyle(fontSize: 14)),
+                            ),
+                            DropdownMenuItem(
+                              value: 'inactive',
+                              child: Text('Inactive Only',
+                                  style: TextStyle(fontSize: 14)),
+                            ),
+                          ],
+                          onChanged: (String? newValue) {
+                            if (newValue != null) {
+                              setState(() {
+                                statusFilter = newValue;
+                                _applyFilters();
+                              });
+                            }
+                          },
+                        ),
                       ),
                     ],
-                    onChanged: (String? newValue) {
-                      if (newValue != null) {
-                        setState(() {
-                          statusFilter = newValue;
-                          _applyFilters();
-                        });
-                      }
-                    },
-                  ),
-                ),
-              ],
+                  );
+                } else {
+                  // Stack vertically on smaller screens
+                  return Column(
+                    children: [
+                      TextField(
+                        controller: _searchController,
+                        onChanged: _search,
+                        decoration: const InputDecoration(
+                          labelText: 'Search All Text Columns',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.search),
+                          contentPadding:
+                              EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        value: statusFilter,
+                        decoration: const InputDecoration(
+                          labelText: 'Filter by Status',
+                          border: OutlineInputBorder(),
+                          contentPadding:
+                              EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'all',
+                            child: Text('All Status'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'active',
+                            child: Text('Active Only'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'inactive',
+                            child: Text('Inactive Only'),
+                          ),
+                        ],
+                        onChanged: (String? newValue) {
+                          if (newValue != null) {
+                            setState(() {
+                              statusFilter = newValue;
+                              _applyFilters();
+                            });
+                          }
+                        },
+                      ),
+                    ],
+                  );
+                }
+              },
             ),
             const SizedBox(height: 8),
             // Second row with add button
