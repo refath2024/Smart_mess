@@ -1134,19 +1134,17 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                                                         minHeight: 32),
                                               )
                                             else
-                                              IconButton(
-                                                icon: const Icon(Icons.delete,
+                                              const IconButton(
+                                                icon: Icon(Icons.delete,
                                                     size: 18),
                                                 color: Colors.grey,
                                                 onPressed: null,
                                                 tooltip:
                                                     'PMC cannot be deleted (Super Admin protection)',
-                                                padding:
-                                                    const EdgeInsets.all(4),
-                                                constraints:
-                                                    const BoxConstraints(
-                                                        minWidth: 32,
-                                                        minHeight: 32),
+                                                padding: EdgeInsets.all(4),
+                                                constraints: BoxConstraints(
+                                                    minWidth: 32,
+                                                    minHeight: 32),
                                               ),
                                           ]
                                         ],
