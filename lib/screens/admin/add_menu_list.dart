@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AddMenuListScreen extends StatefulWidget {
   const AddMenuListScreen({super.key});
@@ -55,13 +56,103 @@ class _AddMenuListScreenState extends State<AddMenuListScreen>
     super.dispose();
   }
 
+  bool _isLoading = false;
+
   Future<void> _handleSave() async {
     if (_formKey.currentState!.validate()) {
-      // TODO: Implement save functionality
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Meal entry saved successfully!')),
-      );
-      Navigator.pop(context);
+      // Check if date is selected
+      if (_selectedDate == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select a date')),
+        );
+        return;
+      }
+
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        final firestore = FirebaseFirestore.instance;
+
+        // Format date as document ID (YYYY-MM-DD)
+        final String dateId =
+            '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}';
+
+        final docRef = firestore.collection('monthly_menu').doc(dateId);
+
+        // Check if document exists
+        final docSnapshot = await docRef.get();
+
+        // Prepare data with smart NULL handling - only include non-empty fields
+        Map<String, dynamic> menuData = {};
+
+        // Add breakfast data if provided
+        if (_breakfastItemController.text.isNotEmpty ||
+            _breakfastPriceController.text.isNotEmpty) {
+          menuData['breakfast'] = {
+            if (_breakfastItemController.text.isNotEmpty)
+              'item': _breakfastItemController.text.trim(),
+            if (_breakfastPriceController.text.isNotEmpty)
+              'price': double.tryParse(_breakfastPriceController.text) ?? 0.0,
+          };
+        }
+
+        // Add lunch data if provided
+        if (_lunchItemController.text.isNotEmpty ||
+            _lunchPriceController.text.isNotEmpty) {
+          menuData['lunch'] = {
+            if (_lunchItemController.text.isNotEmpty)
+              'item': _lunchItemController.text.trim(),
+            if (_lunchPriceController.text.isNotEmpty)
+              'price': double.tryParse(_lunchPriceController.text) ?? 0.0,
+          };
+        }
+
+        // Add dinner data if provided
+        if (_dinnerItemController.text.isNotEmpty ||
+            _dinnerPriceController.text.isNotEmpty) {
+          menuData['dinner'] = {
+            if (_dinnerItemController.text.isNotEmpty)
+              'item': _dinnerItemController.text.trim(),
+            if (_dinnerPriceController.text.isNotEmpty)
+              'price': double.tryParse(_dinnerPriceController.text) ?? 0.0,
+          };
+        }
+
+        // Add metadata
+        menuData['date'] = _selectedDate!;
+        menuData['lastUpdated'] = FieldValue.serverTimestamp();
+
+        if (docSnapshot.exists) {
+          // Document exists - merge with existing data (smart update)
+          await docRef.update(menuData);
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Menu updated successfully!')),
+          );
+        } else {
+          // Document doesn't exist - create new
+          await docRef.set(menuData);
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Menu created successfully!')),
+          );
+        }
+
+        Navigator.pop(context, true); // Return true to indicate success
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error saving menu: $e')),
+        );
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
     }
   }
 
@@ -319,7 +410,8 @@ class _AddMenuListScreenState extends State<AddMenuListScreen>
                                       width: buttonWidth.clamp(120, 150),
                                       height: 45,
                                       child: ElevatedButton(
-                                        onPressed: _handleSave,
+                                        onPressed:
+                                            _isLoading ? null : _handleSave,
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor:
                                               const Color(0xFF007bff),
@@ -332,14 +424,24 @@ class _AddMenuListScreenState extends State<AddMenuListScreen>
                                                 BorderRadius.circular(8),
                                           ),
                                         ),
-                                        child: const Text(
-                                          'Save',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
+                                        child: _isLoading
+                                            ? const SizedBox(
+                                                width: 20,
+                                                height: 20,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                  color: Colors.white,
+                                                  strokeWidth: 2,
+                                                ),
+                                              )
+                                            : const Text(
+                                                'Save',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
                                       ),
                                     ),
                                   ],

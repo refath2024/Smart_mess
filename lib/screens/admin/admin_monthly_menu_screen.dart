@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'add_menu_list.dart';
 import 'admin_users_screen.dart';
@@ -85,24 +86,73 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
     }
   }
 
-  void fetchMenu() async {
-    // Simulated fetch. Replace with actual HTTP GET from your API.
-    setState(() {
-      menuData = List.generate(7, (index) {
-        final date = DateTime.now().add(Duration(days: index));
-        return {
-          'id': (index + 1).toString(),
-          'date':
-              '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}',
-          'breakfast': 'Paratha',
-          'breakfastPrice': '30.00',
-          'lunch': 'Rice & Chicken',
-          'lunchPrice': '70.00',
-          'dinner': 'Khichuri',
-          'dinnerPrice': '50.00',
-        };
+  Future<void> fetchMenu() async {
+    try {
+      setState(() {
+        _isLoading = true;
       });
-    });
+
+      final firestore = FirebaseFirestore.instance;
+
+      // Get all menu documents from Firestore
+      final QuerySnapshot querySnapshot = await firestore
+          .collection('monthly_menu')
+          .orderBy('date', descending: false)
+          .get();
+
+      final List<Map<String, dynamic>> fetchedMenuData = [];
+
+      // Add existing menu data from Firestore
+      for (final doc in querySnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final dateId = doc.id;
+
+        fetchedMenuData.add({
+          'id': dateId,
+          'date': dateId,
+          'breakfast': data['breakfast']?['item'] ?? '',
+          'breakfastPrice': data['breakfast']?['price']?.toString() ?? '',
+          'lunch': data['lunch']?['item'] ?? '',
+          'lunchPrice': data['lunch']?['price']?.toString() ?? '',
+          'dinner': data['dinner']?['item'] ?? '',
+          'dinnerPrice': data['dinner']?['price']?.toString() ?? '',
+        });
+      }
+
+      // If no data exists, add today's date as an empty entry
+      if (fetchedMenuData.isEmpty) {
+        final today = DateTime.now();
+        final todayId =
+            '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+
+        fetchedMenuData.add({
+          'id': todayId,
+          'date': todayId,
+          'breakfast': '',
+          'breakfastPrice': '',
+          'lunch': '',
+          'lunchPrice': '',
+          'dinner': '',
+          'dinnerPrice': '',
+        });
+      }
+
+      setState(() {
+        menuData = fetchedMenuData;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error fetching menu data: $e');
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading menu data: $e')),
+        );
+      }
+    }
   }
 
   void editRow(int index) async {
@@ -208,18 +258,109 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
     );
 
     if (shouldSave == true) {
-      setState(() {
-        menuData[index]['breakfast'] = breakfastController.text;
-        menuData[index]['breakfastPrice'] = breakfastPriceController.text;
-        menuData[index]['lunch'] = lunchController.text;
-        menuData[index]['lunchPrice'] = lunchPriceController.text;
-        menuData[index]['dinner'] = dinnerController.text;
-        menuData[index]['dinnerPrice'] = dinnerPriceController.text;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Menu updated successfully!')),
-        );
+      try {
+        // Show loading indicator
+        if (mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => const AlertDialog(
+              content: Row(
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(width: 16),
+                  Text('Saving changes...'),
+                ],
+              ),
+            ),
+          );
+        }
+
+        final firestore = FirebaseFirestore.instance;
+        final dateId = item['date'] as String;
+
+        // Prepare data with smart NULL handling
+        Map<String, dynamic> updateData = {};
+
+        // Add breakfast data if provided
+        if (breakfastController.text.isNotEmpty ||
+            breakfastPriceController.text.isNotEmpty) {
+          updateData['breakfast'] = {
+            if (breakfastController.text.isNotEmpty)
+              'item': breakfastController.text.trim(),
+            if (breakfastPriceController.text.isNotEmpty)
+              'price': double.tryParse(breakfastPriceController.text) ?? 0.0,
+          };
+        } else {
+          // Remove breakfast data if both fields are empty
+          updateData['breakfast'] = FieldValue.delete();
+        }
+
+        // Add lunch data if provided
+        if (lunchController.text.isNotEmpty ||
+            lunchPriceController.text.isNotEmpty) {
+          updateData['lunch'] = {
+            if (lunchController.text.isNotEmpty)
+              'item': lunchController.text.trim(),
+            if (lunchPriceController.text.isNotEmpty)
+              'price': double.tryParse(lunchPriceController.text) ?? 0.0,
+          };
+        } else {
+          // Remove lunch data if both fields are empty
+          updateData['lunch'] = FieldValue.delete();
+        }
+
+        // Add dinner data if provided
+        if (dinnerController.text.isNotEmpty ||
+            dinnerPriceController.text.isNotEmpty) {
+          updateData['dinner'] = {
+            if (dinnerController.text.isNotEmpty)
+              'item': dinnerController.text.trim(),
+            if (dinnerPriceController.text.isNotEmpty)
+              'price': double.tryParse(dinnerPriceController.text) ?? 0.0,
+          };
+        } else {
+          // Remove dinner data if both fields are empty
+          updateData['dinner'] = FieldValue.delete();
+        }
+
+        // Add metadata
+        final dateObj =
+            DateTime.tryParse(dateId.replaceAll('-', '/')) ?? DateTime.now();
+        updateData['date'] = dateObj;
+        updateData['lastUpdated'] = FieldValue.serverTimestamp();
+
+        // Save to Firestore
+        await firestore
+            .collection('monthly_menu')
+            .doc(dateId)
+            .set(updateData, SetOptions(merge: true));
+
+        // Update local data
+        setState(() {
+          menuData[index]['breakfast'] = breakfastController.text;
+          menuData[index]['breakfastPrice'] = breakfastPriceController.text;
+          menuData[index]['lunch'] = lunchController.text;
+          menuData[index]['lunchPrice'] = lunchPriceController.text;
+          menuData[index]['dinner'] = dinnerController.text;
+          menuData[index]['dinnerPrice'] = dinnerPriceController.text;
+        });
+
+        // Dismiss loading dialog
+        if (mounted) {
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Menu updated successfully!')),
+          );
+        }
+      } catch (e) {
+        // Dismiss loading dialog
+        if (mounted) {
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error updating menu: $e')),
+          );
+        }
       }
     }
   }
@@ -286,13 +427,50 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
     );
 
     if (confirm == true) {
-      setState(() {
-        menuData.removeAt(index);
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Menu item deleted successfully')),
-        );
+      try {
+        // Show loading indicator
+        if (mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => const AlertDialog(
+              content: Row(
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(width: 16),
+                  Text('Deleting menu...'),
+                ],
+              ),
+            ),
+          );
+        }
+
+        final dateId = menuData[index]['date'] as String;
+        final firestore = FirebaseFirestore.instance;
+
+        // Delete from Firestore
+        await firestore.collection('monthly_menu').doc(dateId).delete();
+
+        // Update local data
+        setState(() {
+          menuData.removeAt(index);
+        });
+
+        // Dismiss loading dialog
+        if (mounted) {
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Menu item deleted successfully')),
+          );
+        }
+      } catch (e) {
+        // Dismiss loading dialog
+        if (mounted) {
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error deleting menu: $e')),
+          );
+        }
       }
     }
   }
@@ -662,13 +840,18 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
+                  onPressed: () async {
+                    final result = await Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => const AddMenuListScreen(),
                       ),
                     );
+
+                    // Refresh menu data if a new item was added
+                    if (result == true) {
+                      fetchMenu();
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1A4D8F),

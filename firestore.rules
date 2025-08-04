@@ -2,34 +2,25 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // === SIMPLIFIED RULES FOR SMART MESS APP ===
-    
-    // Allow authenticated users to access user_requests collection
-    // This is needed for registration and email checking
-    match /user_requests/{userId} {
-      // Anyone can read user_requests for email checking during registration
+    // Allow public read access to user_requests for login email checking
+    match /user_requests/{document} {
       allow read: if true;
-      
-      // Authenticated users can create and update their own requests
-      allow create, update: if request.auth != null;
-      
-      // Delete only for authenticated users (admins will be checked in app logic)
-      allow delete: if request.auth != null;
+      allow write: if request.auth != null;
     }
     
-    // Allow access to admins collection for authentication checks
-    match /admins/{adminId} {
-      allow read, write: if request.auth != null;
+    // Allow public read access to staff_state for admin login checking  
+    match /staff_state/{document} {
+      allow read: if true;
+      allow write: if request.auth != null;
     }
     
-    // Allow authenticated users to access their data
-    match /users/{userId} {
-      allow read, write: if request.auth != null;
+    // Monthly menu data - read access for all authenticated users, write for admins
+    match /monthly_menu/{document} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
     }
     
-    // Allow authenticated users to access all other collections
-    // This provides functionality while maintaining basic security
+    // Default rule for other collections - require authentication
     match /{document=**} {
       allow read, write: if request.auth != null;
     }
