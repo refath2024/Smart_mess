@@ -661,7 +661,7 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
               },
               decoration: InputDecoration(
                 labelText: 'Search',
-                hintText: 'Search by ID, Product Name, Type...',
+                hintText: 'Search by Product Name, Type...',
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -717,6 +717,7 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                         columns: const [
+                          DataColumn(label: Text("Index")),
                           DataColumn(label: Text("Product Name")),
                           DataColumn(label: Text("Quantity Held")),
                           DataColumn(label: Text("Type")),
@@ -728,6 +729,16 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
 
                           return DataRow(
                             cells: [
+                              DataCell(
+                                Text(
+                                  '${index + 1}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                    color: Color(0xFF134074),
+                                  ),
+                                ),
+                              ),
                               DataCell(
                                 isEditing
                                     ? _editableTextField(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AdminAddShoppingScreen extends StatefulWidget {
   const AdminAddShoppingScreen({super.key});
@@ -9,20 +10,33 @@ class AdminAddShoppingScreen extends StatefulWidget {
 
 class _AdminAddShoppingScreenState extends State<AdminAddShoppingScreen> {
   final _formKey = GlobalKey<FormState>();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   final TextEditingController _productController = TextEditingController();
   final TextEditingController _unitPriceController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _totalPriceController = TextEditingController();
   final TextEditingController _dateController = TextEditingController();
-  final TextEditingController _buyerController = TextEditingController();
   final TextEditingController _voucherIdController = TextEditingController();
+
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     _unitPriceController.addListener(_calculateTotal);
     _amountController.addListener(_calculateTotal);
+  }
+
+  @override
+  void dispose() {
+    _productController.dispose();
+    _unitPriceController.dispose();
+    _amountController.dispose();
+    _totalPriceController.dispose();
+    _dateController.dispose();
+    _voucherIdController.dispose();
+    super.dispose();
   }
 
   void _calculateTotal() {
@@ -32,31 +46,48 @@ class _AdminAddShoppingScreenState extends State<AdminAddShoppingScreen> {
     _totalPriceController.text = total.toStringAsFixed(2);
   }
 
-  void _save() {
+  Future<void> _save() async {
     if (_formKey.currentState!.validate()) {
-      final name = _productController.text;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("$name added successfully.")));
+      setState(() {
+        _isLoading = true;
+      });
 
-      Navigator.pop(context); // Go back to history page
+      try {
+        // Add shopping data to Firestore (Firebase will auto-generate the document ID)
+        await _firestore.collection('shopping').add({
+          'productName': _productController.text.trim(),
+          'unitPrice': double.tryParse(_unitPriceController.text) ?? 0.0,
+          'amount': double.tryParse(_amountController.text) ?? 0.0,
+          'totalPrice': double.tryParse(_totalPriceController.text) ?? 0.0,
+          'date': _dateController.text.trim(),
+          'voucherId': _voucherIdController.text.trim(),
+          'created_at': FieldValue.serverTimestamp(),
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Shopping data added successfully")),
+          );
+          Navigator.pop(context, true); // Return true to indicate success
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Error adding shopping data: $e")),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
     }
   }
 
   void _cancel() {
     Navigator.pop(context);
-  }
-
-  @override
-  void dispose() {
-    _unitPriceController.dispose();
-    _amountController.dispose();
-    _productController.dispose();
-    _totalPriceController.dispose();
-    _dateController.dispose();
-    _buyerController.dispose();
-    _voucherIdController.dispose();
-    super.dispose();
   }
 
   Widget _buildTextField(
@@ -160,27 +191,35 @@ class _AdminAddShoppingScreenState extends State<AdminAddShoppingScreen> {
                   },
                 ),
 
-                _buildTextField("Buyer", _buyerController),
                 _buildTextField("Voucher ID", _voucherIdController),
                 Row(
                   children: [
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: _save,
+                        onPressed: _isLoading ? null : _save,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF1A4D8F),
                           padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
-                        child: const Text(
-                          "Save",
-                          style: TextStyle(color: Colors.white),
-                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text(
+                                "Save",
+                                style: TextStyle(color: Colors.white),
+                              ),
                       ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: _cancel,
+                        onPressed: _isLoading ? null : _cancel,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.red,
                           padding: const EdgeInsets.symmetric(vertical: 14),

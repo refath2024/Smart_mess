@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:smart_mess/screens/admin/admin_login_screen.dart';
 import 'package:smart_mess/services/admin_auth_service.dart';
 
@@ -29,17 +30,58 @@ class AdminShoppingHistoryScreen extends StatefulWidget {
 class _AdminShoppingHistoryScreenState
     extends State<AdminShoppingHistoryScreen> {
   final AdminAuthService _adminAuthService = AdminAuthService();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  
   bool _isLoading = true;
   String _currentUserName = "Loading...";
   Map<String, dynamic>? _currentUserData;
 
   final TextEditingController _searchController = TextEditingController();
 
+  // Shopping data loaded from Firebase
+  List<Map<String, dynamic>> shoppingData = [];
+  List<Map<String, dynamic>> filteredData = [];
+
   @override
   void initState() {
     super.initState();
-    filteredData = List.from(shoppingData);
     _checkAuthentication();
+    _loadShoppingData();
+  }
+
+  Future<void> _loadShoppingData() async {
+    try {
+      final QuerySnapshot snapshot = await _firestore.collection('shopping').get();
+      
+      setState(() {
+        shoppingData = snapshot.docs.map((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          return {
+            'docId': doc.id, // Use Firebase document ID
+            'productName': data['productName'] ?? '',
+            'unitPrice': data['unitPrice'] ?? 0.0,
+            'amount': data['amount'] ?? 0.0,
+            'totalPrice': data['totalPrice'] ?? 0.0,
+            'date': data['date'] ?? '',
+            'voucherId': data['voucherId'] ?? '',
+            'isEditing': false,
+            'original': {},
+          };
+        }).toList();
+        
+        filteredData = List.from(shoppingData);
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading shopping data: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _checkAuthentication() async {
@@ -124,46 +166,6 @@ class _AdminShoppingHistoryScreenState
     );
   }
 
-  // Shopping data now matches the structure from HTML
-  List<Map<String, dynamic>> shoppingData = [
-    {
-      'id': 1,
-      'productName': 'Rice',
-      'unitPrice': 50.0,
-      'amount': 2.0,
-      'totalPrice': 100.0,
-      'date': '2025-07-05',
-      'voucherId': 'V001',
-      'isEditing': false,
-      // Save original data for cancel action
-      'original': {},
-    },
-    {
-      'id': 2,
-      'productName': 'Chicken',
-      'unitPrice': 150.0,
-      'amount': 1.5,
-      'totalPrice': 225.0,
-      'date': '2025-07-04',
-      'voucherId': 'V002',
-      'isEditing': false,
-      'original': {},
-    },
-    {
-      'id': 3,
-      'productName': 'Vegetables',
-      'unitPrice': 30.0,
-      'amount': 4.0,
-      'totalPrice': 120.0,
-      'date': '2025-07-03',
-      'voucherId': 'V003',
-      'isEditing': false,
-      'original': {},
-    },
-  ];
-
-  List<Map<String, dynamic>> filteredData = [];
-
   void _search(String query) {
     setState(() {
       filteredData = shoppingData.where((entry) {
@@ -214,21 +216,43 @@ class _AdminShoppingHistoryScreenState
     });
   }
 
-  void _saveEdit(int index) {
-    setState(() {
+  void _saveEdit(int index) async {
+    try {
+      final docId = filteredData[index]['docId'];
       final entry = filteredData[index];
+      
       // Recalculate totalPrice
       entry['totalPrice'] = (entry['unitPrice'] * entry['amount']);
-      entry['isEditing'] = false;
+      
+      // Update in Firestore
+      await _firestore.collection('shopping').doc(docId).update({
+        'productName': entry['productName'],
+        'unitPrice': entry['unitPrice'],
+        'amount': entry['amount'],
+        'totalPrice': entry['totalPrice'],
+        'date': entry['date'],
+        'voucherId': entry['voucherId'],
+      });
 
-      // Sync shoppingData (optional)
-      int origIndex = shoppingData.indexWhere((e) => e['id'] == entry['id']);
-      if (origIndex != -1) shoppingData[origIndex] = Map.from(entry);
-    });
+      setState(() {
+        entry['isEditing'] = false;
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Row updated successfully!')));
+        int origIndex = shoppingData.indexWhere(
+          (e) => e['docId'] == filteredData[index]['docId'],
+        );
+        if (origIndex != -1) {
+          shoppingData[origIndex] = Map.from(filteredData[index]);
+        }
+      });
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Shopping entry updated')));
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error updating shopping entry: $e')));
+    }
   }
 
   Future<void> _deleteRow(int index) async {
@@ -255,16 +279,28 @@ class _AdminShoppingHistoryScreenState
     );
 
     if (confirm == true) {
-      setState(() {
-        final id = filteredData[index]['id'];
-        filteredData.removeAt(index);
-        shoppingData.removeWhere((e) => e['id'] == id);
-      });
+      try {
+        final docId = filteredData[index]['docId'];
+        
+        // Delete from Firestore
+        await _firestore.collection('shopping').doc(docId).delete();
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Shopping entry deleted successfully!')),
-        );
+        setState(() {
+          filteredData.removeAt(index);
+          shoppingData.removeWhere((e) => e['docId'] == docId);
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Shopping entry deleted')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error deleting shopping entry: $e')),
+          );
+        }
       }
     }
   }
@@ -566,33 +602,55 @@ class _AdminShoppingHistoryScreenState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const AdminAddShoppingScreen(),
+              Row(
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AdminAddShoppingScreen(),
+                        ),
+                      );
+                      // Refresh data when returning from add screen
+                      if (result == true) {
+                        _loadShoppingData();
+                      }
+                    },
+                    icon: const Icon(Icons.add, color: Colors.white),
+                    label: const Text(
+                      "Add Shopping Data",
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1A4D8F),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
                       ),
-                    );
-                  },
-                  icon: const Icon(Icons.add, color: Colors.white),
-                  label: const Text(
-                    "Add Shopping Data",
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1A4D8F),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
-                ),
+                  const SizedBox(width: 10),
+                  ElevatedButton.icon(
+                    onPressed: _loadShoppingData,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text("Refresh"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
               Row(
@@ -619,7 +677,36 @@ class _AdminShoppingHistoryScreenState
               ),
               const SizedBox(height: 16),
               Expanded(
-                child: SingleChildScrollView(
+                child: filteredData.isEmpty
+                    ? const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.shopping_cart_outlined,
+                              size: 64,
+                              color: Colors.grey,
+                            ),
+                            SizedBox(height: 16),
+                            Text(
+                              'No shopping data found',
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Add some shopping entries to get started',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: DataTable(
                     columnSpacing: 24,
@@ -669,7 +756,11 @@ class _AdminShoppingHistoryScreenState
                       return DataRow(
                         color: WidgetStateProperty.all(rowColor),
                         cells: [
-                          DataCell(Text('${entry['id']}')),
+                          DataCell(Text('${index + 1}', style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: Color(0xFF134074),
+                          ))),
                           DataCell(
                             isEditing
                                 ? _editableTextField(

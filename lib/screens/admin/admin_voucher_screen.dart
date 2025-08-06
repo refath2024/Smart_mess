@@ -643,7 +643,7 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
               },
               decoration: InputDecoration(
                 labelText: 'Search',
-                hintText: 'Search by Voucher ID, Buyer, Date...',
+                hintText: 'Search by Buyer, Date...',
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -699,7 +699,7 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                         columns: const [
-                          DataColumn(label: Text("Voucher ID")),
+                          DataColumn(label: Text("Index")),
                           DataColumn(label: Text("Buyer Name")),
                           DataColumn(label: Text("Date")),
                           DataColumn(label: Text("Images")),
@@ -713,11 +713,11 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                             cells: [
                               DataCell(
                                 Text(
-                                  entry['docId'],
+                                  '${index + 1}',
                                   style: const TextStyle(
-                                    fontFamily: 'monospace',
-                                    fontSize: 12,
-                                    color: Colors.grey,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                    color: Color(0xFF134074),
                                   ),
                                 ),
                               ),
