@@ -1,5 +1,6 @@
 // admin_voucher_screen.dart
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:smart_mess/services/admin_auth_service.dart';
 
 import 'admin_home_screen.dart';
@@ -27,6 +28,8 @@ class AdminVoucherScreen extends StatefulWidget {
 
 class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
   final AdminAuthService _adminAuthService = AdminAuthService();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  
   bool _isLoading = true;
   String _currentUserName = "Loading...";
   Map<String, dynamic>? _currentUserData;
@@ -34,8 +37,40 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
   @override
   void initState() {
     super.initState();
-    filteredData = List.from(voucherData);
     _checkAuthentication();
+    _loadVoucherData();
+  }
+
+  Future<void> _loadVoucherData() async {
+    try {
+      final QuerySnapshot snapshot = await _firestore.collection('voucher').get();
+      
+      setState(() {
+        voucherData = snapshot.docs.map((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          return {
+            'docId': doc.id, // Use Firebase document ID
+            'buyer': data['buyer'] ?? '',
+            'date': data['date'] ?? '',
+            'images': [], // Keep empty for now since no Firebase Storage access
+            'isEditing': false,
+            'original': {},
+          };
+        }).toList();
+        
+        filteredData = List.from(voucherData);
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading vouchers: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _checkAuthentication() async {
@@ -77,24 +112,8 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
 
   final TextEditingController _searchController = TextEditingController();
 
-  List<Map<String, dynamic>> voucherData = [
-    {
-      'id': 'VCH-A7B2C9',
-      'buyer': 'Lt Sami',
-      'date': '2025-07-01',
-      'images': [],
-      'isEditing': false,
-      'original': {},
-    },
-    {
-      'id': 'VCH-X8Y4Z1',
-      'buyer': 'Capt Maruf',
-      'date': '2025-07-02',
-      'images': [],
-      'isEditing': false,
-      'original': {},
-    },
-  ];
+  // Voucher data loaded from Firebase
+  List<Map<String, dynamic>> voucherData = [];
 
   List<Map<String, dynamic>> filteredData = [];
 
@@ -116,19 +135,35 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
     });
   }
 
-  void _saveEdit(int index) {
-    setState(() {
-      final entry = filteredData[index];
-      entry['totalPrice'] = (entry['unitPrice'] * entry['amount']);
-      entry['isEditing'] = false;
+  void _saveEdit(int index) async {
+    try {
+      final docId = filteredData[index]['docId'];
+      
+      // Update in Firestore (no need for manual ID field)
+      await _firestore.collection('voucher').doc(docId).update({
+        'buyer': filteredData[index]['buyer'],
+        'date': filteredData[index]['date'],
+      });
 
-      int origIndex = voucherData.indexWhere((e) => e['id'] == entry['id']);
-      if (origIndex != -1) voucherData[origIndex] = Map.from(entry);
-    });
+      setState(() {
+        filteredData[index]['isEditing'] = false;
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Voucher updated')));
+        int origIndex = voucherData.indexWhere(
+          (e) => e['docId'] == filteredData[index]['docId'],
+        );
+        if (origIndex != -1) {
+          voucherData[origIndex] = Map.from(filteredData[index]);
+        }
+      });
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Voucher updated')));
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error updating voucher: $e')));
+    }
   }
 
   Future<void> _deleteRow(int index) async {
@@ -138,7 +173,7 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
         return AlertDialog(
           title: const Text('Confirm Delete'),
           content: Text(
-              'Are you sure you want to delete voucher "${filteredData[index]['id']}" for ${filteredData[index]['buyer']}?'),
+              'Are you sure you want to delete voucher for ${filteredData[index]['buyer']}?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -155,16 +190,28 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
     );
 
     if (confirm == true) {
-      setState(() {
-        final id = filteredData[index]['id'];
-        filteredData.removeAt(index);
-        voucherData.removeWhere((e) => e['id'] == id);
-      });
+      try {
+        final docId = filteredData[index]['docId'];
+        
+        // Delete from Firestore
+        await _firestore.collection('voucher').doc(docId).delete();
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Voucher deleted')),
-        );
+        setState(() {
+          filteredData.removeAt(index);
+          voucherData.removeWhere((e) => e['docId'] == docId);
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Voucher deleted')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error deleting voucher: $e')),
+          );
+        }
       }
     }
   }
@@ -529,31 +576,53 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ✅ Add Voucher Button First
-            Align(
-              alignment: Alignment.centerRight,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const AdminAddShoppingScreen(),
+            Row(
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AdminAddShoppingScreen(),
+                      ),
+                    );
+                    // Refresh data when returning from add screen
+                    if (result == true) {
+                      _loadVoucherData();
+                    }
+                  },
+                  icon: const Icon(Icons.add),
+                  label: const Text("Add Voucher"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0052CC),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
                     ),
-                  );
-                },
-                icon: const Icon(Icons.add),
-                label: const Text("Add Voucher"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0052CC),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
-              ),
+                const SizedBox(width: 10),
+                ElevatedButton.icon(
+                  onPressed: _loadVoucherData,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text("Refresh"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ],
             ),
 
             const SizedBox(height: 16),
@@ -574,7 +643,7 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
               },
               decoration: InputDecoration(
                 labelText: 'Search',
-                hintText: 'Search by ID, Buyer, Date...',
+                hintText: 'Search by Voucher ID, Buyer, Date...',
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -590,105 +659,136 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
 
             // ✅ Voucher Table
             Expanded(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DataTable(
-                  headingRowColor: WidgetStateProperty.all(
-                    const Color(0xFF134074),
-                  ),
-                  headingTextStyle: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  columns: const [
-                    DataColumn(label: Text("Voucher ID")),
-                    DataColumn(label: Text("Buyer Name")),
-                    DataColumn(label: Text("Date")),
-                    DataColumn(label: Text("Images")),
-                    DataColumn(label: Text("Action")),
-                  ],
-                  rows: List.generate(filteredData.length, (index) {
-                    final entry = filteredData[index];
-                    final isEditing = entry['isEditing'] as bool;
-
-                    return DataRow(
-                      cells: [
-                        DataCell(
-                          isEditing
-                              ? _editableTextField(
-                                  initialValue: entry['id'],
-                                  onChanged: (val) => entry['id'] = val,
-                                )
-                              : Text(entry['id']),
-                        ),
-                        DataCell(
-                          isEditing
-                              ? _editableTextField(
-                                  initialValue: entry['buyer'],
-                                  onChanged: (val) => entry['buyer'] = val,
-                                )
-                              : Text(entry['buyer']),
-                        ),
-                        DataCell(
-                          isEditing
-                              ? _editableTextField(
-                                  initialValue: entry['date'],
-                                  onChanged: (val) => entry['date'] = val,
-                                )
-                              : Text(entry['date']),
-                        ),
-                        DataCell(
-                          ElevatedButton.icon(
-                            onPressed: () {
-                              // TODO: Implement image view dialog
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text("View Images")),
-                              );
-                            },
-                            icon: const Icon(Icons.image),
-                            label: const Text("View"),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF0052CC),
-                              foregroundColor: Colors.white,
+              child: filteredData.isEmpty
+                  ? const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.receipt_outlined,
+                            size: 64,
+                            color: Colors.grey,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'No vouchers found',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.grey,
                             ),
                           ),
+                          SizedBox(height: 8),
+                          Text(
+                            'Add some vouchers to get started',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: DataTable(
+                        headingRowColor: WidgetStateProperty.all(
+                          const Color(0xFF134074),
                         ),
-                        DataCell(
-                          Row(
-                            children: [
-                              if (!isEditing)
-                                _actionButton(
-                                  text: "Edit",
-                                  color: const Color(0xFF0052CC),
-                                  onPressed: () => _startEdit(index),
+                        headingTextStyle: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        columns: const [
+                          DataColumn(label: Text("Voucher ID")),
+                          DataColumn(label: Text("Buyer Name")),
+                          DataColumn(label: Text("Date")),
+                          DataColumn(label: Text("Images")),
+                          DataColumn(label: Text("Action")),
+                        ],
+                        rows: List.generate(filteredData.length, (index) {
+                          final entry = filteredData[index];
+                          final isEditing = entry['isEditing'] as bool;
+
+                          return DataRow(
+                            cells: [
+                              DataCell(
+                                Text(
+                                  entry['docId'],
+                                  style: const TextStyle(
+                                    fontFamily: 'monospace',
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
                                 ),
-                              if (isEditing) ...[
-                                _actionButton(
-                                  text: "Save",
-                                  color: Colors.green,
-                                  onPressed: () => _saveEdit(index),
+                              ),
+                              DataCell(
+                                isEditing
+                                    ? _editableTextField(
+                                        initialValue: entry['buyer'],
+                                        onChanged: (val) => entry['buyer'] = val,
+                                      )
+                                    : Text(entry['buyer']),
+                              ),
+                              DataCell(
+                                isEditing
+                                    ? _editableTextField(
+                                        initialValue: entry['date'],
+                                        onChanged: (val) => entry['date'] = val,
+                                      )
+                                    : Text(entry['date']),
+                              ),
+                              DataCell(
+                                ElevatedButton.icon(
+                                  onPressed: () {
+                                    // TODO: Implement image view dialog
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text("View Images - Feature coming soon")),
+                                    );
+                                  },
+                                  icon: const Icon(Icons.image),
+                                  label: const Text("View"),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF0052CC),
+                                    foregroundColor: Colors.white,
+                                  ),
                                 ),
-                                const SizedBox(width: 6),
-                                _actionButton(
-                                  text: "Cancel",
-                                  color: Colors.grey,
-                                  onPressed: () => _cancelEdit(index),
+                              ),
+                              DataCell(
+                                Row(
+                                  children: [
+                                    if (!isEditing)
+                                      _actionButton(
+                                        text: "Edit",
+                                        color: const Color(0xFF0052CC),
+                                        onPressed: () => _startEdit(index),
+                                      ),
+                                    if (isEditing) ...[
+                                      _actionButton(
+                                        text: "Save",
+                                        color: Colors.green,
+                                        onPressed: () => _saveEdit(index),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      _actionButton(
+                                        text: "Cancel",
+                                        color: Colors.grey,
+                                        onPressed: () => _cancelEdit(index),
+                                      ),
+                                    ],
+                                    const SizedBox(width: 6),
+                                    _actionButton(
+                                      text: "Delete",
+                                      color: Colors.red,
+                                      onPressed: () => _deleteRow(index),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                              const SizedBox(width: 6),
-                              _actionButton(
-                                text: "Delete",
-                                color: Colors.red,
-                                onPressed: () => _deleteRow(index),
                               ),
                             ],
-                          ),
-                        ),
-                      ],
-                    );
-                  }),
-                ),
-              ),
+                          );
+                        }),
+                      ),
+                    ),
             ),
           ],
         ),

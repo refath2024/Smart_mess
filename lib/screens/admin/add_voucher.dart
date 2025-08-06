@@ -1,8 +1,8 @@
-import 'dart:math';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AdminAddShoppingScreen extends StatefulWidget {
   const AdminAddShoppingScreen({super.key});
@@ -13,23 +13,24 @@ class AdminAddShoppingScreen extends StatefulWidget {
 
 class _AdminAddShoppingScreenState extends State<AdminAddShoppingScreen> {
   final _formKey = GlobalKey<FormState>();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   final TextEditingController _buyerController = TextEditingController();
   final TextEditingController _dateController = TextEditingController();
-  final TextEditingController _voucherIdController = TextEditingController();
 
   List<XFile> _images = [];
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _voucherIdController.text = _generateVoucherId();
   }
 
-  String _generateVoucherId() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    final rnd = Random();
-    return 'VCH-${List.generate(6, (index) => chars[rnd.nextInt(chars.length)]).join()}';
+  @override
+  void dispose() {
+    _buyerController.dispose();
+    _dateController.dispose();
+    super.dispose();
   }
 
   Future<void> _pickImages() async {
@@ -43,12 +44,39 @@ class _AdminAddShoppingScreenState extends State<AdminAddShoppingScreen> {
     }
   }
 
-  void _save() {
+  Future<void> _save() async {
     if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Voucher added successfully")),
-      );
-      Navigator.pop(context);
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        // Add voucher to Firestore (Firebase will auto-generate the document ID)
+        await _firestore.collection('voucher').add({
+          'buyer': _buyerController.text.trim(),
+          'date': _dateController.text.trim(),
+          'created_at': FieldValue.serverTimestamp(),
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Voucher added successfully")),
+          );
+          Navigator.pop(context, true); // Return true to indicate success
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Error adding voucher: $e")),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
     }
   }
 
@@ -136,11 +164,6 @@ class _AdminAddShoppingScreenState extends State<AdminAddShoppingScreen> {
                     }
                   },
                 ),
-                _buildTextField(
-                  "Voucher ID",
-                  _voucherIdController,
-                  readOnly: true,
-                ),
 
                 // Image picker section
                 const Align(
@@ -186,21 +209,30 @@ class _AdminAddShoppingScreenState extends State<AdminAddShoppingScreen> {
                   children: [
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: _save,
+                        onPressed: _isLoading ? null : _save,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF1A4D8F),
                           padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
-                        child: const Text(
-                          "Save",
-                          style: TextStyle(color: Colors.white),
-                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text(
+                                "Save",
+                                style: TextStyle(color: Colors.white),
+                              ),
                       ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: _cancel,
+                        onPressed: _isLoading ? null : _cancel,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.red,
                           padding: const EdgeInsets.symmetric(vertical: 14),
