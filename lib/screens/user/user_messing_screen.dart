@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
 
 class MessingScreen extends StatefulWidget {
   const MessingScreen({super.key});
@@ -42,7 +43,10 @@ class _MessingScreenState extends State<MessingScreen> {
     _tempSelectedMonth = _selectedMonth;
     _tempSelectedYear = _selectedYear;
 
-    _fetchMessingData();
+    // Use post-frame callback to ensure widget is fully built before making Firebase calls
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchMessingData();
+    });
   }
 
   Future<void> _fetchMessingData() async {
@@ -52,28 +56,57 @@ class _MessingScreenState extends State<MessingScreen> {
 
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
+      if (user == null) {
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
 
-      // Fetch all user data and filter locally to avoid composite index requirement
-      final querySnapshot = await FirebaseFirestore.instance
-          .collection('messing_data')
-          .where('userId', isEqualTo: user.uid)
-          .get();
+      print('Starting to fetch messing data for ${_selectedMonth} $_selectedYear');
 
       // Calculate selected month index for filtering
       final selectedMonthIndex = _months.indexOf(_selectedMonth) + 1;
+      final startDate = DateTime(_selectedYear, selectedMonthIndex, 1);
+      final endDate = DateTime(_selectedYear, selectedMonthIndex + 1, 0);
+
+      print('Date range: ${startDate.toIso8601String()} to ${endDate.toIso8601String()}');
+
+      // More efficient query with timeout
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('messing_data')
+          .where('userId', isEqualTo: user.uid)
+          .limit(100) // Limit results to prevent excessive data loading
+          .get()
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              throw TimeoutException('Firebase query timeout');
+            },
+          );
+
+      print('Retrieved ${querySnapshot.docs.length} documents from Firebase');
 
       List<Map<String, dynamic>> fetchedData = [];
-      double monthlyMessingTotal = 0.0; // Total of all meals taken in the month
+      double monthlyMessingTotal = 0.0;
 
       for (var doc in querySnapshot.docs) {
-        final data = doc.data();
-        final dateStr = data['date'] as String?;
-        
-        if (dateStr == null) continue;
-        
         try {
-          final docDate = DateTime.parse(dateStr);
+          final data = doc.data();
+          final dateStr = data['date'] as String?;
+          
+          if (dateStr == null || dateStr.isEmpty) {
+            print('Skipping document with null/empty date: ${doc.id}');
+            continue;
+          }
+          
+          DateTime docDate;
+          try {
+            docDate = DateTime.parse(dateStr);
+          } catch (e) {
+            print('Error parsing date "$dateStr" in doc ${doc.id}: $e');
+            continue;
+          }
           
           // Filter by selected month and year locally
           if (docDate.month == selectedMonthIndex && docDate.year == _selectedYear) {
@@ -81,7 +114,12 @@ class _MessingScreenState extends State<MessingScreen> {
             
             double dayTotal = 0.0;
             for (var meal in meals) {
-              dayTotal += (meal['price'] as num?)?.toDouble() ?? 0.0;
+              if (meal is Map<String, dynamic>) {
+                final price = meal['price'];
+                if (price is num) {
+                  dayTotal += price.toDouble();
+                }
+              }
             }
             
             fetchedData.add({
@@ -98,43 +136,78 @@ class _MessingScreenState extends State<MessingScreen> {
             }
           }
         } catch (e) {
-          print('Error parsing date: $dateStr');
+          print('Error processing document ${doc.id}: $e');
           continue;
         }
       }
 
-      // Fetch extra chit data (these will be updated by admin)
-      final extraChitDoc = await FirebaseFirestore.instance
-          .collection('extra_chits')
-          .doc('${user.uid}_${_selectedMonth}_$_selectedYear')
-          .get();
+      print('Processed ${fetchedData.length} documents for the selected month');
 
+      // Fetch extra chit data with timeout and better error handling
       double extraMessing = 0.0;
       double extraBar = 0.0;
 
-      if (extraChitDoc.exists) {
-        final extraData = extraChitDoc.data()!;
-        extraMessing = (extraData['extra_messing'] as num?)?.toDouble() ?? 0.0;
-        extraBar = (extraData['extra_bar'] as num?)?.toDouble() ?? 0.0;
+      try {
+        // Convert month name to number for more consistent document ID
+        final monthNum = selectedMonthIndex.toString().padLeft(2, '0');
+        final docId = '${user.uid}_${monthNum}_$_selectedYear';
+        
+        print('Fetching extra chit data with document ID: $docId');
+        
+        final extraChitDoc = await FirebaseFirestore.instance
+            .collection('extra_chits')
+            .doc(docId)
+            .get()
+            .timeout(
+              const Duration(seconds: 5),
+              onTimeout: () {
+                throw TimeoutException('Extra chit query timeout');
+              },
+            );
+
+        if (extraChitDoc.exists) {
+          final extraData = extraChitDoc.data();
+          if (extraData != null) {
+            extraMessing = (extraData['extra_messing'] as num?)?.toDouble() ?? 0.0;
+            extraBar = (extraData['extra_bar'] as num?)?.toDouble() ?? 0.0;
+            print('Found extra chit data: messing=$extraMessing, bar=$extraBar');
+          }
+        } else {
+          print('No extra chit document found for $docId');
+        }
+      } catch (e) {
+        print('Error fetching extra chit data: $e');
+        // Continue with default values - don't let this fail the entire operation
       }
 
-      setState(() {
-        messingData = fetchedData;
-        totalMonthlyMessing = monthlyMessingTotal; // This is now the total for the whole month
-        totalExtraChitMessing = extraMessing;
-        totalExtraChitBar = extraBar;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          messingData = fetchedData;
+          totalMonthlyMessing = monthlyMessingTotal;
+          totalExtraChitMessing = extraMessing;
+          totalExtraChitBar = extraBar;
+          _isLoading = false;
+        });
+        print('Successfully updated UI with messing data');
+      }
 
     } catch (e) {
       print('Error fetching messing data: $e');
-      setState(() {
-        _isLoading = false;
-      });
-      
       if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading data: $e')),
+          SnackBar(
+            content: Text('Error loading data: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: Colors.white,
+              onPressed: _fetchMessingData,
+            ),
+          ),
         );
       }
     }
@@ -211,6 +284,46 @@ class _MessingScreenState extends State<MessingScreen> {
             CircularProgressIndicator(),
             SizedBox(height: 16),
             Text('Loading messing data...'),
+            SizedBox(height: 8),
+            Text(
+              'This may take a few seconds',
+              style: TextStyle(color: Colors.grey, fontSize: 12),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (messingData.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.no_meals,
+              size: 64,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No messing data found',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'for $_selectedMonth $_selectedYear',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: Colors.grey[500],
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _fetchMessingData,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Refresh'),
+            ),
           ],
         ),
       );
@@ -291,6 +404,46 @@ class _MessingScreenState extends State<MessingScreen> {
             CircularProgressIndicator(),
             SizedBox(height: 16),
             Text('Loading detailed data...'),
+            SizedBox(height: 8),
+            Text(
+              'Preparing your meal breakdown...',
+              style: TextStyle(color: Colors.grey, fontSize: 12),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (messingData.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.table_chart,
+              size: 64,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No detailed data available',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'for $_selectedMonth $_selectedYear',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: Colors.grey[500],
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _fetchMessingData,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Refresh'),
+            ),
           ],
         ),
       );

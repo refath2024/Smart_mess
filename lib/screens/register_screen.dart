@@ -70,6 +70,63 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   String? _selectedRank;
 
+  // Helper method to get service branch from rank
+  String _getServiceBranch(String rank) {
+    if (_armyRanks.contains(rank)) {
+      return 'Army';
+    } else if (_navyRanks.contains(rank)) {
+      return 'Navy';
+    } else if (_airForceRanks.contains(rank)) {
+      return 'Air Force';
+    }
+    return '';
+  }
+
+  // Helper method to get prefix based on service branch
+  String _getPrefix(String serviceBranch) {
+    switch (serviceBranch) {
+      case 'Army':
+        return 'BA-';
+      case 'Navy':
+        return 'BN-';
+      case 'Air Force':
+        return 'BAF-';
+      default:
+        return '';
+    }
+  }
+
+  // Helper method to extract only numbers from BA number field
+  String _extractNumbers(String input) {
+    return input.replaceAll(RegExp(r'[^0-9]'), '');
+  }
+
+  // Method to update BA number based on selected rank
+  void _updateBANumber() {
+    if (_selectedRank != null) {
+      final serviceBranch = _getServiceBranch(_selectedRank!);
+      final prefix = _getPrefix(serviceBranch);
+
+      // Extract only numbers from current BA number
+      final numbersOnly = _extractNumbers(_noController.text);
+
+      // Update the BA number with correct prefix
+      if (numbersOnly.isNotEmpty) {
+        _noController.text = '$prefix$numbersOnly';
+        // Move cursor to end
+        _noController.selection = TextSelection.fromPosition(
+          TextPosition(offset: _noController.text.length),
+        );
+      } else if (prefix.isNotEmpty) {
+        // If no numbers, just set the prefix
+        _noController.text = prefix;
+        _noController.selection = TextSelection.fromPosition(
+          TextPosition(offset: _noController.text.length),
+        );
+      }
+    }
+  }
+
   String? _validateConfirmPassword(String? val) {
     if (val == null || val.isEmpty) return 'Please confirm your password';
     if (val != _passwordController.text) return 'Passwords do not match';
@@ -324,7 +381,37 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    // Add listener to BA number field to maintain proper format
+    _noController.addListener(_onBANumberChanged);
+  }
+
+  void _onBANumberChanged() {
+    if (_selectedRank != null) {
+      final serviceBranch = _getServiceBranch(_selectedRank!);
+      final expectedPrefix = _getPrefix(serviceBranch);
+
+      if (expectedPrefix.isNotEmpty &&
+          !_noController.text.startsWith(expectedPrefix)) {
+        // If user types something that doesn't start with expected prefix, fix it
+        final numbersOnly = _extractNumbers(_noController.text);
+        if (numbersOnly.isNotEmpty) {
+          final newText = '$expectedPrefix$numbersOnly';
+          if (newText != _noController.text) {
+            _noController.text = newText;
+            _noController.selection = TextSelection.fromPosition(
+              TextPosition(offset: _noController.text.length),
+            );
+          }
+        }
+      }
+    }
+  }
+
+  @override
   void dispose() {
+    _noController.removeListener(_onBANumberChanged);
     _noController.dispose();
     _rankController.dispose();
     _nameController.dispose();
@@ -403,6 +490,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
           setState(() {
             _selectedRank = newValue;
             _rankController.text = newValue ?? '';
+            // Update BA number with appropriate prefix
+            _updateBANumber();
           });
         },
         validator: (value) =>
@@ -419,6 +508,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     TextEditingController controller, {
     TextInputType type = TextInputType.text,
     String? Function(String?)? validator,
+    String? hintText,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
@@ -428,6 +518,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         validator: validator,
         decoration: InputDecoration(
           labelText: label,
+          hintText: hintText,
           filled: true,
           fillColor: Colors.white,
           contentPadding:
@@ -502,9 +593,37 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       _buildTextField(
                         "BA No *",
                         _noController,
-                        validator: (val) => val == null || val.trim().isEmpty
-                            ? 'Please enter your BA number'
-                            : null,
+                        hintText: _selectedRank != null
+                            ? '${_getPrefix(_getServiceBranch(_selectedRank!))}12345'
+                            : 'Select rank first, then enter your number',
+                        validator: (val) {
+                          if (val == null || val.trim().isEmpty) {
+                            return 'Please enter your BA number';
+                          }
+
+                          // Check if rank is selected first
+                          if (_selectedRank == null) {
+                            return 'Please select your rank first';
+                          }
+
+                          final serviceBranch =
+                              _getServiceBranch(_selectedRank!);
+                          final expectedPrefix = _getPrefix(serviceBranch);
+
+                          if (expectedPrefix.isNotEmpty) {
+                            if (!val.startsWith(expectedPrefix)) {
+                              return 'BA number should start with $expectedPrefix for your selected rank';
+                            }
+
+                            // Check if there are numbers after the prefix
+                            final numbersOnly = _extractNumbers(val);
+                            if (numbersOnly.isEmpty) {
+                              return 'Please enter your BA number after the prefix';
+                            }
+                          }
+
+                          return null;
+                        },
                       ),
                       _buildRankDropdown(),
                       _buildTextField(
