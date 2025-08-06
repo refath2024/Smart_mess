@@ -875,6 +875,8 @@ class _AdminMealStateScreenState extends State<AdminMealStateScreen> {
                       scrollDirection: Axis.horizontal,
                       child: SingleChildScrollView(
                         child: DataTable(
+                          dataRowMinHeight: 60,
+                          dataRowMaxHeight: editingIndex != null ? 120 : 60,
                           headingRowColor: WidgetStateProperty.all(
                             const Color(0xFF1A4D8F),
                           ),
@@ -1067,115 +1069,187 @@ class _AdminMealStateScreenState extends State<AdminMealStateScreen> {
                                       // Disposals with sub-row for dates
                                       DataCell(
                                         isEditing
-                                            ? Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  DropdownButton<String>(
-                                                    value:
-                                                        _disposalTypeController
-                                                            .text,
-                                                    items: const [
-                                                      DropdownMenuItem(
-                                                          value: 'N/A',
-                                                          child: Text('N/A')),
-                                                      DropdownMenuItem(
-                                                          value: 'SIQ',
-                                                          child: Text('SIQ')),
-                                                      DropdownMenuItem(
-                                                          value: 'Leave',
-                                                          child: Text('Leave')),
-                                                    ],
-                                                    onChanged: (value) {
-                                                      setState(() {
-                                                        _disposalTypeController
-                                                            .text = value!;
-                                                        if (value == 'N/A') {
-                                                          _disposalFromDate =
-                                                              null;
-                                                          _disposalToDate =
-                                                              null;
-                                                        }
-                                                      });
-                                                    },
-                                                  ),
-                                                  if (_disposalTypeController
-                                                          .text !=
-                                                      'N/A') ...[
-                                                    const SizedBox(height: 4),
-                                                    Row(
-                                                      mainAxisSize:
-                                                          MainAxisSize.min,
-                                                      children: [
-                                                        InkWell(
-                                                          onTap: () =>
-                                                              _pickDisposalDate(
-                                                                  isFrom: true),
-                                                          child: Container(
-                                                            padding:
-                                                                const EdgeInsets
-                                                                    .all(4),
-                                                            decoration:
-                                                                BoxDecoration(
-                                                              border: Border.all(
-                                                                  color: Colors
-                                                                      .grey),
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
+                                            ? Container(
+                                                width: 160,
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        vertical: 4),
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    // Disposal Type Dropdown
+                                                    SizedBox(
+                                                      width: 150,
+                                                      height: 35,
+                                                      child:
+                                                          DropdownButtonFormField<
+                                                              String>(
+                                                        value:
+                                                            _disposalTypeController
+                                                                .text,
+                                                        isExpanded: true,
+                                                        decoration:
+                                                            const InputDecoration(
+                                                          contentPadding:
+                                                              EdgeInsets
+                                                                  .symmetric(
+                                                                      horizontal:
+                                                                          8,
+                                                                      vertical:
                                                                           4),
-                                                            ),
-                                                            child: Text(
-                                                              _disposalFromDate !=
-                                                                      null
-                                                                  ? '${_disposalFromDate!.day}/${_disposalFromDate!.month}'
-                                                                  : 'From',
-                                                              style:
-                                                                  const TextStyle(
-                                                                      fontSize:
-                                                                          10),
-                                                            ),
-                                                          ),
+                                                          border:
+                                                              OutlineInputBorder(),
+                                                          isDense: true,
                                                         ),
-                                                        const Text(' - ',
-                                                            style: TextStyle(
-                                                                fontSize: 10)),
-                                                        InkWell(
-                                                          onTap: () =>
-                                                              _pickDisposalDate(
-                                                                  isFrom:
-                                                                      false),
-                                                          child: Container(
-                                                            padding:
-                                                                const EdgeInsets
-                                                                    .all(4),
-                                                            decoration:
-                                                                BoxDecoration(
-                                                              border: Border.all(
-                                                                  color: Colors
-                                                                      .grey),
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          4),
-                                                            ),
-                                                            child: Text(
-                                                              _disposalToDate !=
-                                                                      null
-                                                                  ? '${_disposalToDate!.day}/${_disposalToDate!.month}'
-                                                                  : 'To',
-                                                              style:
-                                                                  const TextStyle(
-                                                                      fontSize:
-                                                                          10),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ],
+                                                        style: const TextStyle(
+                                                            fontSize: 12),
+                                                        items: const [
+                                                          DropdownMenuItem(
+                                                              value: 'N/A',
+                                                              child:
+                                                                  Text('N/A')),
+                                                          DropdownMenuItem(
+                                                              value: 'SIQ',
+                                                              child:
+                                                                  Text('SIQ')),
+                                                          DropdownMenuItem(
+                                                              value: 'Leave',
+                                                              child: Text(
+                                                                  'Leave')),
+                                                        ],
+                                                        onChanged: (value) {
+                                                          setState(() {
+                                                            _disposalTypeController
+                                                                .text = value!;
+                                                            if (value ==
+                                                                'N/A') {
+                                                              _disposalFromDate =
+                                                                  null;
+                                                              _disposalToDate =
+                                                                  null;
+                                                            }
+                                                          });
+                                                        },
+                                                      ),
                                                     ),
+                                                    // Date Selection (only if not N/A)
+                                                    if (_disposalTypeController
+                                                            .text !=
+                                                        'N/A') ...[
+                                                      const SizedBox(height: 6),
+                                                      // From Date
+                                                      InkWell(
+                                                        onTap: () =>
+                                                            _pickDisposalDate(
+                                                                isFrom: true),
+                                                        child: Container(
+                                                          width: 150,
+                                                          height: 28,
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  horizontal: 8,
+                                                                  vertical: 4),
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            border: Border.all(
+                                                                color: Colors
+                                                                    .grey),
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        4),
+                                                          ),
+                                                          child: Row(
+                                                            mainAxisAlignment:
+                                                                MainAxisAlignment
+                                                                    .spaceBetween,
+                                                            children: [
+                                                              Flexible(
+                                                                child: Text(
+                                                                  _disposalFromDate !=
+                                                                          null
+                                                                      ? '${_disposalFromDate!.day}/${_disposalFromDate!.month}/${_disposalFromDate!.year}'
+                                                                      : 'From Date',
+                                                                  style: const TextStyle(
+                                                                      fontSize:
+                                                                          10),
+                                                                  overflow:
+                                                                      TextOverflow
+                                                                          .ellipsis,
+                                                                ),
+                                                              ),
+                                                              const Icon(
+                                                                Icons
+                                                                    .calendar_today,
+                                                                size: 12,
+                                                                color:
+                                                                    Colors.grey,
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 4),
+                                                      // To Date
+                                                      InkWell(
+                                                        onTap: () =>
+                                                            _pickDisposalDate(
+                                                                isFrom: false),
+                                                        child: Container(
+                                                          width: 150,
+                                                          height: 28,
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  horizontal: 8,
+                                                                  vertical: 4),
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            border: Border.all(
+                                                                color: Colors
+                                                                    .grey),
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        4),
+                                                          ),
+                                                          child: Row(
+                                                            mainAxisAlignment:
+                                                                MainAxisAlignment
+                                                                    .spaceBetween,
+                                                            children: [
+                                                              Flexible(
+                                                                child: Text(
+                                                                  _disposalToDate !=
+                                                                          null
+                                                                      ? '${_disposalToDate!.day}/${_disposalToDate!.month}/${_disposalToDate!.year}'
+                                                                      : 'To Date',
+                                                                  style: const TextStyle(
+                                                                      fontSize:
+                                                                          10),
+                                                                  overflow:
+                                                                      TextOverflow
+                                                                          .ellipsis,
+                                                                ),
+                                                              ),
+                                                              const Icon(
+                                                                Icons
+                                                                    .calendar_today,
+                                                                size: 12,
+                                                                color:
+                                                                    Colors.grey,
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ],
-                                                ],
+                                                ),
                                               )
                                             : Column(
                                                 crossAxisAlignment:

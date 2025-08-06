@@ -578,7 +578,7 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
                         labelText: 'Select Disposal Type',
                         border: OutlineInputBorder(),
                       ),
-                      items: ['SIQ', 'Leave', 'Mess Out']
+                      items: ['SIQ', 'Leave']
                           .map(
                               (e) => DropdownMenuItem(value: e, child: Text(e)))
                           .toList(),
