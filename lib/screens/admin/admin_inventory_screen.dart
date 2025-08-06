@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'admin_home_screen.dart';
 import 'admin_users_screen.dart';
@@ -26,6 +27,7 @@ class AdminInventoryScreen extends StatefulWidget {
 
 class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
   final AdminAuthService _adminAuthService = AdminAuthService();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   bool _isLoading = true;
   String _currentUserName = "Admin User";
@@ -35,7 +37,39 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
   void initState() {
     super.initState();
     _checkAuthentication();
-    filteredData = List.from(inventoryData);
+    _loadInventoryData();
+  }
+
+  Future<void> _loadInventoryData() async {
+    try {
+      final QuerySnapshot snapshot = await _firestore.collection('inventory').get();
+      
+      setState(() {
+        inventoryData = snapshot.docs.map((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          return {
+            'docId': doc.id, // Use Firebase document ID
+            'productName': data['productName'] ?? '',
+            'quantityHeld': data['quantityHeld'] ?? 0,
+            'type': data['type'] ?? '',
+            'isEditing': false,
+            'original': {},
+          };
+        }).toList();
+        
+        filteredData = List.from(inventoryData);
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading inventory: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _checkAuthentication() async {
@@ -124,33 +158,8 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
     );
   }
 
-  // Simplified inventory data
-  List<Map<String, dynamic>> inventoryData = [
-    {
-      'id': 'I001',
-      'productName': 'Cable Wire',
-      'quantityHeld': 100,
-      'type': 'utensils',
-      'isEditing': false,
-      'original': {},
-    },
-    {
-      'id': 'I002',
-      'productName': 'Rice',
-      'quantityHeld': 500,
-      'type': 'ration',
-      'isEditing': false,
-      'original': {},
-    },
-    {
-      'id': 'I003',
-      'productName': 'Fresh Milk',
-      'quantityHeld': 200,
-      'type': 'fresh',
-      'isEditing': false,
-      'original': {},
-    },
-  ];
+  // Inventory data loaded from Firebase
+  List<Map<String, dynamic>> inventoryData = [];
 
   List<Map<String, dynamic>> filteredData = [];
 
@@ -182,21 +191,36 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
     });
   }
 
-  void _saveEdit(int index) {
-    setState(() {
-      filteredData[index]['isEditing'] = false;
+  void _saveEdit(int index) async {
+    try {
+      final docId = filteredData[index]['docId'];
+      
+      // Update in Firestore (no need for manual ID field)
+      await _firestore.collection('inventory').doc(docId).update({
+        'productName': filteredData[index]['productName'],
+        'quantityHeld': filteredData[index]['quantityHeld'],
+        'type': filteredData[index]['type'],
+      });
 
-      int origIndex = inventoryData.indexWhere(
-        (e) => e['id'] == filteredData[index]['id'],
-      );
-      if (origIndex != -1) {
-        inventoryData[origIndex] = Map.from(filteredData[index]);
-      }
-    });
+      setState(() {
+        filteredData[index]['isEditing'] = false;
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Inventory updated')));
+        int origIndex = inventoryData.indexWhere(
+          (e) => e['docId'] == filteredData[index]['docId'],
+        );
+        if (origIndex != -1) {
+          inventoryData[origIndex] = Map.from(filteredData[index]);
+        }
+      });
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Inventory updated')));
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error updating inventory: $e')));
+    }
   }
 
   Future<void> _deleteRow(int index) async {
@@ -223,16 +247,28 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
     );
 
     if (confirm == true) {
-      setState(() {
-        final id = filteredData[index]['id'];
-        filteredData.removeAt(index);
-        inventoryData.removeWhere((e) => e['id'] == id);
-      });
+      try {
+        final docId = filteredData[index]['docId'];
+        
+        // Delete from Firestore
+        await _firestore.collection('inventory').doc(docId).delete();
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Inventory item deleted')),
-        );
+        setState(() {
+          filteredData.removeAt(index);
+          inventoryData.removeWhere((e) => e['docId'] == docId);
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Inventory item deleted')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error deleting inventory: $e')),
+          );
+        }
       }
     }
   }
@@ -561,26 +597,51 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AddInventoryScreen()),
-                );
-              },
-              icon: const Icon(Icons.add),
-              label: const Text("Add Inventory Entry"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0052CC),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
+            Row(
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AddInventoryScreen()),
+                    );
+                    // Refresh data when returning from add screen
+                    if (result == true) {
+                      _loadInventoryData();
+                    }
+                  },
+                  icon: const Icon(Icons.add),
+                  label: const Text("Add Inventory Entry"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0052CC),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
                 ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                const SizedBox(width: 10),
+                ElevatedButton.icon(
+                  onPressed: _loadInventoryData,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text("Refresh"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
             const SizedBox(height: 16),
 
@@ -616,124 +677,144 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
 
             // Inventory table
             Expanded(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DataTable(
-                  headingRowColor: WidgetStateProperty.all(
-                    const Color(0xFF134074),
-                  ),
-                  headingTextStyle: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  columns: const [
-                    DataColumn(label: Text("ID")),
-                    DataColumn(label: Text("Product Name")),
-                    DataColumn(label: Text("Quantity Held")),
-                    DataColumn(label: Text("Type")),
-                    DataColumn(label: Text("Action")),
-                  ],
-                  rows: List.generate(filteredData.length, (index) {
-                    final entry = filteredData[index];
-                    final isEditing = entry['isEditing'] as bool;
+              child: filteredData.isEmpty
+                  ? const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.inventory_2_outlined,
+                            size: 64,
+                            color: Colors.grey,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'No inventory items found',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'Add some inventory items to get started',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: DataTable(
+                        headingRowColor: WidgetStateProperty.all(
+                          const Color(0xFF134074),
+                        ),
+                        headingTextStyle: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        columns: const [
+                          DataColumn(label: Text("Product Name")),
+                          DataColumn(label: Text("Quantity Held")),
+                          DataColumn(label: Text("Type")),
+                          DataColumn(label: Text("Action")),
+                        ],
+                        rows: List.generate(filteredData.length, (index) {
+                          final entry = filteredData[index];
+                          final isEditing = entry['isEditing'] as bool;
 
-                    return DataRow(
-                      cells: [
-                        DataCell(
-                          isEditing
-                              ? _editableTextField(
-                                  initialValue: entry['id'],
-                                  onChanged: (val) => entry['id'] = val,
-                                )
-                              : Text(entry['id']),
-                        ),
-                        DataCell(
-                          isEditing
-                              ? _editableTextField(
-                                  initialValue: entry['productName'],
-                                  onChanged: (val) =>
-                                      entry['productName'] = val,
-                                )
-                              : Text(entry['productName']),
-                        ),
-                        DataCell(
-                          isEditing
-                              ? _editableTextField(
-                                  initialValue:
-                                      entry['quantityHeld'].toString(),
-                                  keyboardType: TextInputType.number,
-                                  onChanged: (val) {
-                                    entry['quantityHeld'] =
-                                        int.tryParse(val) ?? 0;
-                                    setState(() {});
-                                  },
-                                )
-                              : Text('${entry['quantityHeld']}'),
-                        ),
-                        DataCell(
-                          isEditing
-                              ? DropdownButton<String>(
-                                  value: entry['type'],
-                                  onChanged: (val) {
-                                    if (val != null) {
-                                      setState(() {
-                                        entry['type'] = val;
-                                      });
-                                    }
-                                  },
-                                  items: _types
-                                      .map(
-                                        (type) => DropdownMenuItem(
-                                          value: type,
-                                          child: Text(
-                                            type[0].toUpperCase() +
-                                                type.substring(1),
-                                          ),
-                                        ),
+                          return DataRow(
+                            cells: [
+                              DataCell(
+                                isEditing
+                                    ? _editableTextField(
+                                        initialValue: entry['productName'],
+                                        onChanged: (val) =>
+                                            entry['productName'] = val,
                                       )
-                                      .toList(),
-                                )
-                              : Text(
-                                  entry['type'][0].toUpperCase() +
-                                      entry['type'].substring(1),
+                                    : Text(entry['productName']),
+                              ),
+                              DataCell(
+                                isEditing
+                                    ? _editableTextField(
+                                        initialValue:
+                                            entry['quantityHeld'].toString(),
+                                        keyboardType: TextInputType.number,
+                                        onChanged: (val) {
+                                          entry['quantityHeld'] =
+                                              int.tryParse(val) ?? 0;
+                                          setState(() {});
+                                        },
+                                      )
+                                    : Text('${entry['quantityHeld']}'),
+                              ),
+                              DataCell(
+                                isEditing
+                                    ? DropdownButton<String>(
+                                        value: entry['type'],
+                                        onChanged: (val) {
+                                          if (val != null) {
+                                            setState(() {
+                                              entry['type'] = val;
+                                            });
+                                          }
+                                        },
+                                        items: _types
+                                            .map(
+                                              (type) => DropdownMenuItem(
+                                                value: type,
+                                                child: Text(
+                                                  type[0].toUpperCase() +
+                                                      type.substring(1),
+                                                ),
+                                              ),
+                                            )
+                                            .toList(),
+                                      )
+                                    : Text(
+                                        entry['type'][0].toUpperCase() +
+                                            entry['type'].substring(1),
+                                      ),
+                              ),
+                              DataCell(
+                                Row(
+                                  children: [
+                                    if (!isEditing)
+                                      _actionButton(
+                                        text: "Edit",
+                                        color: const Color(0xFF0052CC),
+                                        onPressed: () => _startEdit(index),
+                                      ),
+                                    if (isEditing) ...[
+                                      _actionButton(
+                                        text: "Save",
+                                        color: Colors.green,
+                                        onPressed: () => _saveEdit(index),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      _actionButton(
+                                        text: "Cancel",
+                                        color: Colors.grey,
+                                        onPressed: () => _cancelEdit(index),
+                                      ),
+                                    ],
+                                    const SizedBox(width: 6),
+                                    _actionButton(
+                                      text: "Delete",
+                                      color: Colors.red,
+                                      onPressed: () => _deleteRow(index),
+                                    ),
+                                  ],
                                 ),
-                        ),
-                        DataCell(
-                          Row(
-                            children: [
-                              if (!isEditing)
-                                _actionButton(
-                                  text: "Edit",
-                                  color: const Color(0xFF0052CC),
-                                  onPressed: () => _startEdit(index),
-                                ),
-                              if (isEditing) ...[
-                                _actionButton(
-                                  text: "Save",
-                                  color: Colors.green,
-                                  onPressed: () => _saveEdit(index),
-                                ),
-                                const SizedBox(width: 6),
-                                _actionButton(
-                                  text: "Cancel",
-                                  color: Colors.grey,
-                                  onPressed: () => _cancelEdit(index),
-                                ),
-                              ],
-                              const SizedBox(width: 6),
-                              _actionButton(
-                                text: "Delete",
-                                color: Colors.red,
-                                onPressed: () => _deleteRow(index),
                               ),
                             ],
-                          ),
-                        ),
-                      ],
-                    );
-                  }),
-                ),
-              ),
+                          );
+                        }),
+                      ),
+                    ),
             ),
           ],
         ),
