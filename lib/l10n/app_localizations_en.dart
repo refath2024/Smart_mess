@@ -452,4 +452,40 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get memberSummary => 'Member Summary';
+
+  @override
+  String get requestedAt => 'Requested At';
+
+  @override
+  String get accept => 'Accept';
+
+  @override
+  String get reject => 'Reject';
+
+  @override
+  String get confirmAccept => 'Confirm Accept';
+
+  @override
+  String get confirmReject => 'Confirm Reject';
+
+  @override
+  String get acceptUserMessage =>
+      'Are you sure you want to accept this user? This action will approve their application and grant them access to the system.';
+
+  @override
+  String get rejectUserMessage =>
+      'Are you sure you want to reject this user? This action will deny their application. They will be able to reapply later with updated information.';
+
+  @override
+  String get userAccepted =>
+      'User has been accepted and can now log in to the system.';
+
+  @override
+  String get userRejected => 'User has been rejected.';
+
+  @override
+  String get failedToAcceptUser => 'Failed to accept user';
+
+  @override
+  String get failedToRejectUser => 'Failed to reject user';
 }

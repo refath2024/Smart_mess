@@ -151,5 +151,19 @@
   "totalActiveDiningMembers": "Total Active Dining Members",
   "totalStaffs": "Total Staffs",
   "memberSummary": "Member Summary",
-  "search": "Search"
+  "search": "Search",
+  "pendingIds": "Pending IDs",
+  "requestedAt": "Requested At",
+  "action": "Action",
+  "accept": "Accept",
+  "reject": "Reject",
+  "confirmAccept": "Confirm Accept",
+  "confirmReject": "Confirm Reject",
+  "acceptUserMessage": "Are you sure you want to accept this user? This action will approve their application and grant them access to the system.",
+  "rejectUserMessage": "Are you sure you want to reject this user? This action will deny their application. They will be able to reapply later with updated information.",
+  "cancel": "Cancel",
+  "userAccepted": "User has been accepted and can now log in to the system.",
+  "userRejected": "User has been rejected.",
+  "failedToAcceptUser": "Failed to accept user",
+  "failedToRejectUser": "Failed to reject user"
 }

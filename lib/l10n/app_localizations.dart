@@ -979,6 +979,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Member Summary'**
   String get memberSummary;
+
+  /// No description provided for @requestedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Requested At'**
+  String get requestedAt;
+
+  /// No description provided for @accept.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get accept;
+
+  /// No description provided for @reject.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get reject;
+
+  /// No description provided for @confirmAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Accept'**
+  String get confirmAccept;
+
+  /// No description provided for @confirmReject.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Reject'**
+  String get confirmReject;
+
+  /// No description provided for @acceptUserMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to accept this user? This action will approve their application and grant them access to the system.'**
+  String get acceptUserMessage;
+
+  /// No description provided for @rejectUserMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to reject this user? This action will deny their application. They will be able to reapply later with updated information.'**
+  String get rejectUserMessage;
+
+  /// No description provided for @userAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'User has been accepted and can now log in to the system.'**
+  String get userAccepted;
+
+  /// No description provided for @userRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'User has been rejected.'**
+  String get userRejected;
+
+  /// No description provided for @failedToAcceptUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to accept user'**
+  String get failedToAcceptUser;
+
+  /// No description provided for @failedToRejectUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to reject user'**
+  String get failedToRejectUser;
 }
 
 class _AppLocalizationsDelegate

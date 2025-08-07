@@ -21,7 +21,7 @@ class AppLocalizationsBn extends AppLocalizations {
   String get users => 'ব্যবহারকারী';
 
   @override
-  String get pendingIds => 'অমীমাংসিত আইডি';
+  String get pendingIds => 'মুলতুবি আইডি';
 
   @override
   String get shoppingHistory => 'কেনাকাটার ইতিহাস';
@@ -141,7 +141,7 @@ class AppLocalizationsBn extends AppLocalizations {
   String get type => 'ধরন';
 
   @override
-  String get action => 'কাজ';
+  String get action => 'কার্যক্রম';
 
   @override
   String get buyerName => 'ক্রেতার নাম';
@@ -452,4 +452,40 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get memberSummary => 'সদস্য সারসংক্ষেপ';
+
+  @override
+  String get requestedAt => 'অনুরোধের সময়';
+
+  @override
+  String get accept => 'গ্রহণ';
+
+  @override
+  String get reject => 'প্রত্যাখ্যান';
+
+  @override
+  String get confirmAccept => 'গ্রহণ নিশ্চিত করুন';
+
+  @override
+  String get confirmReject => 'প্রত্যাখ্যান নিশ্চিত করুন';
+
+  @override
+  String get acceptUserMessage =>
+      'আপনি কি নিশ্চিত যে আপনি এই ব্যবহারকারীকে গ্রহণ করতে চান? এই কার্যটি তাদের আবেদন অনুমোদন করবে এবং তাদের সিস্টেমে অ্যাক্সেস প্রদান করবে।';
+
+  @override
+  String get rejectUserMessage =>
+      'আপনি কি নিশ্চিত যে আপনি এই ব্যবহারকারীকে প্রত্যাখ্যান করতে চান? এই কার্যটি তাদের আবেদন প্রত্যাখ্যান করবে। তারা পরে আপডেট তথ্য সহ পুনরায় আবেদন করতে পারবেন।';
+
+  @override
+  String get userAccepted =>
+      'ব্যবহারকারীকে গ্রহণ করা হয়েছে এবং এখন সিস্টেমে লগইন করতে পারবেন।';
+
+  @override
+  String get userRejected => 'ব্যবহারকারীকে প্রত্যাখ্যান করা হয়েছে।';
+
+  @override
+  String get failedToAcceptUser => 'ব্যবহারকারীকে গ্রহণ করতে ব্যর্থ';
+
+  @override
+  String get failedToRejectUser => 'ব্যবহারকারীকে প্রত্যাখ্যান করতে ব্যর্থ';
 }

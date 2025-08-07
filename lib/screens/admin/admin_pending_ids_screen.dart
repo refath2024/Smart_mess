@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
 
 import 'admin_home_screen.dart';
 import 'admin_users_screen.dart';
@@ -16,6 +17,8 @@ import 'admin_menu_vote_screen.dart';
 import 'admin_meal_state_screen.dart';
 import 'admin_login_screen.dart';
 import '../../services/admin_auth_service.dart';
+import '../../providers/language_provider.dart';
+import '../../l10n/app_localizations.dart';
 
 class AdminPendingIdsScreen extends StatefulWidget {
   const AdminPendingIdsScreen({super.key});
@@ -143,13 +146,12 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirm Accept'),
-        content: const Text(
-            'Are you sure you want to accept this user? This action will approve their application and grant them access to the system.'),
+        title: Text(AppLocalizations.of(context)!.confirmAccept),
+        content: Text(AppLocalizations.of(context)!.acceptUserMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -157,7 +159,7 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
               backgroundColor: Colors.green.shade600,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Accept'),
+            child: Text(AppLocalizations.of(context)!.accept),
           ),
         ],
       ),
@@ -188,16 +190,15 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content:
-              Text("User has been accepted and can now log in to the system."),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.userAccepted),
           duration: Duration(seconds: 4),
         ),
       );
       await _fetchPendingUsers();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to accept user: $e")),
+        SnackBar(content: Text("${AppLocalizations.of(context)!.failedToAcceptUser}: $e")),
       );
     }
   }
@@ -207,13 +208,12 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirm Reject'),
-        content: const Text(
-            'Are you sure you want to reject this user? This action will deny their application. They will be able to reapply later with updated information.'),
+        title: Text(AppLocalizations.of(context)!.confirmReject),
+        content: Text(AppLocalizations.of(context)!.rejectUserMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -221,7 +221,7 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
               backgroundColor: Colors.red.shade600,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Reject'),
+            child: Text(AppLocalizations.of(context)!.reject),
           ),
         ],
       ),
@@ -236,12 +236,12 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
           .update({'rejected': true, 'status': "rejected"});
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("User has been rejected.")),
+        SnackBar(content: Text(AppLocalizations.of(context)!.userRejected)),
       );
       await _fetchPendingUsers();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to reject user: $e")),
+        SnackBar(content: Text("${AppLocalizations.of(context)!.failedToRejectUser}: $e")),
       );
     }
   }
@@ -292,13 +292,15 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
+    return Consumer<LanguageProvider>(
+      builder: (context, languageProvider, child) {
+        if (_isLoading) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
 
     return Scaffold(
       drawer: Drawer(
@@ -540,14 +542,48 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
         backgroundColor: const Color(0xFF002B5B),
         iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
-        title: const Text(
-          "Pending IDs",
+        title: Text(
+          AppLocalizations.of(context)!.pendingIds,
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w600,
             fontSize: 18,
           ),
         ),
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.language, color: Colors.white),
+            onSelected: (String value) {
+              if (value == 'bn') {
+                languageProvider.changeLanguage(const Locale('bn'));
+              } else {
+                languageProvider.changeLanguage(const Locale('en'));
+              }
+            },
+            itemBuilder: (BuildContext context) => [
+              PopupMenuItem<String>(
+                value: 'en',
+                child: Row(
+                  children: [
+                    Text('🇺🇸'),
+                    const SizedBox(width: 8),
+                    Text('English'),
+                  ],
+                ),
+              ),
+              PopupMenuItem<String>(
+                value: 'bn',
+                child: Row(
+                  children: [
+                    Text('🇧🇩'),
+                    const SizedBox(width: 8),
+                    Text('বাংলা'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(
@@ -557,8 +593,8 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
             children: [
               Row(
                 children: [
-                  const Text(
-                    "Search:",
+                  Text(
+                    "${AppLocalizations.of(context)!.search}:",
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(width: 10),
@@ -567,7 +603,7 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
                       controller: _searchController,
                       onChanged: _search,
                       decoration: InputDecoration(
-                        hintText: "Search...",
+                        hintText: "${AppLocalizations.of(context)!.search}...",
                         prefixIcon: const Icon(Icons.search),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -600,15 +636,15 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
                     ),
                     dividerThickness: 0.5,
                     showBottomBorder: true,
-                    columns: const [
-                      DataColumn(label: Text("BA No")),
-                      DataColumn(label: Text("Rank")),
-                      DataColumn(label: Text("Name")),
-                      DataColumn(label: Text("Unit")),
-                      DataColumn(label: Text("Email")),
-                      DataColumn(label: Text("Mobile")),
-                      DataColumn(label: Text("Requested At")),
-                      DataColumn(label: Text("Action")),
+                    columns: [
+                      DataColumn(label: Text(AppLocalizations.of(context)!.baNumber)),
+                      DataColumn(label: Text(AppLocalizations.of(context)!.rank)),
+                      DataColumn(label: Text(AppLocalizations.of(context)!.name)),
+                      DataColumn(label: Text(AppLocalizations.of(context)!.unit)),
+                      DataColumn(label: Text(AppLocalizations.of(context)!.email)),
+                      DataColumn(label: Text(AppLocalizations.of(context)!.mobile)),
+                      DataColumn(label: Text(AppLocalizations.of(context)!.requestedAt)),
+                      DataColumn(label: Text(AppLocalizations.of(context)!.action)),
                     ],
                     rows: filteredUsers.map((user) {
                       final docId = user['id'] as String;
@@ -631,7 +667,7 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
                                 ElevatedButton.icon(
                                   onPressed: () => _acceptUser(docId),
                                   icon: const Icon(Icons.check, size: 16),
-                                  label: const Text("Accept"),
+                                  label: Text(AppLocalizations.of(context)!.accept),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.green.shade600,
                                     foregroundColor: Colors.white,
@@ -652,7 +688,7 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
                                 ElevatedButton.icon(
                                   onPressed: () => _rejectUser(docId),
                                   icon: const Icon(Icons.close, size: 16),
-                                  label: const Text("Reject"),
+                                  label: Text(AppLocalizations.of(context)!.reject),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.red.shade600,
                                     foregroundColor: Colors.white,
@@ -682,6 +718,8 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
           ),
         ),
       ),
+    );
+      },
     );
   }
 }
