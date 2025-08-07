@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+import 'package:smart_mess/l10n/app_localizations.dart';
+import 'package:smart_mess/providers/language_provider.dart';
 import 'package:smart_mess/screens/admin/admin_login_screen.dart';
 import 'package:smart_mess/services/admin_auth_service.dart';
 
@@ -78,7 +81,7 @@ class _AdminShoppingHistoryScreenState
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading shopping data: $e')),
+          SnackBar(content: Text('${AppLocalizations.of(context)!.errorLoadingShoppingData}: $e')),
         );
       }
     }
@@ -190,7 +193,7 @@ class _AdminShoppingHistoryScreenState
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Logout failed: $e')),
+          SnackBar(content: Text('${AppLocalizations.of(context)!.logoutFailed}: $e')),
         );
       }
     }
@@ -247,11 +250,11 @@ class _AdminShoppingHistoryScreenState
 
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Shopping entry updated')));
+      ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.shoppingEntryUpdated)));
     } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Error updating shopping entry: $e')));
+      ).showSnackBar(SnackBar(content: Text('${AppLocalizations.of(context)!.errorUpdatingShoppingEntry}: $e')));
     }
   }
 
@@ -260,18 +263,18 @@ class _AdminShoppingHistoryScreenState
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Confirm Delete'),
+          title: Text(AppLocalizations.of(context)!.confirmDelete),
           content: Text(
-              'Are you sure you want to delete "${filteredData[index]['productName']}" from shopping history?'),
+              '${AppLocalizations.of(context)!.areYouSureYouWantToDelete} "${filteredData[index]['productName']}" from shopping history?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
+              child: Text(AppLocalizations.of(context)!.cancel),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
               style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Delete'),
+              child: Text(AppLocalizations.of(context)!.delete),
             ),
           ],
         );
@@ -292,13 +295,13 @@ class _AdminShoppingHistoryScreenState
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Shopping entry deleted')),
+            SnackBar(content: Text(AppLocalizations.of(context)!.shoppingEntryDeleted)),
           );
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error deleting shopping entry: $e')),
+            SnackBar(content: Text('${AppLocalizations.of(context)!.errorDeletingShoppingEntry}: $e')),
           );
         }
       }
@@ -337,7 +340,9 @@ class _AdminShoppingHistoryScreenState
       );
     }
 
-    return Scaffold(
+    return Consumer<LanguageProvider>(
+      builder: (context, languageProvider, child) {
+        return Scaffold(
       drawer: Drawer(
         child: Column(
           children: [
@@ -398,7 +403,7 @@ class _AdminShoppingHistoryScreenState
                 children: [
                   _buildSidebarTile(
                     icon: Icons.dashboard,
-                    title: "Home",
+                    title: AppLocalizations.of(context)!.home,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -410,7 +415,7 @@ class _AdminShoppingHistoryScreenState
                   ),
                   _buildSidebarTile(
                     icon: Icons.people,
-                    title: "Users",
+                    title: AppLocalizations.of(context)!.users,
                     onTap: () {
                       Navigator.push(
                         context,
@@ -422,7 +427,7 @@ class _AdminShoppingHistoryScreenState
                   ),
                   _buildSidebarTile(
                     icon: Icons.pending,
-                    title: "Pending IDs",
+                    title: AppLocalizations.of(context)!.pendingIds,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -434,13 +439,13 @@ class _AdminShoppingHistoryScreenState
                   ),
                   _buildSidebarTile(
                     icon: Icons.history,
-                    title: "Shopping History",
+                    title: AppLocalizations.of(context)!.shoppingHistory,
                     onTap: () => Navigator.pop(context),
                     selected: true,
                   ),
                   _buildSidebarTile(
                     icon: Icons.receipt,
-                    title: "Voucher List",
+                    title: AppLocalizations.of(context)!.voucherList,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -452,7 +457,7 @@ class _AdminShoppingHistoryScreenState
                   ),
                   _buildSidebarTile(
                     icon: Icons.storage,
-                    title: "Inventory",
+                    title: AppLocalizations.of(context)!.inventory,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -464,7 +469,7 @@ class _AdminShoppingHistoryScreenState
                   ),
                   _buildSidebarTile(
                     icon: Icons.food_bank,
-                    title: "Messing",
+                    title: AppLocalizations.of(context)!.messing,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -476,7 +481,7 @@ class _AdminShoppingHistoryScreenState
                   ),
                   _buildSidebarTile(
                     icon: Icons.menu_book,
-                    title: "Monthly Menu",
+                    title: AppLocalizations.of(context)!.monthlyMenu,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -488,7 +493,7 @@ class _AdminShoppingHistoryScreenState
                   ),
                   _buildSidebarTile(
                     icon: Icons.analytics,
-                    title: "Meal State",
+                    title: AppLocalizations.of(context)!.mealState,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -500,7 +505,7 @@ class _AdminShoppingHistoryScreenState
                   ),
                   _buildSidebarTile(
                     icon: Icons.thumb_up,
-                    title: "Menu Vote",
+                    title: AppLocalizations.of(context)!.menuVote,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -512,7 +517,7 @@ class _AdminShoppingHistoryScreenState
                   ),
                   _buildSidebarTile(
                     icon: Icons.receipt_long,
-                    title: "Bills",
+                    title: AppLocalizations.of(context)!.bills,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -524,7 +529,7 @@ class _AdminShoppingHistoryScreenState
                   ),
                   _buildSidebarTile(
                     icon: Icons.payment,
-                    title: "Payments",
+                    title: AppLocalizations.of(context)!.payments,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -536,7 +541,7 @@ class _AdminShoppingHistoryScreenState
                   ),
                   _buildSidebarTile(
                     icon: Icons.people_alt,
-                    title: "Dining Member State",
+                    title: AppLocalizations.of(context)!.diningMemberState,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -548,7 +553,7 @@ class _AdminShoppingHistoryScreenState
                   ),
                   _buildSidebarTile(
                     icon: Icons.manage_accounts,
-                    title: "Staff State",
+                    title: AppLocalizations.of(context)!.staffState,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -574,7 +579,7 @@ class _AdminShoppingHistoryScreenState
                 ),
                 child: _buildSidebarTile(
                   icon: Icons.logout,
-                  title: "Logout",
+                  title: AppLocalizations.of(context)!.logout,
                   onTap: _logout,
                   color: Colors.red,
                 ),
@@ -587,14 +592,51 @@ class _AdminShoppingHistoryScreenState
         backgroundColor: const Color(0xFF002B5B),
         iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
-        title: const Text(
-          "Shopping History",
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.shoppingHistory,
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w600,
             fontSize: 18,
           ),
         ),
+        actions: [
+          PopupMenuButton<Locale>(
+            icon: const Icon(
+              Icons.language,
+              color: Colors.white,
+            ),
+            onSelected: (Locale locale) {
+              languageProvider.changeLanguage(locale);
+            },
+            itemBuilder: (BuildContext context) => [
+              PopupMenuItem<Locale>(
+                value: const Locale('en'),
+                child: Row(
+                  children: [
+                    Text(AppLocalizations.of(context)!.english),
+                    if (languageProvider.isEnglish) ...[
+                      const SizedBox(width: 8),
+                      const Icon(Icons.check, color: Colors.green),
+                    ],
+                  ],
+                ),
+              ),
+              PopupMenuItem<Locale>(
+                value: const Locale('bn'),
+                child: Row(
+                  children: [
+                    Text(AppLocalizations.of(context)!.bangla),
+                    if (languageProvider.isBangla) ...[
+                      const SizedBox(width: 8),
+                      const Icon(Icons.check, color: Colors.green),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(
@@ -618,9 +660,9 @@ class _AdminShoppingHistoryScreenState
                       }
                     },
                     icon: const Icon(Icons.add, color: Colors.white),
-                    label: const Text(
-                      "Add Shopping Data",
-                      style: TextStyle(color: Colors.white),
+                    label: Text(
+                      AppLocalizations.of(context)!.addShoppingData,
+                      style: const TextStyle(color: Colors.white),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF1A4D8F),
@@ -637,7 +679,7 @@ class _AdminShoppingHistoryScreenState
                   ElevatedButton.icon(
                     onPressed: _loadShoppingData,
                     icon: const Icon(Icons.refresh),
-                    label: const Text("Refresh"),
+                    label: Text(AppLocalizations.of(context)!.refresh),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
                       foregroundColor: Colors.white,
@@ -655,9 +697,9 @@ class _AdminShoppingHistoryScreenState
               const SizedBox(height: 16),
               Row(
                 children: [
-                  const Text(
-                    "Search:",
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                  Text(
+                    AppLocalizations.of(context)!.search,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -665,7 +707,7 @@ class _AdminShoppingHistoryScreenState
                       controller: _searchController,
                       onChanged: _search,
                       decoration: InputDecoration(
-                        hintText: "Search...",
+                        hintText: "${AppLocalizations.of(context)!.search}...",
                         prefixIcon: const Icon(Icons.search),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -678,27 +720,27 @@ class _AdminShoppingHistoryScreenState
               const SizedBox(height: 16),
               Expanded(
                 child: filteredData.isEmpty
-                    ? const Center(
+                    ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.shopping_cart_outlined,
                               size: 64,
                               color: Colors.grey,
                             ),
-                            SizedBox(height: 16),
+                            const SizedBox(height: 16),
                             Text(
-                              'No shopping data found',
-                              style: TextStyle(
+                              AppLocalizations.of(context)!.noShoppingDataFound,
+                              style: const TextStyle(
                                 fontSize: 18,
                                 color: Colors.grey,
                               ),
                             ),
-                            SizedBox(height: 8),
+                            const SizedBox(height: 8),
                             Text(
-                              'Add some shopping entries to get started',
-                              style: TextStyle(
+                              AppLocalizations.of(context)!.addSomeShoppingEntries,
+                              style: const TextStyle(
                                 fontSize: 14,
                                 color: Colors.grey,
                               ),
@@ -735,15 +777,15 @@ class _AdminShoppingHistoryScreenState
                       }
                       return null;
                     }),
-                    columns: const [
-                      DataColumn(label: Text("Index")),
-                      DataColumn(label: Text("Product Name")),
-                      DataColumn(label: Text("Unit Price (Per Kg/Qty)")),
-                      DataColumn(label: Text("Amount (Kg/Qty)")),
-                      DataColumn(label: Text("Total Price")),
-                      DataColumn(label: Text("Date")),
-                      DataColumn(label: Text("Voucher ID")),
-                      DataColumn(label: Text("Action")),
+                    columns: [
+                      DataColumn(label: Text(AppLocalizations.of(context)!.index)),
+                      DataColumn(label: Text(AppLocalizations.of(context)!.productName)),
+                      DataColumn(label: Text(AppLocalizations.of(context)!.unitPrice)),
+                      DataColumn(label: Text(AppLocalizations.of(context)!.amount)),
+                      DataColumn(label: Text(AppLocalizations.of(context)!.totalPrice)),
+                      DataColumn(label: Text(AppLocalizations.of(context)!.date)),
+                      DataColumn(label: Text(AppLocalizations.of(context)!.voucherId)),
+                      DataColumn(label: Text(AppLocalizations.of(context)!.action)),
                     ],
                     rows: List.generate(filteredData.length, (index) {
                       final entry = filteredData[index];
@@ -815,26 +857,26 @@ class _AdminShoppingHistoryScreenState
                               children: [
                                 if (!isEditing)
                                   _actionButton(
-                                    text: 'Edit',
+                                    text: AppLocalizations.of(context)!.edit,
                                     color: const Color(0xFF0052CC),
                                     onPressed: () => _startEdit(index),
                                   ),
                                 if (isEditing) ...[
                                   _actionButton(
-                                    text: 'Save',
+                                    text: AppLocalizations.of(context)!.save,
                                     color: const Color(0xFF2E8B57),
                                     onPressed: () => _saveEdit(index),
                                   ),
                                   const SizedBox(width: 8),
                                   _actionButton(
-                                    text: 'Cancel',
+                                    text: AppLocalizations.of(context)!.cancel,
                                     color: Colors.grey.shade600,
                                     onPressed: () => _cancelEdit(index),
                                   ),
                                 ],
                                 const SizedBox(width: 8),
                                 _actionButton(
-                                  text: 'Delete',
+                                  text: AppLocalizations.of(context)!.delete,
                                   color: const Color(0xFFCC0000),
                                   onPressed: () => _deleteRow(index),
                                 ),
@@ -851,6 +893,8 @@ class _AdminShoppingHistoryScreenState
           ),
         ),
       ),
+    );
+      },
     );
   }
 }
