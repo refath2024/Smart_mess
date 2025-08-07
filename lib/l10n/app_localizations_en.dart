@@ -488,4 +488,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get failedToRejectUser => 'Failed to reject user';
+
+  @override
+  String get indlEntry => 'Indl Entry';
+
+  @override
+  String get miscEntry => 'Misc Entry';
+
+  @override
+  String get create => 'Create';
+
+  @override
+  String get changeDate => 'Change Date';
+
+  @override
+  String get breakfastEntries => 'Breakfast Entries';
+
+  @override
+  String get lunchEntries => 'Lunch Entries';
+
+  @override
+  String get dinnerEntries => 'Dinner Entries';
+
+  @override
+  String get viewingDate => 'Viewing Date:';
+
+  @override
+  String get totalPriceExpended => 'Total Price Expended';
+
+  @override
+  String get totalPricePerMember => 'Total Price per Member';
 }

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+import 'package:smart_mess/l10n/app_localizations.dart';
+import 'package:smart_mess/providers/language_provider.dart';
 
 import 'admin_home_screen.dart';
 import 'admin_users_screen.dart';
@@ -443,7 +446,7 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Logout failed: $e')),
+          SnackBar(content: Text('${AppLocalizations.of(context)!.logoutFailed}: $e')),
         );
       }
     }
@@ -517,12 +520,12 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                   return Colors.white;
                 },
               ),
-              columns: const [
+              columns: [
                 DataColumn(
                   label: Expanded(
                     child: Text(
-                      'Name',
-                      style: TextStyle(
+                      AppLocalizations.of(context)!.name,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
@@ -534,8 +537,8 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                 DataColumn(
                   label: Expanded(
                     child: Text(
-                      'Unit Price (L/Kg)',
-                      style: TextStyle(
+                      AppLocalizations.of(context)!.unitPrice,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
@@ -547,8 +550,8 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                 DataColumn(
                   label: Expanded(
                     child: Text(
-                      'Amount (L/Kg)',
-                      style: TextStyle(
+                      AppLocalizations.of(context)!.amount,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
@@ -560,8 +563,8 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                 DataColumn(
                   label: Expanded(
                     child: Text(
-                      'Price Expended',
-                      style: TextStyle(
+                      AppLocalizations.of(context)!.totalPrice,
+                      style: const TextStyle(
                         color: Colors.yellow,
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
@@ -580,8 +583,8 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                 DataColumn(
                   label: Expanded(
                     child: Text(
-                      'Dining Member',
-                      style: TextStyle(
+                      AppLocalizations.of(context)!.activeMembers,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
@@ -594,7 +597,7 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                   label: Expanded(
                     child: Text(
                       'Total Price per Member',
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: Colors.lightGreenAccent,
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
@@ -613,8 +616,8 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                 DataColumn(
                   label: Expanded(
                     child: Text(
-                      'Actions',
-                      style: TextStyle(
+                      AppLocalizations.of(context)!.action,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
@@ -1508,7 +1511,9 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
       );
     }
 
-    return Scaffold(
+    return Consumer<LanguageProvider>(
+      builder: (context, languageProvider, child) {
+        return Scaffold(
       drawer: Drawer(
         child: Column(
           children: [
@@ -1550,7 +1555,7 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                             ),
                           ),
                           Text(
-                            'BA: ${_currentUserData!['ba_no'] ?? ''}',
+                            '${AppLocalizations.of(context)!.baNumber}: ${_currentUserData!['ba_no'] ?? ''}',
                             style: const TextStyle(
                               color: Colors.white70,
                               fontSize: 12,
@@ -1569,7 +1574,7 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                 children: [
                   _buildSidebarTile(
                     icon: Icons.dashboard,
-                    title: "Home",
+                    title: AppLocalizations.of(context)!.home,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -1581,7 +1586,7 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.people,
-                    title: "Users",
+                    title: AppLocalizations.of(context)!.users,
                     onTap: () {
                       Navigator.push(
                         context,
@@ -1593,7 +1598,7 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.pending,
-                    title: "Pending IDs",
+                    title: AppLocalizations.of(context)!.pendingIds,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -1605,7 +1610,7 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.history,
-                    title: "Shopping History",
+                    title: AppLocalizations.of(context)!.shoppingHistory,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -1618,7 +1623,7 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.receipt,
-                    title: "Voucher List",
+                    title: AppLocalizations.of(context)!.voucherList,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -1630,7 +1635,7 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.storage,
-                    title: "Inventory",
+                    title: AppLocalizations.of(context)!.inventory,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -1642,13 +1647,13 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.food_bank,
-                    title: "Messing",
+                    title: AppLocalizations.of(context)!.messing,
                     onTap: () => Navigator.pop(context),
                     selected: true,
                   ),
                   _buildSidebarTile(
                     icon: Icons.menu_book,
-                    title: "Monthly Menu",
+                    title: AppLocalizations.of(context)!.monthlyMenu,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -1660,7 +1665,7 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.analytics,
-                    title: "Meal State",
+                    title: AppLocalizations.of(context)!.mealState,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -1672,7 +1677,7 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.thumb_up,
-                    title: "Menu Vote",
+                    title: AppLocalizations.of(context)!.menuVote,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -1684,7 +1689,7 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.receipt_long,
-                    title: "Bills",
+                    title: AppLocalizations.of(context)!.bills,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -1696,7 +1701,7 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.payment,
-                    title: "Payments",
+                    title: AppLocalizations.of(context)!.payments,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -1708,7 +1713,7 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.people_alt,
-                    title: "Dining Member State",
+                    title: AppLocalizations.of(context)!.diningMemberState,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -1720,7 +1725,7 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.manage_accounts,
-                    title: "Staff State",
+                    title: AppLocalizations.of(context)!.staffState,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -1746,7 +1751,7 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                 ),
                 child: _buildSidebarTile(
                   icon: Icons.logout,
-                  title: "Logout",
+                  title: AppLocalizations.of(context)!.logout,
                   onTap: _logout,
                   color: Colors.red,
                 ),
@@ -1759,14 +1764,95 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
         backgroundColor: const Color(0xFF002B5B),
         iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
-        title: const Text(
-          "Messing",
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.messing,
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w600,
             fontSize: 18,
           ),
         ),
+        actions: [
+          PopupMenuButton<String>(
+            icon: Container(
+              width: 32,
+              height: 24,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(3),
+                border: Border.all(color: Colors.white70, width: 0.5),
+              ),
+              child: languageProvider.isEnglish
+                  ? CustomPaint(
+                      painter: _EnglandFlagPainter(),
+                      size: const Size(32, 24),
+                    )
+                  : CustomPaint(
+                      painter: _BangladeshFlagPainter(),
+                      size: const Size(32, 24),
+                    ),
+            ),
+            onSelected: (String value) {
+              if (value == 'english') {
+                languageProvider.changeLanguage(const Locale('en'));
+              } else if (value == 'bangla') {
+                languageProvider.changeLanguage(const Locale('bn'));
+              }
+            },
+            itemBuilder: (BuildContext context) => [
+              PopupMenuItem<String>(
+                value: 'english',
+                child: Row(
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 18,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(2),
+                        border: Border.all(color: Colors.grey.shade300, width: 0.5),
+                      ),
+                      child: CustomPaint(
+                        painter: _EnglandFlagPainter(),
+                        size: const Size(24, 18),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Text('English'),
+                    if (languageProvider.isEnglish) ...[
+                      const Spacer(),
+                      Icon(Icons.check, color: Colors.green.shade600, size: 18),
+                    ],
+                  ],
+                ),
+              ),
+              PopupMenuItem<String>(
+                value: 'bangla',
+                child: Row(
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 18,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(2),
+                        border: Border.all(color: Colors.grey.shade300, width: 0.5),
+                      ),
+                      child: CustomPaint(
+                        painter: _BangladeshFlagPainter(),
+                        size: const Size(24, 18),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Text('বাংলা'),
+                    if (languageProvider.isBangla) ...[
+                      const Spacer(),
+                      Icon(Icons.check, color: Colors.green.shade600, size: 18),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -1788,9 +1874,9 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                         );
                       },
                       icon: const Icon(Icons.person_add, color: Colors.white),
-                      label: const Text(
-                        "Indl Entry",
-                        style: TextStyle(
+                      label: Text(
+                        AppLocalizations.of(context)!.indlEntry,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w500,
                         ),
@@ -1818,9 +1904,9 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                         );
                       },
                       icon: const Icon(Icons.group_add, color: Colors.white),
-                      label: const Text(
-                        "Misc Entry",
-                        style: TextStyle(
+                      label: Text(
+                        AppLocalizations.of(context)!.miscEntry,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w500,
                         ),
@@ -1848,9 +1934,9 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                         ).then((_) => _loadMessingData());
                       },
                       icon: const Icon(Icons.add, color: Colors.white),
-                      label: const Text(
-                        "Create",
-                        style: TextStyle(
+                      label: Text(
+                        AppLocalizations.of(context)!.create,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w500,
                         ),
@@ -1874,7 +1960,7 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                 TextField(
                   controller: searchController,
                   decoration: InputDecoration(
-                    hintText: "Search...",
+                    hintText: AppLocalizations.of(context)!.search,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -1900,9 +1986,9 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Viewing Date:',
-                              style: TextStyle(
+                            Text(
+                              AppLocalizations.of(context)!.viewingDate,
+                              style: const TextStyle(
                                   fontSize: 16, fontWeight: FontWeight.bold),
                             ),
                             const SizedBox(height: 4),
@@ -1916,7 +2002,7 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                         ElevatedButton.icon(
                           onPressed: _selectDate,
                           icon: const Icon(Icons.calendar_today),
-                          label: const Text('Change Date'),
+                          label: Text(AppLocalizations.of(context)!.changeDate),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF1A4D8F),
                             foregroundColor: Colors.white,
@@ -1936,7 +2022,7 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                   ),
                 ),
                 _buildTable(
-                  "Breakfast Entries",
+                  AppLocalizations.of(context)!.breakfastEntries,
                   _breakfastEntries.isNotEmpty
                       ? _breakfastEntries
                       : breakfastEntries,
@@ -1963,8 +2049,8 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                       children: [
                         Column(
                           children: [
-                            const Text('Total Price Expended',
-                                style: TextStyle(fontWeight: FontWeight.bold)),
+                            Text(AppLocalizations.of(context)!.totalPriceExpended,
+                                style: const TextStyle(fontWeight: FontWeight.bold)),
                             Text(
                                 '${_breakfastTotalExpended.toStringAsFixed(2)} BDT',
                                 style: const TextStyle(
@@ -1975,8 +2061,8 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                         ),
                         Column(
                           children: [
-                            const Text('Total Price per Member',
-                                style: TextStyle(fontWeight: FontWeight.bold)),
+                            Text(AppLocalizations.of(context)!.totalPricePerMember,
+                                style: const TextStyle(fontWeight: FontWeight.bold)),
                             Text(
                                 '${_breakfastTotalPerMember.toStringAsFixed(2)} BDT',
                                 style: const TextStyle(
@@ -1989,7 +2075,7 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                     ),
                   ),
                 _buildTable(
-                  "Lunch Entries",
+                  AppLocalizations.of(context)!.lunchEntries,
                   _lunchEntries.isNotEmpty ? _lunchEntries : lunchEntries,
                   editingLunchIndex,
                   lunchControllers,
@@ -2014,8 +2100,8 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                       children: [
                         Column(
                           children: [
-                            const Text('Total Price Expended',
-                                style: TextStyle(fontWeight: FontWeight.bold)),
+                            Text(AppLocalizations.of(context)!.totalPriceExpended,
+                                style: const TextStyle(fontWeight: FontWeight.bold)),
                             Text(
                                 '${_lunchTotalExpended.toStringAsFixed(2)} BDT',
                                 style: const TextStyle(
@@ -2026,8 +2112,8 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                         ),
                         Column(
                           children: [
-                            const Text('Total Price per Member',
-                                style: TextStyle(fontWeight: FontWeight.bold)),
+                            Text(AppLocalizations.of(context)!.totalPricePerMember,
+                                style: const TextStyle(fontWeight: FontWeight.bold)),
                             Text(
                                 '${_lunchTotalPerMember.toStringAsFixed(2)} BDT',
                                 style: const TextStyle(
@@ -2040,7 +2126,7 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                     ),
                   ),
                 _buildTable(
-                  "Dinner Entries",
+                  AppLocalizations.of(context)!.dinnerEntries,
                   _dinnerEntries.isNotEmpty ? _dinnerEntries : dinnerEntries,
                   editingDinnerIndex,
                   dinnerControllers,
@@ -2065,8 +2151,8 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                       children: [
                         Column(
                           children: [
-                            const Text('Total Price Expended',
-                                style: TextStyle(fontWeight: FontWeight.bold)),
+                            Text(AppLocalizations.of(context)!.totalPriceExpended,
+                                style: const TextStyle(fontWeight: FontWeight.bold)),
                             Text(
                                 '${_dinnerTotalExpended.toStringAsFixed(2)} BDT',
                                 style: const TextStyle(
@@ -2077,8 +2163,8 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
                         ),
                         Column(
                           children: [
-                            const Text('Total Price per Member',
-                                style: TextStyle(fontWeight: FontWeight.bold)),
+                            Text(AppLocalizations.of(context)!.totalPricePerMember,
+                                style: const TextStyle(fontWeight: FontWeight.bold)),
                             Text(
                                 '${_dinnerTotalPerMember.toStringAsFixed(2)} BDT',
                                 style: const TextStyle(
@@ -2096,5 +2182,60 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
         ),
       ),
     );
+      },
+    );
   }
+}
+
+// Custom painters for flags
+class _EnglandFlagPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint();
+    
+    // White background
+    paint.color = Colors.white;
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
+    
+    // Red cross
+    paint.color = Colors.red;
+    paint.strokeWidth = size.height * 0.15;
+    
+    // Vertical line
+    canvas.drawLine(
+      Offset(size.width / 2, 0),
+      Offset(size.width / 2, size.height),
+      paint,
+    );
+    
+    // Horizontal line
+    canvas.drawLine(
+      Offset(0, size.height / 2),
+      Offset(size.width, size.height / 2),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
+}
+
+class _BangladeshFlagPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint();
+    
+    // Green background
+    paint.color = const Color(0xFF006A4E);
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
+    
+    // Red circle (slightly offset to the left)
+    paint.color = const Color(0xFFF42A41);
+    final center = Offset(size.width * 0.4, size.height / 2);
+    final radius = size.height * 0.3;
+    canvas.drawCircle(center, radius, paint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

@@ -165,5 +165,15 @@
   "userAccepted": "User has been accepted and can now log in to the system.",
   "userRejected": "User has been rejected.",
   "failedToAcceptUser": "Failed to accept user",
-  "failedToRejectUser": "Failed to reject user"
+  "failedToRejectUser": "Failed to reject user",
+  "indlEntry": "Indl Entry",
+  "miscEntry": "Misc Entry",
+  "create": "Create",
+  "changeDate": "Change Date",
+  "breakfastEntries": "Breakfast Entries",
+  "lunchEntries": "Lunch Entries",
+  "dinnerEntries": "Dinner Entries",
+  "viewingDate": "Viewing Date:",
+  "totalPriceExpended": "Total Price Expended",
+  "totalPricePerMember": "Total Price per Member"
 }

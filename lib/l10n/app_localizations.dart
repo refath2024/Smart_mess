@@ -1045,6 +1045,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to reject user'**
   String get failedToRejectUser;
+
+  /// No description provided for @indlEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Indl Entry'**
+  String get indlEntry;
+
+  /// No description provided for @miscEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Misc Entry'**
+  String get miscEntry;
+
+  /// No description provided for @create.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get create;
+
+  /// No description provided for @changeDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Date'**
+  String get changeDate;
+
+  /// No description provided for @breakfastEntries.
+  ///
+  /// In en, this message translates to:
+  /// **'Breakfast Entries'**
+  String get breakfastEntries;
+
+  /// No description provided for @lunchEntries.
+  ///
+  /// In en, this message translates to:
+  /// **'Lunch Entries'**
+  String get lunchEntries;
+
+  /// No description provided for @dinnerEntries.
+  ///
+  /// In en, this message translates to:
+  /// **'Dinner Entries'**
+  String get dinnerEntries;
+
+  /// No description provided for @viewingDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Viewing Date:'**
+  String get viewingDate;
+
+  /// No description provided for @totalPriceExpended.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Price Expended'**
+  String get totalPriceExpended;
+
+  /// No description provided for @totalPricePerMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Price per Member'**
+  String get totalPricePerMember;
 }
 
 class _AppLocalizationsDelegate

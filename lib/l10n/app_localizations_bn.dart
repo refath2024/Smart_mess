@@ -488,4 +488,34 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get failedToRejectUser => 'ব্যবহারকারীকে প্রত্যাখ্যান করতে ব্যর্থ';
+
+  @override
+  String get indlEntry => 'ব্যক্তিগত এন্ট্রি';
+
+  @override
+  String get miscEntry => 'বিবিধ এন্ট্রি';
+
+  @override
+  String get create => 'তৈরি করুন';
+
+  @override
+  String get changeDate => 'তারিখ পরিবর্তন';
+
+  @override
+  String get breakfastEntries => 'নাস্তার এন্ট্রি';
+
+  @override
+  String get lunchEntries => 'দুপুরের খাবারের এন্ট্রি';
+
+  @override
+  String get dinnerEntries => 'রাতের খাবারের এন্ট্রি';
+
+  @override
+  String get viewingDate => 'দেখার তারিখ:';
+
+  @override
+  String get totalPriceExpended => 'মোট ব্যয়িত মূল্য';
+
+  @override
+  String get totalPricePerMember => 'প্রতি সদস্যের মোট মূল্য';
 }
