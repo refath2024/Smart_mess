@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'admin_login_screen.dart';
 import 'admin_users_screen.dart';
 import 'admin_pending_ids_screen.dart';
@@ -14,6 +15,8 @@ import 'admin_bill_screen.dart';
 import 'admin_monthly_menu_screen.dart';
 import 'admin_menu_vote_screen.dart';
 import '../../services/admin_auth_service.dart';
+import '../../providers/language_provider.dart';
+import '../../l10n/app_localizations.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -95,7 +98,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Logout failed: $e')),
+          SnackBar(content: Text('${AppLocalizations.of(context)!.logoutFailed}: $e')),
         );
       }
     }
@@ -202,11 +205,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildMealItem(
-                        "Breakfast", meals["breakfast"] ?? "Not set"),
+                        AppLocalizations.of(context)!.breakfast, meals["breakfast"] ?? AppLocalizations.of(context)!.notSet),
                     const SizedBox(height: 8),
-                    _buildMealItem("Lunch", meals["lunch"] ?? "Not set"),
+                    _buildMealItem(AppLocalizations.of(context)!.lunch, meals["lunch"] ?? AppLocalizations.of(context)!.notSet),
                     const SizedBox(height: 8),
-                    _buildMealItem("Dinner", meals["dinner"] ?? "Not set"),
+                    _buildMealItem(AppLocalizations.of(context)!.dinner, meals["dinner"] ?? AppLocalizations.of(context)!.notSet),
                   ],
                 ),
               ),
@@ -254,9 +257,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     }
 
     if (!_isAuthenticated) {
-      return const Scaffold(
+      return Scaffold(
         body: Center(
-          child: Text('Authentication required'),
+          child: Text(AppLocalizations.of(context)!.authenticationRequired),
         ),
       );
     }
@@ -322,13 +325,13 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 children: [
                   _buildSidebarTile(
                     icon: Icons.dashboard,
-                    title: "Home",
+                    title: AppLocalizations.of(context)!.home,
                     onTap: () => Navigator.pop(context),
                     selected: true,
                   ),
                   _buildSidebarTile(
                     icon: Icons.people,
-                    title: "Users",
+                    title: AppLocalizations.of(context)!.users,
                     onTap: () {
                       Navigator.push(
                         context,
@@ -340,7 +343,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.pending,
-                    title: "Pending IDs",
+                    title: AppLocalizations.of(context)!.pendingIds,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -352,7 +355,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.history,
-                    title: "Shopping History",
+                    title: AppLocalizations.of(context)!.shoppingHistory,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -365,7 +368,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.receipt,
-                    title: "Voucher List",
+                    title: AppLocalizations.of(context)!.voucherList,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -377,7 +380,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.storage,
-                    title: "Inventory",
+                    title: AppLocalizations.of(context)!.inventory,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -389,7 +392,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.food_bank,
-                    title: "Messing",
+                    title: AppLocalizations.of(context)!.messing,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -401,7 +404,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.menu_book,
-                    title: "Monthly Menu",
+                    title: AppLocalizations.of(context)!.monthlyMenu,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -413,7 +416,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.analytics,
-                    title: "Meal State",
+                    title: AppLocalizations.of(context)!.mealState,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -425,7 +428,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.thumb_up,
-                    title: "Menu Vote",
+                    title: AppLocalizations.of(context)!.menuVote,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -437,7 +440,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.receipt_long,
-                    title: "Bills",
+                    title: AppLocalizations.of(context)!.bills,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -449,7 +452,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.payment,
-                    title: "Payments",
+                    title: AppLocalizations.of(context)!.payments,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -461,7 +464,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.people_alt,
-                    title: "Dining Member State",
+                    title: AppLocalizations.of(context)!.diningMemberState,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -473,7 +476,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.manage_accounts,
-                    title: "Staff State",
+                    title: AppLocalizations.of(context)!.staffState,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -499,7 +502,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 ),
                 child: _buildSidebarTile(
                   icon: Icons.logout,
-                  title: "Logout",
+                  title: AppLocalizations.of(context)!.logout,
                   onTap: _logout,
                   color: Colors.red,
                 ),
@@ -512,14 +515,49 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         backgroundColor: const Color(0xFF002B5B),
         iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
-        title: const Text(
-          "Admin Dashboard",
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.adminDashboard,
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w600,
             fontSize: 18,
           ),
         ),
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.language, color: Colors.white),
+            onSelected: (String value) {
+              final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+              if (value == 'en') {
+                languageProvider.changeLanguage(const Locale('en'));
+              } else if (value == 'bn') {
+                languageProvider.changeLanguage(const Locale('bn'));
+              }
+            },
+            itemBuilder: (BuildContext context) => [
+              PopupMenuItem<String>(
+                value: 'en',
+                child: Row(
+                  children: [
+                    const Icon(Icons.language),
+                    const SizedBox(width: 8),
+                    Text(AppLocalizations.of(context)!.english),
+                  ],
+                ),
+              ),
+              PopupMenuItem<String>(
+                value: 'bn',
+                child: Row(
+                  children: [
+                    const Icon(Icons.language),
+                    const SizedBox(width: 8),
+                    Text(AppLocalizations.of(context)!.bangla),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -528,46 +566,46 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  "Overview",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                Text(
+                  AppLocalizations.of(context)!.overview,
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 Row(
                   children: [
                     _buildDemoBox(
-                        "Total\nUsers", "120", const Color(0xFF1A4D8F)),
+                        AppLocalizations.of(context)!.totalUsers, "120", const Color(0xFF1A4D8F)),
                     _buildDemoBox(
-                        "Pending\nRequests", "8", const Color(0xFFE65100)),
+                        AppLocalizations.of(context)!.pendingRequests, "8", const Color(0xFFE65100)),
                     _buildDemoBox(
-                        "Active\nMeals", "85", const Color(0xFF2E7D32)),
+                        AppLocalizations.of(context)!.activeMeals, "85", const Color(0xFF2E7D32)),
                   ],
                 ),
                 const SizedBox(height: 24),
-                const Text(
-                  "Welcome back, Admin!",
-                  style: TextStyle(fontSize: 16),
+                Text(
+                  AppLocalizations.of(context)!.welcomeBackAdmin,
+                  style: const TextStyle(fontSize: 16),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  "Monitor user activity, update menus, and manage system settings from here.",
-                  style: TextStyle(color: Colors.grey),
+                Text(
+                  AppLocalizations.of(context)!.monitorUserActivity,
+                  style: const TextStyle(color: Colors.grey),
                 ),
                 const SizedBox(height: 24),
                 _buildMenuCard(
-                  "Today's Menu",
+                  AppLocalizations.of(context)!.todaysMenu,
                   {
-                    "breakfast": "Paratha, Vegetables, Tea",
-                    "lunch": "Rice, Chicken Curry, Dal",
-                    "dinner": "Rice, Fish Curry, Mixed Vegetables",
+                    "breakfast": AppLocalizations.of(context)!.parathaVegetablesTea,
+                    "lunch": AppLocalizations.of(context)!.riceChickenCurryDal,
+                    "dinner": AppLocalizations.of(context)!.riceFishCurryMixedVegetables,
                   },
                 ),
                 _buildMenuCard(
-                  "Tomorrow's Menu",
+                  AppLocalizations.of(context)!.tomorrowsMenu,
                   {
-                    "breakfast": "Ruti, Egg Curry, Tea",
-                    "lunch": "Rice, Beef Curry, Dal",
-                    "dinner": "Biriyani, Chicken Roast, Salad",
+                    "breakfast": AppLocalizations.of(context)!.rutiEggCurryTea,
+                    "lunch": AppLocalizations.of(context)!.riceBeefCurryDal,
+                    "dinner": AppLocalizations.of(context)!.biriyaniChickenRoastSalad,
                   },
                 ),
               ],
