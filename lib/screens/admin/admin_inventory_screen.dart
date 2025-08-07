@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+import 'package:smart_mess/l10n/app_localizations.dart';
+import 'package:smart_mess/providers/language_provider.dart';
 
 import 'admin_home_screen.dart';
 import 'admin_users_screen.dart';
@@ -66,7 +69,7 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading inventory: $e')),
+          SnackBar(content: Text('${AppLocalizations.of(context)!.errorLoadingInventory}: $e')),
         );
       }
     }
@@ -130,7 +133,7 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Logout failed: $e')),
+          SnackBar(content: Text('${AppLocalizations.of(context)!.logoutFailed}: $e')),
         );
       }
     }
@@ -166,6 +169,19 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
   final TextEditingController _searchController = TextEditingController();
 
   final List<String> _types = ['fresh', 'utensils', 'ration'];
+
+  String _getTranslatedType(String type) {
+    switch (type) {
+      case 'fresh':
+        return AppLocalizations.of(context)!.fresh;
+      case 'utensils':
+        return AppLocalizations.of(context)!.utensils;
+      case 'ration':
+        return AppLocalizations.of(context)!.ration;
+      default:
+        return type;
+    }
+  }
 
   @override
   void dispose() {
@@ -219,7 +235,7 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
     } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Error updating inventory: $e')));
+      ).showSnackBar(SnackBar(content: Text('${AppLocalizations.of(context)!.errorUpdatingInventory}: $e')));
     }
   }
 
@@ -228,18 +244,18 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Confirm Delete'),
+          title: Text(AppLocalizations.of(context)!.confirmDelete),
           content: Text(
-              'Are you sure you want to delete "${filteredData[index]['productName']}"?'),
+              '${AppLocalizations.of(context)!.areYouSureYouWantToDelete} "${filteredData[index]['productName']}"?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
+              child: Text(AppLocalizations.of(context)!.cancel),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
               style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Delete'),
+              child: Text(AppLocalizations.of(context)!.delete),
             ),
           ],
         );
@@ -260,13 +276,13 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Inventory item deleted')),
+            SnackBar(content: Text(AppLocalizations.of(context)!.inventoryItemDeleted)),
           );
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error deleting inventory: $e')),
+            SnackBar(content: Text('${AppLocalizations.of(context)!.errorDeletingInventory}: $e')),
           );
         }
       }
@@ -332,7 +348,9 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
       );
     }
 
-    return Scaffold(
+    return Consumer<LanguageProvider>(
+      builder: (context, languageProvider, child) {
+        return Scaffold(
       drawer: Drawer(
         child: Column(
           children: [
@@ -374,7 +392,7 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                             ),
                           ),
                           Text(
-                            'BA: ${_currentUserData!['ba_no'] ?? ''}',
+                            '${AppLocalizations.of(context)!.baNumber}: ${_currentUserData!['ba_no'] ?? ''}',
                             style: const TextStyle(
                               color: Colors.white70,
                               fontSize: 12,
@@ -393,7 +411,7 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                 children: [
                   _buildSidebarTile(
                     icon: Icons.dashboard,
-                    title: "Home",
+                    title: AppLocalizations.of(context)!.home,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -405,7 +423,7 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.people,
-                    title: "Users",
+                    title: AppLocalizations.of(context)!.users,
                     onTap: () {
                       Navigator.push(
                         context,
@@ -417,7 +435,7 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.pending,
-                    title: "Pending IDs",
+                    title: AppLocalizations.of(context)!.pendingIds,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -429,7 +447,7 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.history,
-                    title: "Shopping History",
+                    title: AppLocalizations.of(context)!.shoppingHistory,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -442,7 +460,7 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.receipt,
-                    title: "Voucher List",
+                    title: AppLocalizations.of(context)!.voucherList,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -454,13 +472,13 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.storage,
-                    title: "Inventory",
+                    title: AppLocalizations.of(context)!.inventory,
                     onTap: () => Navigator.pop(context),
                     selected: true,
                   ),
                   _buildSidebarTile(
                     icon: Icons.food_bank,
-                    title: "Messing",
+                    title: AppLocalizations.of(context)!.messing,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -472,7 +490,7 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.menu_book,
-                    title: "Monthly Menu",
+                    title: AppLocalizations.of(context)!.monthlyMenu,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -484,7 +502,7 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.analytics,
-                    title: "Meal State",
+                    title: AppLocalizations.of(context)!.mealState,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -495,8 +513,8 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                     },
                   ),
                   _buildSidebarTile(
-                    icon: Icons.thumb_up,
-                    title: "Menu Vote",
+                    icon: Icons.how_to_vote,
+                    title: AppLocalizations.of(context)!.menuVote,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -508,7 +526,7 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.receipt_long,
-                    title: "Bills",
+                    title: AppLocalizations.of(context)!.bills,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -520,7 +538,7 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.payment,
-                    title: "Payments",
+                    title: AppLocalizations.of(context)!.payments,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -532,7 +550,7 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.people_alt,
-                    title: "Dining Member State",
+                    title: AppLocalizations.of(context)!.diningMemberState,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -544,7 +562,7 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.manage_accounts,
-                    title: "Staff State",
+                    title: AppLocalizations.of(context)!.staffState,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -570,7 +588,7 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                 ),
                 child: _buildSidebarTile(
                   icon: Icons.logout,
-                  title: "Logout",
+                  title: AppLocalizations.of(context)!.logout,
                   onTap: _logout,
                   color: Colors.red,
                 ),
@@ -583,14 +601,140 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
         backgroundColor: const Color(0xFF002B5B),
         iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
-        title: const Text(
-          "Inventory",
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.inventory,
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w600,
             fontSize: 18,
           ),
         ),
+        actions: [
+          PopupMenuButton<Locale>(
+            icon: const Icon(
+              Icons.language,
+              color: Colors.white,
+            ),
+            onSelected: (Locale locale) {
+              languageProvider.changeLanguage(locale);
+            },
+            itemBuilder: (BuildContext context) => [
+              PopupMenuItem<Locale>(
+                value: const Locale('en'),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 20,
+                      height: 14,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(2),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(1),
+                        child: Stack(
+                          children: [
+                            // Red cross background
+                            Container(color: const Color(0xFF012169)), // Blue background
+                            // White cross
+                            Positioned(
+                              left: 0,
+                              right: 0,
+                              top: 6,
+                              child: Container(height: 2, color: Colors.white),
+                            ),
+                            Positioned(
+                              top: 0,
+                              bottom: 0,
+                              left: 9,
+                              child: Container(width: 2, color: Colors.white),
+                            ),
+                            // Red cross
+                            Positioned(
+                              left: 0,
+                              right: 0,
+                              top: 6.5,
+                              child: Container(height: 1, color: const Color(0xFFCE1124)),
+                            ),
+                            Positioned(
+                              top: 0,
+                              bottom: 0,
+                              left: 9.5,
+                              child: Container(width: 1, color: const Color(0xFFCE1124)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(AppLocalizations.of(context)!.english),
+                    if (languageProvider.isEnglish) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Colors.green,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              PopupMenuItem<Locale>(
+                value: const Locale('bn'),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 20,
+                      height: 14,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(2),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(1),
+                        child: Stack(
+                          children: [
+                            // Green background
+                            Container(color: const Color(0xFF006A4E)),
+                            // Red circle
+                            Positioned(
+                              left: 6,
+                              top: 3,
+                              child: Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFF42A41),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(AppLocalizations.of(context)!.bangla),
+                    if (languageProvider.isBangla) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Colors.green,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -611,7 +755,7 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                     }
                   },
                   icon: const Icon(Icons.add),
-                  label: const Text("Add Inventory Entry"),
+                  label: Text(AppLocalizations.of(context)!.addInventoryEntry),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF0052CC),
                     foregroundColor: Colors.white,
@@ -660,8 +804,8 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                 });
               },
               decoration: InputDecoration(
-                labelText: 'Search',
-                hintText: 'Search by Product Name, Type...',
+                labelText: AppLocalizations.of(context)!.search,
+                hintText: AppLocalizations.of(context)!.searchByProductName,
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -678,7 +822,7 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
             // Inventory table
             Expanded(
               child: filteredData.isEmpty
-                  ? const Center(
+                  ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -689,7 +833,7 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                           ),
                           SizedBox(height: 16),
                           Text(
-                            'No inventory items found',
+                            AppLocalizations.of(context)!.noInventoryItemsFound,
                             style: TextStyle(
                               fontSize: 18,
                               color: Colors.grey,
@@ -697,7 +841,7 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                           ),
                           SizedBox(height: 8),
                           Text(
-                            'Add some inventory items to get started',
+                            AppLocalizations.of(context)!.addSomeInventoryItems,
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.grey,
@@ -716,12 +860,12 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
-                        columns: const [
-                          DataColumn(label: Text("Index")),
-                          DataColumn(label: Text("Product Name")),
-                          DataColumn(label: Text("Quantity Held")),
-                          DataColumn(label: Text("Type")),
-                          DataColumn(label: Text("Action")),
+                        columns: [
+                          DataColumn(label: Text(AppLocalizations.of(context)!.index)),
+                          DataColumn(label: Text(AppLocalizations.of(context)!.productName)),
+                          DataColumn(label: Text(AppLocalizations.of(context)!.quantityHeld)),
+                          DataColumn(label: Text(AppLocalizations.of(context)!.type)),
+                          DataColumn(label: Text(AppLocalizations.of(context)!.action)),
                         ],
                         rows: List.generate(filteredData.length, (index) {
                           final entry = filteredData[index];
@@ -778,16 +922,14 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                                               (type) => DropdownMenuItem(
                                                 value: type,
                                                 child: Text(
-                                                  type[0].toUpperCase() +
-                                                      type.substring(1),
+                                                  _getTranslatedType(type),
                                                 ),
                                               ),
                                             )
                                             .toList(),
                                       )
                                     : Text(
-                                        entry['type'][0].toUpperCase() +
-                                            entry['type'].substring(1),
+                                        _getTranslatedType(entry['type']),
                                       ),
                               ),
                               DataCell(
@@ -795,26 +937,26 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                                   children: [
                                     if (!isEditing)
                                       _actionButton(
-                                        text: "Edit",
+                                        text: AppLocalizations.of(context)!.edit,
                                         color: const Color(0xFF0052CC),
                                         onPressed: () => _startEdit(index),
                                       ),
                                     if (isEditing) ...[
                                       _actionButton(
-                                        text: "Save",
+                                        text: AppLocalizations.of(context)!.save,
                                         color: Colors.green,
                                         onPressed: () => _saveEdit(index),
                                       ),
                                       const SizedBox(width: 6),
                                       _actionButton(
-                                        text: "Cancel",
+                                        text: AppLocalizations.of(context)!.cancel,
                                         color: Colors.grey,
                                         onPressed: () => _cancelEdit(index),
                                       ),
                                     ],
                                     const SizedBox(width: 6),
                                     _actionButton(
-                                      text: "Delete",
+                                      text: AppLocalizations.of(context)!.delete,
                                       color: Colors.red,
                                       onPressed: () => _deleteRow(index),
                                     ),
@@ -830,6 +972,8 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
           ],
         ),
       ),
+    );
+      },
     );
   }
 }
