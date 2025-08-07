@@ -1,6 +1,9 @@
 // admin_voucher_screen.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+import 'package:smart_mess/l10n/app_localizations.dart';
+import 'package:smart_mess/providers/language_provider.dart';
 import 'package:smart_mess/services/admin_auth_service.dart';
 
 import 'admin_home_screen.dart';
@@ -67,7 +70,7 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading vouchers: $e')),
+          SnackBar(content: Text('${AppLocalizations.of(context)!.errorLoadingVouchers}: $e')),
         );
       }
     }
@@ -158,11 +161,11 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
 
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Voucher updated')));
+      ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.voucherUpdated)));
     } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Error updating voucher: $e')));
+      ).showSnackBar(SnackBar(content: Text('${AppLocalizations.of(context)!.errorUpdatingVoucher}: $e')));
     }
   }
 
@@ -171,18 +174,18 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Confirm Delete'),
+          title: Text(AppLocalizations.of(context)!.confirmDelete),
           content: Text(
-              'Are you sure you want to delete voucher for ${filteredData[index]['buyer']}?'),
+              '${AppLocalizations.of(context)!.areYouSureYouWantToDelete} voucher for ${filteredData[index]['buyer']}?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
+              child: Text(AppLocalizations.of(context)!.cancel),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
               style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Delete'),
+              child: Text(AppLocalizations.of(context)!.delete),
             ),
           ],
         );
@@ -203,13 +206,13 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Voucher deleted')),
+            SnackBar(content: Text(AppLocalizations.of(context)!.voucherDeleted)),
           );
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error deleting voucher: $e')),
+            SnackBar(content: Text('${AppLocalizations.of(context)!.errorDeletingVoucher}: $e')),
           );
         }
       }
@@ -294,7 +297,7 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Logout failed: $e')),
+          SnackBar(content: Text('${AppLocalizations.of(context)!.logoutFailed}: $e')),
         );
       }
     }
@@ -310,7 +313,9 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
       );
     }
 
-    return Scaffold(
+    return Consumer<LanguageProvider>(
+      builder: (context, languageProvider, child) {
+        return Scaffold(
       drawer: Drawer(
         child: Column(
           children: [
@@ -371,7 +376,7 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                 children: [
                   _buildSidebarTile(
                     icon: Icons.dashboard,
-                    title: "Home",
+                    title: AppLocalizations.of(context)!.home,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -383,7 +388,7 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.people,
-                    title: "Users",
+                    title: AppLocalizations.of(context)!.users,
                     onTap: () {
                       Navigator.push(
                         context,
@@ -395,7 +400,7 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.pending,
-                    title: "Pending IDs",
+                    title: AppLocalizations.of(context)!.pendingIds,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -407,7 +412,7 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.history,
-                    title: "Shopping History",
+                    title: AppLocalizations.of(context)!.shoppingHistory,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -420,13 +425,13 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.receipt,
-                    title: "Voucher List",
+                    title: AppLocalizations.of(context)!.voucherList,
                     onTap: () => Navigator.pop(context),
                     selected: true,
                   ),
                   _buildSidebarTile(
                     icon: Icons.storage,
-                    title: "Inventory",
+                    title: AppLocalizations.of(context)!.inventory,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -438,7 +443,7 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.food_bank,
-                    title: "Messing",
+                    title: AppLocalizations.of(context)!.messing,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -450,7 +455,7 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.menu_book,
-                    title: "Monthly Menu",
+                    title: AppLocalizations.of(context)!.monthlyMenu,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -462,7 +467,7 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.analytics,
-                    title: "Meal State",
+                    title: AppLocalizations.of(context)!.mealState,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -474,7 +479,7 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.thumb_up,
-                    title: "Menu Vote",
+                    title: AppLocalizations.of(context)!.menuVote,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -486,7 +491,7 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.receipt_long,
-                    title: "Bills",
+                    title: AppLocalizations.of(context)!.bills,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -498,7 +503,7 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.payment,
-                    title: "Payments",
+                    title: AppLocalizations.of(context)!.payments,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -510,7 +515,7 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.people_alt,
-                    title: "Dining Member State",
+                    title: AppLocalizations.of(context)!.diningMemberState,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -522,7 +527,7 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.manage_accounts,
-                    title: "Staff State",
+                    title: AppLocalizations.of(context)!.staffState,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -548,7 +553,7 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                 ),
                 child: _buildSidebarTile(
                   icon: Icons.logout,
-                  title: "Logout",
+                  title: AppLocalizations.of(context)!.logout,
                   onTap: _logout,
                   color: Colors.red,
                 ),
@@ -561,14 +566,48 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
         backgroundColor: const Color(0xFF002B5B),
         iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
-        title: const Text(
-          "Voucher List",
+        title: Text(
+          AppLocalizations.of(context)!.voucherList,
           style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
+        color: Colors.white,
+        fontWeight: FontWeight.w600,
+        fontSize: 18,
           ),
         ),
+        actions: [
+          PopupMenuButton<String>(
+        icon: const Icon(Icons.language, color: Colors.white),
+        onSelected: (String value) {
+          if (value == 'bn') {
+            Provider.of<LanguageProvider>(context, listen: false).changeLanguage(const Locale('bn'));
+          } else {
+            Provider.of<LanguageProvider>(context, listen: false).changeLanguage(const Locale('en'));
+          }
+        },
+        itemBuilder: (BuildContext context) => [
+          PopupMenuItem<String>(
+            value: 'en',
+            child: Row(
+          children: [
+            Text('🇺🇸'),
+            const SizedBox(width: 8),
+            Text('English'),
+          ],
+            ),
+          ),
+          PopupMenuItem<String>(
+            value: 'bn',
+            child: Row(
+          children: [
+            Text('🇧🇩'),
+            const SizedBox(width: 8),
+            Text('বাংলা'),
+          ],
+            ),
+          ),
+        ],
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -592,7 +631,7 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                     }
                   },
                   icon: const Icon(Icons.add),
-                  label: const Text("Add Voucher"),
+                  label: Text(AppLocalizations.of(context)!.addVoucher),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF0052CC),
                     foregroundColor: Colors.white,
@@ -609,7 +648,7 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                 ElevatedButton.icon(
                   onPressed: _loadVoucherData,
                   icon: const Icon(Icons.refresh),
-                  label: const Text("Refresh"),
+                  label: Text(AppLocalizations.of(context)!.refresh),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
@@ -642,8 +681,8 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                 });
               },
               decoration: InputDecoration(
-                labelText: 'Search',
-                hintText: 'Search by Buyer, Date...',
+                labelText: AppLocalizations.of(context)!.search,
+                hintText: AppLocalizations.of(context)!.searchByVoucherIdBuyerDate,
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -660,27 +699,27 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
             // ✅ Voucher Table
             Expanded(
               child: filteredData.isEmpty
-                  ? const Center(
+                  ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.receipt_outlined,
                             size: 64,
                             color: Colors.grey,
                           ),
-                          SizedBox(height: 16),
+                          const SizedBox(height: 16),
                           Text(
-                            'No vouchers found',
-                            style: TextStyle(
+                            AppLocalizations.of(context)!.noVouchersFound,
+                            style: const TextStyle(
                               fontSize: 18,
                               color: Colors.grey,
                             ),
                           ),
-                          SizedBox(height: 8),
+                          const SizedBox(height: 8),
                           Text(
-                            'Add some vouchers to get started',
-                            style: TextStyle(
+                            AppLocalizations.of(context)!.addSomeVouchers,
+                            style: const TextStyle(
                               fontSize: 14,
                               color: Colors.grey,
                             ),
@@ -698,12 +737,12 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
-                        columns: const [
-                          DataColumn(label: Text("Index")),
-                          DataColumn(label: Text("Buyer Name")),
-                          DataColumn(label: Text("Date")),
-                          DataColumn(label: Text("Images")),
-                          DataColumn(label: Text("Action")),
+                        columns: [
+                          DataColumn(label: Text(AppLocalizations.of(context)!.index)),
+                          DataColumn(label: Text(AppLocalizations.of(context)!.buyerName)),
+                          DataColumn(label: Text(AppLocalizations.of(context)!.date)),
+                          DataColumn(label: Text(AppLocalizations.of(context)!.images)),
+                          DataColumn(label: Text(AppLocalizations.of(context)!.action)),
                         ],
                         rows: List.generate(filteredData.length, (index) {
                           final entry = filteredData[index];
@@ -742,11 +781,11 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                                   onPressed: () {
                                     // TODO: Implement image view dialog
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text("View Images - Feature coming soon")),
+                                      SnackBar(content: Text(AppLocalizations.of(context)!.viewImagesFeatureComingSoon)),
                                     );
                                   },
                                   icon: const Icon(Icons.image),
-                                  label: const Text("View"),
+                                  label: Text(AppLocalizations.of(context)!.viewImages),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFF0052CC),
                                     foregroundColor: Colors.white,
@@ -758,26 +797,26 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
                                   children: [
                                     if (!isEditing)
                                       _actionButton(
-                                        text: "Edit",
+                                        text: AppLocalizations.of(context)!.edit,
                                         color: const Color(0xFF0052CC),
                                         onPressed: () => _startEdit(index),
                                       ),
                                     if (isEditing) ...[
                                       _actionButton(
-                                        text: "Save",
+                                        text: AppLocalizations.of(context)!.save,
                                         color: Colors.green,
                                         onPressed: () => _saveEdit(index),
                                       ),
                                       const SizedBox(width: 6),
                                       _actionButton(
-                                        text: "Cancel",
+                                        text: AppLocalizations.of(context)!.cancel,
                                         color: Colors.grey,
                                         onPressed: () => _cancelEdit(index),
                                       ),
                                     ],
                                     const SizedBox(width: 6),
                                     _actionButton(
-                                      text: "Delete",
+                                      text: AppLocalizations.of(context)!.delete,
                                       color: Colors.red,
                                       onPressed: () => _deleteRow(index),
                                     ),
@@ -793,6 +832,8 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
           ],
         ),
       ),
+    );
+      },
     );
   }
 }
