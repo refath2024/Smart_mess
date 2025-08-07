@@ -1,0 +1,137 @@
+// ADMIN SCREEN LOCALIZATION TEMPLATE
+// Copy this template to quickly update any admin screen
+
+// 1. ADD IMPORTS (at the top of the file)
+import '../../l10n/app_localizations.dart';
+
+// 2. ADD LANGUAGE TOGGLE TO APPBAR (if the screen has an AppBar)
+AppBar(
+  title: Text(AppLocalizations.of(context)!.screenTitle),
+  actions: [
+    PopupMenuButton<String>(
+      icon: const Icon(Icons.language, color: Colors.white),
+      onSelected: (String value) {
+        final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+        if (value == 'en') {
+          languageProvider.changeLanguage(const Locale('en'));
+        } else if (value == 'bn') {
+          languageProvider.changeLanguage(const Locale('bn'));
+        }
+      },
+      itemBuilder: (BuildContext context) => [
+        PopupMenuItem<String>(
+          value: 'en',
+          child: Row(
+            children: [
+              const Icon(Icons.language),
+              const SizedBox(width: 8),
+              Text(AppLocalizations.of(context)!.english),
+            ],
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'bn',
+          child: Row(
+            children: [
+              const Icon(Icons.language),
+              const SizedBox(width: 8),
+              Text(AppLocalizations.of(context)!.bangla),
+            ],
+          ),
+        ),
+      ],
+    ),
+  ],
+),
+
+// 3. REPLACE HARDCODED STRINGS
+
+// Before:
+Text("Users")
+Text("Search")
+Text("Add User")
+Text("Edit")
+Text("Delete")
+Text("Save")
+Text("Cancel")
+
+// After:
+Text(AppLocalizations.of(context)!.users)
+Text(AppLocalizations.of(context)!.search)
+Text(AppLocalizations.of(context)!.addUser)
+Text(AppLocalizations.of(context)!.edit)
+Text(AppLocalizations.of(context)!.delete)
+Text(AppLocalizations.of(context)!.save)
+Text(AppLocalizations.of(context)!.cancel)
+
+// Before:
+TextField(
+  decoration: InputDecoration(
+    labelText: 'Search users...',
+  ),
+)
+
+// After:
+TextField(
+  decoration: InputDecoration(
+    labelText: AppLocalizations.of(context)!.searchUsers,
+  ),
+)
+
+// Before:
+showDialog(
+  context: context,
+  builder: (context) => AlertDialog(
+    title: Text("Confirm Delete"),
+    content: Text("Are you sure?"),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: Text("Cancel"),
+      ),
+      TextButton(
+        onPressed: () => deleteUser(),
+        child: Text("Delete"),
+      ),
+    ],
+  ),
+);
+
+// After:
+showDialog(
+  context: context,
+  builder: (context) => AlertDialog(
+    title: Text(AppLocalizations.of(context)!.confirmDelete),
+    content: Text(AppLocalizations.of(context)!.areYouSure),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: Text(AppLocalizations.of(context)!.cancel),
+      ),
+      TextButton(
+        onPressed: () => deleteUser(),
+        child: Text(AppLocalizations.of(context)!.delete),
+      ),
+    ],
+  ),
+);
+
+// 4. UPDATE SNACKBAR MESSAGES
+
+// Before:
+ScaffoldMessenger.of(context).showSnackBar(
+  SnackBar(content: Text('User deleted successfully')),
+);
+
+// After:
+ScaffoldMessenger.of(context).showSnackBar(
+  SnackBar(content: Text(AppLocalizations.of(context)!.userDeletedSuccessfully)),
+);
+
+// 5. ADD MISSING STRINGS TO ARB FILES
+// If you use a new string like 'userDeletedSuccessfully', add it to:
+// lib/l10n/app_en.arb: "userDeletedSuccessfully": "User deleted successfully"
+// lib/l10n/app_bn.arb: "userDeletedSuccessfully": "ব্যবহারকারী সফলভাবে মুছে ফেলা হয়েছে"
+
+// 6. DON'T FORGET TO REGENERATE LOCALIZATION
+// Run: flutter gen-l10n
