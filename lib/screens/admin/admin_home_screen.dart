@@ -517,45 +517,44 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         centerTitle: true,
         title: Text(
           AppLocalizations.of(context)!.adminDashboard,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
+          style: TextStyle(
+        color: Colors.white,
+        fontWeight: FontWeight.w600,
+        fontSize: 18,
           ),
         ),
         actions: [
           PopupMenuButton<String>(
-            icon: const Icon(Icons.language, color: Colors.white),
-            onSelected: (String value) {
-              final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
-              if (value == 'en') {
-                languageProvider.changeLanguage(const Locale('en'));
-              } else if (value == 'bn') {
-                languageProvider.changeLanguage(const Locale('bn'));
-              }
-            },
-            itemBuilder: (BuildContext context) => [
-              PopupMenuItem<String>(
-                value: 'en',
-                child: Row(
-                  children: [
-                    const Icon(Icons.language),
-                    const SizedBox(width: 8),
-                    Text(AppLocalizations.of(context)!.english),
-                  ],
-                ),
-              ),
-              PopupMenuItem<String>(
-                value: 'bn',
-                child: Row(
-                  children: [
-                    const Icon(Icons.language),
-                    const SizedBox(width: 8),
-                    Text(AppLocalizations.of(context)!.bangla),
-                  ],
-                ),
-              ),
-            ],
+        icon: const Icon(Icons.language, color: Colors.white),
+        onSelected: (String value) {
+          if (value == 'bn') {
+            Provider.of<LanguageProvider>(context, listen: false).changeLanguage(const Locale('bn'));
+          } else {
+            Provider.of<LanguageProvider>(context, listen: false).changeLanguage(const Locale('en'));
+          }
+        },
+        itemBuilder: (BuildContext context) => [
+          PopupMenuItem<String>(
+            value: 'en',
+            child: Row(
+          children: [
+            Text('🇺🇸'),
+            const SizedBox(width: 8),
+            Text('English'),
+          ],
+            ),
+          ),
+          PopupMenuItem<String>(
+            value: 'bn',
+            child: Row(
+          children: [
+            Text('🇧🇩'),
+            const SizedBox(width: 8),
+            Text('বাংলা'),
+          ],
+            ),
+          ),
+        ],
           ),
         ],
       ),

@@ -594,47 +594,44 @@ class _AdminShoppingHistoryScreenState
         centerTitle: true,
         title: Text(
           AppLocalizations.of(context)!.shoppingHistory,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
+          style: TextStyle(
+        color: Colors.white,
+        fontWeight: FontWeight.w600,
+        fontSize: 18,
           ),
         ),
         actions: [
-          PopupMenuButton<Locale>(
-            icon: const Icon(
-              Icons.language,
-              color: Colors.white,
+          PopupMenuButton<String>(
+        icon: const Icon(Icons.language, color: Colors.white),
+        onSelected: (String value) {
+          if (value == 'bn') {
+            languageProvider.changeLanguage(const Locale('bn'));
+          } else {
+            languageProvider.changeLanguage(const Locale('en'));
+          }
+        },
+        itemBuilder: (BuildContext context) => [
+          PopupMenuItem<String>(
+            value: 'en',
+            child: Row(
+          children: [
+            Text('🇺🇸'),
+            const SizedBox(width: 8),
+            Text('English'),
+          ],
             ),
-            onSelected: (Locale locale) {
-              languageProvider.changeLanguage(locale);
-            },
-            itemBuilder: (BuildContext context) => [
-              PopupMenuItem<Locale>(
-                value: const Locale('en'),
-                child: Row(
-                  children: [
-                    Text(AppLocalizations.of(context)!.english),
-                    if (languageProvider.isEnglish) ...[
-                      const SizedBox(width: 8),
-                      const Icon(Icons.check, color: Colors.green),
-                    ],
-                  ],
-                ),
-              ),
-              PopupMenuItem<Locale>(
-                value: const Locale('bn'),
-                child: Row(
-                  children: [
-                    Text(AppLocalizations.of(context)!.bangla),
-                    if (languageProvider.isBangla) ...[
-                      const SizedBox(width: 8),
-                      const Icon(Icons.check, color: Colors.green),
-                    ],
-                  ],
-                ),
-              ),
-            ],
+          ),
+          PopupMenuItem<String>(
+            value: 'bn',
+            child: Row(
+          children: [
+            Text('🇧🇩'),
+            const SizedBox(width: 8),
+            Text('বাংলা'),
+          ],
+            ),
+          ),
+        ],
           ),
         ],
       ),
