@@ -931,6 +931,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Error loading users'**
   String get errorLoadingUsers;
+
+  /// No description provided for @errorLoadingUsersData.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading users data'**
+  String get errorLoadingUsersData;
+
+  /// No description provided for @rank.
+  ///
+  /// In en, this message translates to:
+  /// **'Rank'**
+  String get rank;
+
+  /// No description provided for @unit.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit'**
+  String get unit;
+
+  /// No description provided for @mobile.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile'**
+  String get mobile;
+
+  /// No description provided for @totalDiningMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Dining Members'**
+  String get totalDiningMembers;
+
+  /// No description provided for @totalActiveDiningMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Active Dining Members'**
+  String get totalActiveDiningMembers;
+
+  /// No description provided for @totalStaffs.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Staffs'**
+  String get totalStaffs;
+
+  /// No description provided for @memberSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Member Summary'**
+  String get memberSummary;
 }
 
 class _AppLocalizationsDelegate

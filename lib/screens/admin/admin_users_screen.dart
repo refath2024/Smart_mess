@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
 import 'admin_home_screen.dart';
 import 'admin_pending_ids_screen.dart';
 import 'admin_shopping_history.dart';
@@ -15,6 +16,8 @@ import 'admin_menu_vote_screen.dart';
 import 'admin_meal_state_screen.dart';
 import 'admin_login_screen.dart';
 import '../../services/admin_auth_service.dart';
+import '../../providers/language_provider.dart';
+import '../../l10n/app_localizations.dart';
 
 class AdminUsersScreen extends StatefulWidget {
   const AdminUsersScreen({super.key});
@@ -162,7 +165,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error loading users data: $e'),
+            content: Text('${AppLocalizations.of(context)!.errorLoadingUsersData}: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -209,11 +212,11 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
         color: const Color(0xFF1A4D8F), // Dark blue
         borderRadius: BorderRadius.circular(6),
       ),
-      child: const Row(
+      child: Row(
         children: [
           Expanded(
             child: Text(
-              "BA No",
+              AppLocalizations.of(context)!.baNumber,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -222,7 +225,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           ),
           Expanded(
             child: Text(
-              "Rank",
+              AppLocalizations.of(context)!.rank,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -231,7 +234,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           ),
           Expanded(
             child: Text(
-              "Name",
+              AppLocalizations.of(context)!.name,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -240,7 +243,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           ),
           Expanded(
             child: Text(
-              "Unit",
+              AppLocalizations.of(context)!.unit,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -249,7 +252,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           ),
           Expanded(
             child: Text(
-              "Mobile",
+              AppLocalizations.of(context)!.mobile,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -258,7 +261,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           ),
           Expanded(
             child: Text(
-              "Email",
+              AppLocalizations.of(context)!.email,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -267,7 +270,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           ),
           Expanded(
             child: Text(
-              "Role",
+              AppLocalizations.of(context)!.role,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -276,7 +279,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           ),
           Expanded(
             child: Text(
-              "Status",
+              AppLocalizations.of(context)!.status,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -317,8 +320,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Member Summary",
+            Text(
+              AppLocalizations.of(context)!.memberSummary,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -326,10 +329,10 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            Text("• Total Members = $_totalMembers"),
-            Text("• Total Dining Members = $_totalDiningMembers"),
-            Text("• Total Active Dining Members = $_totalActiveDiningMembers"),
-            Text("• Total Staffs = $_totalStaff"),
+            Text("• ${AppLocalizations.of(context)!.totalMembers} = $_totalMembers"),
+            Text("• ${AppLocalizations.of(context)!.totalDiningMembers} = $_totalDiningMembers"),
+            Text("• ${AppLocalizations.of(context)!.totalActiveDiningMembers} = $_totalActiveDiningMembers"),
+            Text("• ${AppLocalizations.of(context)!.totalStaffs} = $_totalStaff"),
           ],
         ),
       ),
@@ -399,14 +402,16 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Show loading screen while authenticating
-    if (_isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
+    return Consumer<LanguageProvider>(
+      builder: (context, languageProvider, child) {
+        // Show loading screen while authenticating
+        if (_isLoading) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
 
     return Scaffold(
       drawer: Drawer(
@@ -653,14 +658,48 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
         backgroundColor: const Color(0xFF002B5B),
         iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
-        title: const Text(
-          "Users",
+        title: Text(
+          AppLocalizations.of(context)!.users,
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w600,
             fontSize: 18,
           ),
         ),
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.language, color: Colors.white),
+            onSelected: (String value) {
+              if (value == 'bn') {
+                languageProvider.changeLanguage(const Locale('bn'));
+              } else {
+                languageProvider.changeLanguage(const Locale('en'));
+              }
+            },
+            itemBuilder: (BuildContext context) => [
+              PopupMenuItem<String>(
+                value: 'en',
+                child: Row(
+                  children: [
+                    Text('🇺🇸'),
+                    const SizedBox(width: 8),
+                    Text('English'),
+                  ],
+                ),
+              ),
+              PopupMenuItem<String>(
+                value: 'bn',
+                child: Row(
+                  children: [
+                    Text('🇧🇩'),
+                    const SizedBox(width: 8),
+                    Text('বাংলা'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(
@@ -670,8 +709,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
             children: [
               Row(
                 children: [
-                  const Text(
-                    "Search:",
+                  Text(
+                    "${AppLocalizations.of(context)!.search}:",
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(width: 10),
@@ -680,7 +719,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                       controller: _searchController,
                       onChanged: _search,
                       decoration: InputDecoration(
-                        hintText: "Search All Text Columns",
+                        hintText: AppLocalizations.of(context)!.searchUsers,
                         prefixIcon: const Icon(Icons.search),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -715,6 +754,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           ),
         ),
       ),
+    );
+      },
     );
   }
 }

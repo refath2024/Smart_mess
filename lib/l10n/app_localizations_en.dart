@@ -428,4 +428,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorLoadingUsers => 'Error loading users';
+
+  @override
+  String get errorLoadingUsersData => 'Error loading users data';
+
+  @override
+  String get rank => 'Rank';
+
+  @override
+  String get unit => 'Unit';
+
+  @override
+  String get mobile => 'Mobile';
+
+  @override
+  String get totalDiningMembers => 'Total Dining Members';
+
+  @override
+  String get totalActiveDiningMembers => 'Total Active Dining Members';
+
+  @override
+  String get totalStaffs => 'Total Staffs';
+
+  @override
+  String get memberSummary => 'Member Summary';
 }

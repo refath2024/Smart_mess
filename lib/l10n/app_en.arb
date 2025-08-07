@@ -139,5 +139,17 @@
   "staff": "Staff",
   "noUsersFound": "No users found",
   "loadingUsers": "Loading users...",
-  "errorLoadingUsers": "Error loading users"
+  "errorLoadingUsers": "Error loading users",
+  "errorLoadingUsersData": "Error loading users data",
+  "rank": "Rank",
+  "unit": "Unit",
+  "mobile": "Mobile",
+  "email": "Email",
+  "role": "Role",
+  "totalMembers": "Total Members",
+  "totalDiningMembers": "Total Dining Members",
+  "totalActiveDiningMembers": "Total Active Dining Members",
+  "totalStaffs": "Total Staffs",
+  "memberSummary": "Member Summary",
+  "search": "Search"
 }

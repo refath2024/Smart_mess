@@ -428,4 +428,28 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get errorLoadingUsers => 'ব্যবহারকারী লোড করতে ত্রুটি';
+
+  @override
+  String get errorLoadingUsersData => 'ব্যবহারকারী ডেটা লোড করতে ত্রুটি';
+
+  @override
+  String get rank => 'পদবী';
+
+  @override
+  String get unit => 'ইউনিট';
+
+  @override
+  String get mobile => 'মোবাইল';
+
+  @override
+  String get totalDiningMembers => 'মোট ডাইনিং সদস্য';
+
+  @override
+  String get totalActiveDiningMembers => 'মোট সক্রিয় ডাইনিং সদস্য';
+
+  @override
+  String get totalStaffs => 'মোট কর্মচারী';
+
+  @override
+  String get memberSummary => 'সদস্য সারসংক্ষেপ';
 }
