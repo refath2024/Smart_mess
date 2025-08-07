@@ -474,19 +474,19 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 children: [
                   _buildSidebarTile(
                     icon: Icons.dashboard,
-                    title: "Home",
+                    title: AppLocalizations.of(context)!.home,
                     onTap: () =>
                         _navigateToScreen(context, const AdminHomeScreen()),
                   ),
                   _buildSidebarTile(
                     icon: Icons.people,
-                    title: "Users",
+                    title: AppLocalizations.of(context)!.users,
                     onTap: () => Navigator.pop(context),
                     selected: true,
                   ),
                   _buildSidebarTile(
                     icon: Icons.pending,
-                    title: "Pending IDs",
+                    title: AppLocalizations.of(context)!.pendingIds,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -498,7 +498,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.history,
-                    title: "Shopping History",
+                    title: AppLocalizations.of(context)!.shoppingHistory,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -511,7 +511,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.receipt,
-                    title: "Voucher List",
+                    title: AppLocalizations.of(context)!.voucherList,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -523,7 +523,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.storage,
-                    title: "Inventory",
+                    title: AppLocalizations.of(context)!.inventory,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -535,7 +535,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.food_bank,
-                    title: "Messing",
+                    title: AppLocalizations.of(context)!.messing,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -547,7 +547,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.menu_book,
-                    title: "Monthly Menu",
+                    title: AppLocalizations.of(context)!.monthlyMenu,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -559,7 +559,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.analytics,
-                    title: "Meal State",
+                    title: AppLocalizations.of(context)!.mealState,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -571,7 +571,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.thumb_up,
-                    title: "Menu Vote",
+                    title: AppLocalizations.of(context)!.menuVote,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -583,7 +583,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.receipt_long,
-                    title: "Bills",
+                    title: AppLocalizations.of(context)!.bills,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -595,7 +595,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.payment,
-                    title: "Payments",
+                    title: AppLocalizations.of(context)!.payments,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -607,7 +607,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.people_alt,
-                    title: "Dining Member State",
+                    title: AppLocalizations.of(context)!.diningMemberState,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -619,7 +619,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.manage_accounts,
-                    title: "Staff State",
+                    title: AppLocalizations.of(context)!.staffState,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -645,7 +645,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 ),
                 child: _buildSidebarTile(
                   icon: Icons.logout,
-                  title: "Logout",
+                  title: AppLocalizations.of(context)!.logout,
                   onTap: _logout,
                   color: Colors.red,
                 ),
