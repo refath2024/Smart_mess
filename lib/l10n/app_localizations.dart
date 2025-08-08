@@ -1327,6 +1327,276 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Leave'**
   String get leave;
+
+  /// No description provided for @addNewSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Add New Set'**
+  String get addNewSet;
+
+  /// No description provided for @searchMealSets.
+  ///
+  /// In en, this message translates to:
+  /// **'Search meal sets...'**
+  String get searchMealSets;
+
+  /// No description provided for @noMealVoteData.
+  ///
+  /// In en, this message translates to:
+  /// **'No meal vote data available for the selected day or search query.'**
+  String get noMealVoteData;
+
+  /// No description provided for @sunday.
+  ///
+  /// In en, this message translates to:
+  /// **'Sunday'**
+  String get sunday;
+
+  /// No description provided for @monday.
+  ///
+  /// In en, this message translates to:
+  /// **'Monday'**
+  String get monday;
+
+  /// No description provided for @tuesday.
+  ///
+  /// In en, this message translates to:
+  /// **'Tuesday'**
+  String get tuesday;
+
+  /// No description provided for @wednesday.
+  ///
+  /// In en, this message translates to:
+  /// **'Wednesday'**
+  String get wednesday;
+
+  /// No description provided for @thursday.
+  ///
+  /// In en, this message translates to:
+  /// **'Thursday'**
+  String get thursday;
+
+  /// No description provided for @friday.
+  ///
+  /// In en, this message translates to:
+  /// **'Friday'**
+  String get friday;
+
+  /// No description provided for @saturday.
+  ///
+  /// In en, this message translates to:
+  /// **'Saturday'**
+  String get saturday;
+
+  /// No description provided for @mealVoteStatistics.
+  ///
+  /// In en, this message translates to:
+  /// **'Meal Vote Statistics'**
+  String get mealVoteStatistics;
+
+  /// No description provided for @insightsRemarks.
+  ///
+  /// In en, this message translates to:
+  /// **'Insights & Remarks'**
+  String get insightsRemarks;
+
+  /// No description provided for @noRemarksAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No specific remarks available at the moment. Please check back later.'**
+  String get noRemarksAvailable;
+
+  /// No description provided for @parathaSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Paratha Set'**
+  String get parathaSet;
+
+  /// No description provided for @rutiSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Ruti Set'**
+  String get rutiSet;
+
+  /// No description provided for @naanSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Naan Set'**
+  String get naanSet;
+
+  /// No description provided for @chickenSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Chicken Set'**
+  String get chickenSet;
+
+  /// No description provided for @fishSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Fish Set'**
+  String get fishSet;
+
+  /// No description provided for @vegetableSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Vegetable Set'**
+  String get vegetableSet;
+
+  /// No description provided for @biriyaniSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Biriyani Set'**
+  String get biriyaniSet;
+
+  /// No description provided for @riceSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Rice Set'**
+  String get riceSet;
+
+  /// No description provided for @khichuriSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Khichuri Set'**
+  String get khichuriSet;
+
+  /// No description provided for @sundayRemark1.
+  ///
+  /// In en, this message translates to:
+  /// **'Sunday dinner, Biriyani is a clear favorite, indicating a strong preference for hearty meals at the end of the week.'**
+  String get sundayRemark1;
+
+  /// No description provided for @sundayRemark2.
+  ///
+  /// In en, this message translates to:
+  /// **'Breakfast options on Sunday show a good mix of preferences, suggesting variety is appreciated.'**
+  String get sundayRemark2;
+
+  /// No description provided for @sundayRemark3.
+  ///
+  /// In en, this message translates to:
+  /// **'Lunch on Sunday could benefit from more diverse protein sources based on current vote distribution.'**
+  String get sundayRemark3;
+
+  /// No description provided for @mondayRemark1.
+  ///
+  /// In en, this message translates to:
+  /// **'Pizza for Monday dinner received overwhelming votes; consider making it a regular special.'**
+  String get mondayRemark1;
+
+  /// No description provided for @mondayRemark2.
+  ///
+  /// In en, this message translates to:
+  /// **'Breakfast on Monday sees a strong preference for Egg Toast, indicating a need for quick and familiar options.'**
+  String get mondayRemark2;
+
+  /// No description provided for @mondayRemark3.
+  ///
+  /// In en, this message translates to:
+  /// **'Lunch options on Monday are fairly balanced, but Pasta Bake leads the preferences.'**
+  String get mondayRemark3;
+
+  /// No description provided for @tuesdayRemark1.
+  ///
+  /// In en, this message translates to:
+  /// **'South Indian breakfast options are popular on Tuesdays.'**
+  String get tuesdayRemark1;
+
+  /// No description provided for @tuesdayRemark2.
+  ///
+  /// In en, this message translates to:
+  /// **'Dal Makhani is a preferred lunch item, consider its regular inclusion.'**
+  String get tuesdayRemark2;
+
+  /// No description provided for @tuesdayRemark3.
+  ///
+  /// In en, this message translates to:
+  /// **'Chicken Curry remains a strong contender for dinner choice.'**
+  String get tuesdayRemark3;
+
+  /// No description provided for @wednesdayRemark1.
+  ///
+  /// In en, this message translates to:
+  /// **'Western breakfast is highly favored on Wednesdays.'**
+  String get wednesdayRemark1;
+
+  /// No description provided for @wednesdayRemark2.
+  ///
+  /// In en, this message translates to:
+  /// **'Fish & Chips stands out for lunch, a good option for variety.'**
+  String get wednesdayRemark2;
+
+  /// No description provided for @wednesdayRemark3.
+  ///
+  /// In en, this message translates to:
+  /// **'Beef Steak is the top pick for dinner, indicating demand for premium options.'**
+  String get wednesdayRemark3;
+
+  /// No description provided for @thursdayRemark1.
+  ///
+  /// In en, this message translates to:
+  /// **'Healthy breakfast options like Oatmeal and Yogurt Parfait are well-received.'**
+  String get thursdayRemark1;
+
+  /// No description provided for @thursdayRemark2.
+  ///
+  /// In en, this message translates to:
+  /// **'Sushi is surprisingly popular for lunch, consider expanding Asian cuisine.'**
+  String get thursdayRemark2;
+
+  /// No description provided for @thursdayRemark3.
+  ///
+  /// In en, this message translates to:
+  /// **'Tacos are a clear winner for dinner; a themed night could work well.'**
+  String get thursdayRemark3;
+
+  /// No description provided for @fridayRemark1.
+  ///
+  /// In en, this message translates to:
+  /// **'Pastries are a good choice for Friday breakfast.'**
+  String get fridayRemark1;
+
+  /// No description provided for @fridayRemark2.
+  ///
+  /// In en, this message translates to:
+  /// **'Pizza is overwhelmingly popular for Friday lunch, consider offering more toppings.'**
+  String get fridayRemark2;
+
+  /// No description provided for @fridayRemark3.
+  ///
+  /// In en, this message translates to:
+  /// **'BBQ Ribs are highly demanded for Friday dinner, a good end-of-week treat.'**
+  String get fridayRemark3;
+
+  /// No description provided for @saturdayRemark1.
+  ///
+  /// In en, this message translates to:
+  /// **'Hearty breakfast options are preferred on Saturdays.'**
+  String get saturdayRemark1;
+
+  /// No description provided for @saturdayRemark2.
+  ///
+  /// In en, this message translates to:
+  /// **'Burgers are a casual and popular lunch choice for the weekend.'**
+  String get saturdayRemark2;
+
+  /// No description provided for @saturdayRemark3.
+  ///
+  /// In en, this message translates to:
+  /// **'Seafood Boil is a top choice for Saturday dinner, indicating a preference for special meals.'**
+  String get saturdayRemark3;
+
+  /// No description provided for @noSpecificRemarks.
+  ///
+  /// In en, this message translates to:
+  /// **'No specific remarks available for this day yet.'**
+  String get noSpecificRemarks;
+
+  /// No description provided for @dataCollectionOngoing.
+  ///
+  /// In en, this message translates to:
+  /// **'Data collection is ongoing; encourage more members to vote to gather comprehensive insights.'**
+  String get dataCollectionOngoing;
 }
 
 class _AppLocalizationsDelegate

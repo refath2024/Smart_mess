@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../l10n/app_localizations.dart';
+import '../../providers/language_provider.dart';
 import 'admin_home_screen.dart';
 import 'admin_users_screen.dart';
 import 'admin_pending_ids_screen.dart';
@@ -27,7 +30,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
   final AdminAuthService _adminAuthService = AdminAuthService();
 
   bool _isLoading = true;
-  String _currentUserName = "Admin User";
+  String _currentUserName = "Admin User"; // This is just a fallback, will be updated from Firebase
   Map<String, dynamic>? _currentUserData;
 
   final TextEditingController _searchController = TextEditingController();
@@ -38,7 +41,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
     super.initState();
     _checkAuthentication();
     _filteredMealData = Map.from(mealData); // Initialize filtered data
-    _updateRemarks(); // Initial update for remarks instantly
+    // _updateRemarks will be called in build method when context is available
   }
 
   Future<void> _checkAuthentication() async {
@@ -61,7 +64,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
       if (userData != null) {
         setState(() {
           _currentUserData = userData;
-          _currentUserName = userData['name'] ?? 'Admin User';
+          _currentUserName = userData['name'] ?? AppLocalizations.of(context)!.adminUser;
           _isLoading = false;
         });
       } else {
@@ -222,6 +225,68 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
     'Saturday',
   ];
 
+  // Method to get localized day name
+  String getLocalizedDay(BuildContext context, String day) {
+    switch (day) {
+      case 'Sunday':
+        return AppLocalizations.of(context)!.sunday;
+      case 'Monday':
+        return AppLocalizations.of(context)!.monday;
+      case 'Tuesday':
+        return AppLocalizations.of(context)!.tuesday;
+      case 'Wednesday':
+        return AppLocalizations.of(context)!.wednesday;
+      case 'Thursday':
+        return AppLocalizations.of(context)!.thursday;
+      case 'Friday':
+        return AppLocalizations.of(context)!.friday;
+      case 'Saturday':
+        return AppLocalizations.of(context)!.saturday;
+      default:
+        return day;
+    }
+  }
+
+  // Method to get localized meal type name
+  String getLocalizedMealType(BuildContext context, String mealType) {
+    switch (mealType) {
+      case 'Breakfast':
+        return AppLocalizations.of(context)!.breakfast;
+      case 'Lunch':
+        return AppLocalizations.of(context)!.lunch;
+      case 'Dinner':
+        return AppLocalizations.of(context)!.dinner;
+      default:
+        return mealType;
+    }
+  }
+
+  // Method to get localized food item name
+  String getLocalizedFoodItem(BuildContext context, String foodItem) {
+    switch (foodItem) {
+      case 'Paratha Set':
+        return AppLocalizations.of(context)!.parathaSet;
+      case 'Ruti Set':
+        return AppLocalizations.of(context)!.rutiSet;
+      case 'Naan Set':
+        return AppLocalizations.of(context)!.naanSet;
+      case 'Chicken Set':
+        return AppLocalizations.of(context)!.chickenSet;
+      case 'Fish Set':
+        return AppLocalizations.of(context)!.fishSet;
+      case 'Vegetable Set':
+        return AppLocalizations.of(context)!.vegetableSet;
+      case 'Biriyani Set':
+        return AppLocalizations.of(context)!.biriyaniSet;
+      case 'Rice Set':
+        return AppLocalizations.of(context)!.riceSet;
+      case 'Khichuri Set':
+        return AppLocalizations.of(context)!.khichuriSet;
+      default:
+        return foodItem;
+    }
+  }
+
   // Remarks data - this will be dynamically populated
   List<String> dynamicRemarks = [];
 
@@ -252,57 +317,57 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
   }
 
   // Method to update dynamic remarks instantly
-  void _updateRemarks() {
+  void _updateRemarks(BuildContext context) {
     setState(() {
       dynamicRemarks = []; // Clear previous remarks
 
-      // Dummy remarks based on selectedDay
+      // Localized remarks based on selectedDay
       if (selectedDay == 'Sunday') {
         dynamicRemarks = [
-          'Sunday dinner, Biriyani is a clear favorite, indicating a strong preference for hearty meals at the end of the week.',
-          'Breakfast options on Sunday show a good mix of preferences, suggesting variety is appreciated.',
-          'Lunch on Sunday could benefit from more diverse protein sources based on current vote distribution.'
+          AppLocalizations.of(context)!.sundayRemark1,
+          AppLocalizations.of(context)!.sundayRemark2,
+          AppLocalizations.of(context)!.sundayRemark3,
         ];
       } else if (selectedDay == 'Monday') {
         dynamicRemarks = [
-          'Pizza for Monday dinner received overwhelming votes; consider making it a regular special.',
-          'Breakfast on Monday sees a strong preference for Egg Toast, indicating a need for quick and familiar options.',
-          'Lunch options on Monday are fairly balanced, but Pasta Bake leads the preferences.'
+          AppLocalizations.of(context)!.mondayRemark1,
+          AppLocalizations.of(context)!.mondayRemark2,
+          AppLocalizations.of(context)!.mondayRemark3,
         ];
       } else if (selectedDay == 'Tuesday') {
         dynamicRemarks = [
-          'South Indian breakfast options are popular on Tuesdays.',
-          'Dal Makhani is a preferred lunch item, consider its regular inclusion.',
-          'Chicken Curry remains a strong contender for dinner choice.'
+          AppLocalizations.of(context)!.tuesdayRemark1,
+          AppLocalizations.of(context)!.tuesdayRemark2,
+          AppLocalizations.of(context)!.tuesdayRemark3,
         ];
       } else if (selectedDay == 'Wednesday') {
         dynamicRemarks = [
-          'Western breakfast is highly favored on Wednesdays.',
-          'Fish & Chips stands out for lunch, a good option for variety.',
-          'Beef Steak is the top pick for dinner, indicating demand for premium options.'
+          AppLocalizations.of(context)!.wednesdayRemark1,
+          AppLocalizations.of(context)!.wednesdayRemark2,
+          AppLocalizations.of(context)!.wednesdayRemark3,
         ];
       } else if (selectedDay == 'Thursday') {
         dynamicRemarks = [
-          'Healthy breakfast options like Oatmeal and Yogurt Parfait are well-received.',
-          'Sushi is surprisingly popular for lunch, consider expanding Asian cuisine.',
-          'Tacos are a clear winner for dinner; a themed night could work well.'
+          AppLocalizations.of(context)!.thursdayRemark1,
+          AppLocalizations.of(context)!.thursdayRemark2,
+          AppLocalizations.of(context)!.thursdayRemark3,
         ];
       } else if (selectedDay == 'Friday') {
         dynamicRemarks = [
-          'Pastries are a good choice for Friday breakfast.',
-          'Pizza is overwhelmingly popular for Friday lunch, consider offering more toppings.',
-          'BBQ Ribs are highly demanded for Friday dinner, a good end-of-week treat.'
+          AppLocalizations.of(context)!.fridayRemark1,
+          AppLocalizations.of(context)!.fridayRemark2,
+          AppLocalizations.of(context)!.fridayRemark3,
         ];
       } else if (selectedDay == 'Saturday') {
         dynamicRemarks = [
-          'Hearty breakfast options are preferred on Saturdays.',
-          'Burgers are a casual and popular lunch choice for the weekend.',
-          'Seafood Boil is a top choice for Saturday dinner, indicating a preference for special meals.'
+          AppLocalizations.of(context)!.saturdayRemark1,
+          AppLocalizations.of(context)!.saturdayRemark2,
+          AppLocalizations.of(context)!.saturdayRemark3,
         ];
       } else {
         dynamicRemarks = [
-          'No specific remarks available for $selectedDay yet.',
-          'Data collection is ongoing; encourage more members to vote to gather comprehensive insights.'
+          AppLocalizations.of(context)!.noSpecificRemarks,
+          AppLocalizations.of(context)!.dataCollectionOngoing,
         ];
       }
     });
@@ -344,7 +409,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Logout failed: $e')),
+          SnackBar(content: Text('${AppLocalizations.of(context)!.logoutFailed}: $e')),
         );
       }
     }
@@ -365,7 +430,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '${meal['name']} (${meal['percentage']}%)',
+                '${getLocalizedFoodItem(context, meal['name'])} (${meal['percentage']}%)',
                 style:
                     const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
               ),
@@ -389,18 +454,25 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Show loading screen while authenticating
-    if (_isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
+    return Consumer<LanguageProvider>(
+      builder: (context, languageProvider, child) {
+        // Ensure remarks are updated for the current day and language
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _updateRemarks(context);
+        });
+        
+        // Show loading screen while authenticating
+        if (_isLoading) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
 
-    final displayedMeals = _filteredMealData[selectedDay];
+        final displayedMeals = _filteredMealData[selectedDay];
 
-    return Scaffold(
+        return Scaffold(
       drawer: Drawer(
         child: Column(
           children: [
@@ -461,7 +533,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                 children: [
                   _buildSidebarTile(
                     icon: Icons.dashboard,
-                    title: "Home",
+                    title: AppLocalizations.of(context)!.home,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -473,7 +545,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.people,
-                    title: "Users",
+                    title: AppLocalizations.of(context)!.users,
                     onTap: () {
                       Navigator.push(
                         context,
@@ -485,7 +557,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.pending,
-                    title: "Pending IDs",
+                    title: AppLocalizations.of(context)!.pendingIds,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -497,7 +569,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.history,
-                    title: "Shopping History",
+                    title: AppLocalizations.of(context)!.shoppingHistory,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -510,7 +582,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.receipt,
-                    title: "Voucher List",
+                    title: AppLocalizations.of(context)!.voucherList,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -522,7 +594,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.storage,
-                    title: "Inventory",
+                    title: AppLocalizations.of(context)!.inventory,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -534,7 +606,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.food_bank,
-                    title: "Messing",
+                    title: AppLocalizations.of(context)!.messing,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -546,7 +618,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.menu_book,
-                    title: "Monthly Menu",
+                    title: AppLocalizations.of(context)!.monthlyMenu,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -558,7 +630,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.analytics,
-                    title: "Meal State",
+                    title: AppLocalizations.of(context)!.mealState,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -570,13 +642,13 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.thumb_up,
-                    title: "Menu Vote",
+                    title: AppLocalizations.of(context)!.menuVote,
                     onTap: () => Navigator.pop(context),
                     selected: true,
                   ),
                   _buildSidebarTile(
                     icon: Icons.receipt_long,
-                    title: "Bills",
+                    title: AppLocalizations.of(context)!.bills,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -588,7 +660,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.payment,
-                    title: "Payments",
+                    title: AppLocalizations.of(context)!.payments,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -600,7 +672,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.people_alt,
-                    title: "Dining Member State",
+                    title: AppLocalizations.of(context)!.diningMemberState,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -612,7 +684,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.manage_accounts,
-                    title: "Staff State",
+                    title: AppLocalizations.of(context)!.staffState,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -638,7 +710,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                 ),
                 child: _buildSidebarTile(
                   icon: Icons.logout,
-                  title: "Logout",
+                  title: AppLocalizations.of(context)!.logout,
                   onTap: _logout,
                   color: Colors.red,
                 ),
@@ -651,14 +723,62 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
         backgroundColor: const Color(0xFF002B5B),
         iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
-        title: const Text(
-          "Menu Vote",
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.menuVote,
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w600,
             fontSize: 18,
           ),
         ),
+        actions: [
+          PopupMenuButton<Locale>(
+            icon: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CustomPaint(
+                  size: const Size(24, 16),
+                  painter: languageProvider.currentLocale.languageCode == 'en'
+                      ? _EnglandFlagPainter()
+                      : _BangladeshFlagPainter(),
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.arrow_drop_down, color: Colors.white),
+              ],
+            ),
+            onSelected: (Locale locale) {
+              languageProvider.changeLanguage(locale);
+            },
+            itemBuilder: (BuildContext context) => [
+              PopupMenuItem<Locale>(
+                value: const Locale('en', ''),
+                child: Row(
+                  children: [
+                    CustomPaint(
+                      size: const Size(20, 14),
+                      painter: _EnglandFlagPainter(),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(AppLocalizations.of(context)!.english),
+                  ],
+                ),
+              ),
+              PopupMenuItem<Locale>(
+                value: const Locale('bn', ''),
+                child: Row(
+                  children: [
+                    CustomPaint(
+                      size: const Size(20, 14),
+                      painter: _BangladeshFlagPainter(),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(AppLocalizations.of(context)!.bangla),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         // Changed to SingleChildScrollView
@@ -676,7 +796,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                       controller: _searchController,
                       onChanged: _filterRecords,
                       decoration: InputDecoration(
-                        hintText: 'Search meal sets...',
+                        hintText: AppLocalizations.of(context)!.searchMealSets,
                         prefixIcon: const Icon(Icons.search, size: 20),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -709,9 +829,9 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                       ),
                     ),
                     icon: const Icon(Icons.add, color: Colors.white),
-                    label: const Text(
-                      'Add New Set',
-                      style: TextStyle(
+                    label: Text(
+                      AppLocalizations.of(context)!.addNewSet,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                       ),
@@ -745,7 +865,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                         items: days.map((String day) {
                           return DropdownMenuItem<String>(
                             value: day,
-                            child: Text(day),
+                            child: Text(getLocalizedDay(context, day)),
                           );
                         }).toList(),
                         onChanged: (String? newValue) {
@@ -754,7 +874,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                               selectedDay = newValue;
                               // Re-apply filter based on the new day
                               _filterRecords(_searchController.text);
-                              _updateRemarks(); // Update remarks for the new day instantly
+                              _updateRemarks(context); // Update remarks for the new day instantly
                             });
                           }
                         },
@@ -766,9 +886,8 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
               const SizedBox(height: 20),
               // Meal Vote Statistics Section
               if (displayedMeals != null && displayedMeals.isNotEmpty) ...[
-                const Text("Meal Vote Statistics",
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text(AppLocalizations.of(context)!.mealVoteStatistics,
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 10),
                 // Removed Expanded from here to allow natural scrolling
                 Column(
@@ -786,7 +905,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                           children: [
                             // Highlighted meal time (Breakfast, Lunch, Dinner)
                             Text(
-                              entry.key,
+                              getLocalizedMealType(context, entry.key),
                               style: const TextStyle(
                                   fontSize: 16, fontWeight: FontWeight.bold),
                             ),
@@ -799,12 +918,12 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                   }).toList(),
                 ),
               ] else ...[
-                const Center(
+                Center(
                   child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 20.0),
+                    padding: const EdgeInsets.symmetric(vertical: 20.0),
                     child: Text(
-                        "No meal vote data available for the selected day or search query.",
-                        style: TextStyle(fontSize: 16, color: Colors.grey)),
+                        AppLocalizations.of(context)!.noMealVoteData,
+                        style: const TextStyle(fontSize: 16, color: Colors.grey)),
                   ),
                 ),
               ],
@@ -824,9 +943,9 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Insights & Remarks',
-                      style: TextStyle(
+                    Text(
+                      AppLocalizations.of(context)!.insightsRemarks,
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF002B5B),
@@ -835,9 +954,9 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                     const SizedBox(height: 10),
                     // Display remarks content directly
                     dynamicRemarks.isEmpty
-                        ? const Text(
-                            'No specific remarks available at the moment. Please check back later.',
-                            style: TextStyle(
+                        ? Text(
+                            AppLocalizations.of(context)!.noRemarksAvailable,
+                            style: const TextStyle(
                                 fontSize: 14,
                                 fontStyle: FontStyle.italic,
                                 color: Colors.grey),
@@ -877,5 +996,52 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
         ),
       ),
     );
+      },
+    );
   }
+}
+
+// Custom painter for England flag
+class _EnglandFlagPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint();
+    
+    // White background
+    paint.color = Colors.white;
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
+    
+    // Red cross
+    paint.color = Colors.red;
+    // Vertical line
+    canvas.drawRect(Rect.fromLTWH(size.width * 0.4, 0, size.width * 0.2, size.height), paint);
+    // Horizontal line  
+    canvas.drawRect(Rect.fromLTWH(0, size.height * 0.4, size.width, size.height * 0.2), paint);
+  }
+  
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
+}
+
+// Custom painter for Bangladesh flag
+class _BangladeshFlagPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint();
+    
+    // Green background
+    paint.color = const Color(0xFF006A4E);
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
+    
+    // Red circle
+    paint.color = const Color(0xFFF42A41);
+    canvas.drawCircle(
+      Offset(size.width * 0.4, size.height * 0.5), 
+      size.height * 0.3, 
+      paint
+    );
+  }
+  
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

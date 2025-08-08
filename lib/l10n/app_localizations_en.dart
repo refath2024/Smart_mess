@@ -632,4 +632,164 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get leave => 'Leave';
+
+  @override
+  String get addNewSet => 'Add New Set';
+
+  @override
+  String get searchMealSets => 'Search meal sets...';
+
+  @override
+  String get noMealVoteData =>
+      'No meal vote data available for the selected day or search query.';
+
+  @override
+  String get sunday => 'Sunday';
+
+  @override
+  String get monday => 'Monday';
+
+  @override
+  String get tuesday => 'Tuesday';
+
+  @override
+  String get wednesday => 'Wednesday';
+
+  @override
+  String get thursday => 'Thursday';
+
+  @override
+  String get friday => 'Friday';
+
+  @override
+  String get saturday => 'Saturday';
+
+  @override
+  String get mealVoteStatistics => 'Meal Vote Statistics';
+
+  @override
+  String get insightsRemarks => 'Insights & Remarks';
+
+  @override
+  String get noRemarksAvailable =>
+      'No specific remarks available at the moment. Please check back later.';
+
+  @override
+  String get parathaSet => 'Paratha Set';
+
+  @override
+  String get rutiSet => 'Ruti Set';
+
+  @override
+  String get naanSet => 'Naan Set';
+
+  @override
+  String get chickenSet => 'Chicken Set';
+
+  @override
+  String get fishSet => 'Fish Set';
+
+  @override
+  String get vegetableSet => 'Vegetable Set';
+
+  @override
+  String get biriyaniSet => 'Biriyani Set';
+
+  @override
+  String get riceSet => 'Rice Set';
+
+  @override
+  String get khichuriSet => 'Khichuri Set';
+
+  @override
+  String get sundayRemark1 =>
+      'Sunday dinner, Biriyani is a clear favorite, indicating a strong preference for hearty meals at the end of the week.';
+
+  @override
+  String get sundayRemark2 =>
+      'Breakfast options on Sunday show a good mix of preferences, suggesting variety is appreciated.';
+
+  @override
+  String get sundayRemark3 =>
+      'Lunch on Sunday could benefit from more diverse protein sources based on current vote distribution.';
+
+  @override
+  String get mondayRemark1 =>
+      'Pizza for Monday dinner received overwhelming votes; consider making it a regular special.';
+
+  @override
+  String get mondayRemark2 =>
+      'Breakfast on Monday sees a strong preference for Egg Toast, indicating a need for quick and familiar options.';
+
+  @override
+  String get mondayRemark3 =>
+      'Lunch options on Monday are fairly balanced, but Pasta Bake leads the preferences.';
+
+  @override
+  String get tuesdayRemark1 =>
+      'South Indian breakfast options are popular on Tuesdays.';
+
+  @override
+  String get tuesdayRemark2 =>
+      'Dal Makhani is a preferred lunch item, consider its regular inclusion.';
+
+  @override
+  String get tuesdayRemark3 =>
+      'Chicken Curry remains a strong contender for dinner choice.';
+
+  @override
+  String get wednesdayRemark1 =>
+      'Western breakfast is highly favored on Wednesdays.';
+
+  @override
+  String get wednesdayRemark2 =>
+      'Fish & Chips stands out for lunch, a good option for variety.';
+
+  @override
+  String get wednesdayRemark3 =>
+      'Beef Steak is the top pick for dinner, indicating demand for premium options.';
+
+  @override
+  String get thursdayRemark1 =>
+      'Healthy breakfast options like Oatmeal and Yogurt Parfait are well-received.';
+
+  @override
+  String get thursdayRemark2 =>
+      'Sushi is surprisingly popular for lunch, consider expanding Asian cuisine.';
+
+  @override
+  String get thursdayRemark3 =>
+      'Tacos are a clear winner for dinner; a themed night could work well.';
+
+  @override
+  String get fridayRemark1 =>
+      'Pastries are a good choice for Friday breakfast.';
+
+  @override
+  String get fridayRemark2 =>
+      'Pizza is overwhelmingly popular for Friday lunch, consider offering more toppings.';
+
+  @override
+  String get fridayRemark3 =>
+      'BBQ Ribs are highly demanded for Friday dinner, a good end-of-week treat.';
+
+  @override
+  String get saturdayRemark1 =>
+      'Hearty breakfast options are preferred on Saturdays.';
+
+  @override
+  String get saturdayRemark2 =>
+      'Burgers are a casual and popular lunch choice for the weekend.';
+
+  @override
+  String get saturdayRemark3 =>
+      'Seafood Boil is a top choice for Saturday dinner, indicating a preference for special meals.';
+
+  @override
+  String get noSpecificRemarks =>
+      'No specific remarks available for this day yet.';
+
+  @override
+  String get dataCollectionOngoing =>
+      'Data collection is ongoing; encourage more members to vote to gather comprehensive insights.';
 }

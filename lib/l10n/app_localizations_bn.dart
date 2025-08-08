@@ -635,4 +635,163 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get leave => 'ছুটি';
+
+  @override
+  String get addNewSet => 'নতুন সেট যোগ করুন';
+
+  @override
+  String get searchMealSets => 'খাবারের সেট খুঁজুন...';
+
+  @override
+  String get noMealVoteData =>
+      'নির্বাচিত দিন বা অনুসন্ধান অনুযায়ী কোন খাবারের ভোটের তথ্য নেই।';
+
+  @override
+  String get sunday => 'রবিবার';
+
+  @override
+  String get monday => 'সোমবার';
+
+  @override
+  String get tuesday => 'মঙ্গলবার';
+
+  @override
+  String get wednesday => 'বুধবার';
+
+  @override
+  String get thursday => 'বৃহস্পতিবার';
+
+  @override
+  String get friday => 'শুক্রবার';
+
+  @override
+  String get saturday => 'শনিবার';
+
+  @override
+  String get mealVoteStatistics => 'খাবারের ভোটের পরিসংখ্যান';
+
+  @override
+  String get insightsRemarks => 'অন্তর্দৃষ্টি ও মন্তব্য';
+
+  @override
+  String get noRemarksAvailable =>
+      'এই মুহূর্তে কোন নির্দিষ্ট মন্তব্য পাওয়া যাচ্ছে না। পরে আবার চেক করুন।';
+
+  @override
+  String get parathaSet => 'পরোটা সেট';
+
+  @override
+  String get rutiSet => 'রুটি সেট';
+
+  @override
+  String get naanSet => 'নান সেট';
+
+  @override
+  String get chickenSet => 'চিকেন সেট';
+
+  @override
+  String get fishSet => 'মাছ সেট';
+
+  @override
+  String get vegetableSet => 'সবজি সেট';
+
+  @override
+  String get biriyaniSet => 'বিরিয়ানি সেট';
+
+  @override
+  String get riceSet => 'ভাত সেট';
+
+  @override
+  String get khichuriSet => 'খিচুড়ি সেট';
+
+  @override
+  String get sundayRemark1 =>
+      'রবিবারের রাতের খাবারে Biriyani একটি স্পষ্ট পছন্দ, যা সপ্তাহের শেষে হৃদয়গ্রাহী খাবারের জন্য দৃঢ় পছন্দ নির্দেশ করে।';
+
+  @override
+  String get sundayRemark2 =>
+      'রবিবারে Continental Breakfast জনপ্রিয়, যা সাপ্তাহিক ছুটিতে হালকা নাস্তার পছন্দ নির্দেশ করে।';
+
+  @override
+  String get sundayRemark3 =>
+      'দুপুরের খাবারে Fish Curry পারিবারিক সময়ে ঐতিহ্যবাহী স্বাদের পছন্দ প্রকাশ করে।';
+
+  @override
+  String get mondayRemark1 =>
+      'সোমবারের রাতের খাবারের জন্য Pizza অপ্রতিরোধ্য ভোট পেয়েছে; এটি একটি নিয়মিত বিশেষ করার কথা বিবেচনা করুন।';
+
+  @override
+  String get mondayRemark2 =>
+      'সোমবারের নাস্তায় Egg Toast এর জন্য দৃঢ় পছন্দ দেখা যায়, যা দ্রুত এবং পরিচিত বিকল্পের প্রয়োজন নির্দেশ করে।';
+
+  @override
+  String get mondayRemark3 =>
+      'সোমবারের দুপুরের খাবারের বিকল্পগুলি মোটামুটি সুষম, তবে Pasta Bake পছন্দের দিকে এগিয়ে রয়েছে।';
+
+  @override
+  String get tuesdayRemark1 =>
+      'মঙ্গলবারে South Indian নাস্তার বিকল্পগুলি জনপ্রিয়।';
+
+  @override
+  String get tuesdayRemark2 =>
+      'Dal Makhani একটি পছন্দের দুপুরের খাবার, এর নিয়মিত অন্তর্ভুক্তি বিবেচনা করুন।';
+
+  @override
+  String get tuesdayRemark3 =>
+      'Chicken Curry রাতের খাবারের পছন্দের জন্য একটি শক্তিশালী প্রতিযোগী রয়ে গেছে।';
+
+  @override
+  String get wednesdayRemark1 => 'বুধবারে Western নাস্তা অত্যন্ত পছন্দনীয়।';
+
+  @override
+  String get wednesdayRemark2 =>
+      'Fish and Chips দুপুরের খাবারের জন্য আলাদা, বৈচিত্র্যের জন্য একটি ভাল বিকল্প।';
+
+  @override
+  String get wednesdayRemark3 =>
+      'Beef Steak রাতের খাবারের জন্য শীর্ষ পছন্দ, প্রিমিয়াম বিকল্পের চাহিদা নির্দেশ করে।';
+
+  @override
+  String get thursdayRemark1 =>
+      'Oatmeal এবং Yogurt Parfait এর মতো স্বাস্থ্যকর নাস্তার বিকল্পগুলি ভালভাবে গৃহীত হয়।';
+
+  @override
+  String get thursdayRemark2 =>
+      'Sushi দুপুরের খাবারের জন্য আশ্চর্যজনকভাবে জনপ্রিয়, Asian খাবার সম্প্রসারণ বিবেচনা করুন।';
+
+  @override
+  String get thursdayRemark3 =>
+      'Tacos রাতের খাবারের জন্য একটি স্পষ্ট বিজয়ী; একটি থিমযুক্ত রাত ভাল কাজ করতে পারে।';
+
+  @override
+  String get fridayRemark1 =>
+      'Pastries শুক্রবারের নাস্তার জন্য একটি ভাল পছন্দ।';
+
+  @override
+  String get fridayRemark2 =>
+      'Pizza শুক্রবারের দুপুরের খাবারের জন্য অপ্রতিরোধ্যভাবে জনপ্রিয়, আরও টপিং অফার করার কথা বিবেচনা করুন।';
+
+  @override
+  String get fridayRemark3 =>
+      'BBQ Ribs শুক্রবারের রাতের খাবারের জন্য অত্যন্ত চাহিদা, সপ্তাহের শেষের একটি ভাল ট্রিট।';
+
+  @override
+  String get saturdayRemark1 =>
+      'শনিবারে হৃদয়গ্রাহী নাস্তার বিকল্পগুলি পছন্দ করা হয়।';
+
+  @override
+  String get saturdayRemark2 =>
+      'Burgers সপ্তাহান্তের জন্য একটি নৈমিত্তিক এবং জনপ্রিয় দুপুরের খাবারের পছন্দ।';
+
+  @override
+  String get saturdayRemark3 =>
+      'Seafood Boil শনিবারের রাতের খাবারের জন্য একটি শীর্ষ পছন্দ, বিশেষ খাবারের জন্য পছন্দ নির্দেশ করে।';
+
+  @override
+  String get noSpecificRemarks =>
+      'এই দিনের জন্য এখনও কোন নির্দিষ্ট মন্তব্য পাওয়া যায়নি।';
+
+  @override
+  String get dataCollectionOngoing =>
+      'ডেটা সংগ্রহ চলমান; ব্যাপক অন্তর্দৃষ্টি সংগ্রহের জন্য আরও সদস্যদের ভোট দিতে উৎসাহিত করুন।';
 }
