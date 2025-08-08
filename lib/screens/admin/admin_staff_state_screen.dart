@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+import '../../l10n/app_localizations.dart';
+import '../../providers/language_provider.dart';
 import '../../services/admin_auth_service.dart';
 import 'add_staff.dart';
 import 'admin_home_screen.dart';
@@ -125,7 +128,7 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load staff data: $e')),
+          SnackBar(content: Text('${AppLocalizations.of(context)!.failedToLoadStaffData}: $e')),
         );
       }
     }
@@ -208,7 +211,7 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Logout failed: $e')),
+          SnackBar(content: Text('${AppLocalizations.of(context)!.logoutFailed}: $e')),
         );
       }
     }
@@ -240,17 +243,17 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Confirm Save'),
-          content: const Text('Are you sure you want to save these changes?'),
+          title: Text(AppLocalizations.of(context)!.confirmSave),
+          content: Text(AppLocalizations.of(context)!.confirmSaveMessage),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
+              child: Text(AppLocalizations.of(context)!.cancel),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
               style: TextButton.styleFrom(foregroundColor: Colors.blue),
-              child: const Text('Save'),
+              child: Text(AppLocalizations.of(context)!.save),
             ),
           ],
         );
@@ -280,13 +283,13 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Changes saved successfully')),
+            SnackBar(content: Text(AppLocalizations.of(context)!.changesSavedSuccessfully)),
           );
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to save changes: $e')),
+            SnackBar(content: Text('${AppLocalizations.of(context)!.failedToSaveChanges}: $e')),
           );
         }
       }
@@ -313,36 +316,36 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Confirm Delete'),
+          title: Text(AppLocalizations.of(context)!.confirmDelete),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Are you sure you want to delete "${row['name']}"?'),
+              Text('${AppLocalizations.of(context)!.confirmDeleteMessage} ("${row['name']}")'),
               const SizedBox(height: 8),
-              const Text(
-                'This will permanently delete:',
-                style: TextStyle(fontWeight: FontWeight.w500),
+              Text(
+                AppLocalizations.of(context)!.permanentlyDeleteMessage,
+                style: const TextStyle(fontWeight: FontWeight.w500),
               ),
-              const Text('• Staff record from database'),
-              const Text('• Associated user account from all collections'),
-              const Text('• Firebase authentication account (automatic)'),
+              Text(AppLocalizations.of(context)!.deleteRecordInfo),
+              Text(AppLocalizations.of(context)!.deleteAccountInfo),
+              Text(AppLocalizations.of(context)!.deleteFirebaseInfo),
               const SizedBox(height: 8),
-              const Text(
-                'This action cannot be undone.',
-                style: TextStyle(color: Colors.red, fontSize: 12),
+              Text(
+                AppLocalizations.of(context)!.actionCannotBeUndone,
+                style: const TextStyle(color: Colors.red, fontSize: 12),
               ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
+              child: Text(AppLocalizations.of(context)!.cancel),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
               style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Delete'),
+              child: Text(AppLocalizations.of(context)!.delete),
             ),
           ],
         );
@@ -355,12 +358,12 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
         context: context,
         barrierDismissible: false,
         builder: (BuildContext context) {
-          return const AlertDialog(
+          return AlertDialog(
             content: Row(
               children: [
-                CircularProgressIndicator(),
-                SizedBox(width: 20),
-                Text('Deleting staff member...'),
+                const CircularProgressIndicator(),
+                const SizedBox(width: 20),
+                Text(AppLocalizations.of(context)!.deletingStaffMember),
               ],
             ),
           );
@@ -402,7 +405,7 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
         if (mounted) {
           Navigator.of(context).pop(); // Close loading dialog
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to delete staff member: $e')),
+            SnackBar(content: Text('${AppLocalizations.of(context)!.failedToDeleteStaffMember}: $e')),
           );
         }
       }
@@ -443,16 +446,39 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
     );
   }
 
+  Widget _buildFlagToggle(LanguageProvider languageProvider) {
+    return GestureDetector(
+      onTap: () {
+        languageProvider.changeLanguage(
+          languageProvider.isEnglish ? const Locale('bn') : const Locale('en')
+        );
+      },
+      child: Container(
+        width: 40,
+        height: 25,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: Colors.white, width: 1),
+        ),
+        child: CustomPaint(
+          painter: languageProvider.isEnglish ? EnglandFlagPainter() : BangladeshFlagPainter(),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Show loading screen while checking authentication
-    if (_isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
+    return Consumer<LanguageProvider>(
+      builder: (context, languageProvider, child) {
+        // Show loading screen while checking authentication
+        if (_isLoading) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
 
     final filteredData = staffData.where((row) {
       return row.values
@@ -464,14 +490,20 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
         backgroundColor: const Color(0xFF002B5B),
         iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
-        title: const Text(
-          "Staff State",
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.staffState,
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w600,
             fontSize: 18,
           ),
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: _buildFlagToggle(languageProvider),
+          ),
+        ],
       ),
       drawer: Drawer(
         child: Column(
@@ -533,7 +565,7 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                 children: [
                   _buildSidebarTile(
                     icon: Icons.dashboard,
-                    title: "Home",
+                    title: AppLocalizations.of(context)!.home,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -545,7 +577,7 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.people,
-                    title: "Users",
+                    title: AppLocalizations.of(context)!.users,
                     onTap: () {
                       Navigator.push(
                         context,
@@ -557,7 +589,7 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.pending,
-                    title: "Pending IDs",
+                    title: AppLocalizations.of(context)!.pendingIds,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -569,7 +601,7 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.history,
-                    title: "Shopping History",
+                    title: AppLocalizations.of(context)!.shoppingHistory,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -582,7 +614,7 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.receipt,
-                    title: "Voucher List",
+                    title: AppLocalizations.of(context)!.voucherList,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -594,7 +626,7 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.storage,
-                    title: "Inventory",
+                    title: AppLocalizations.of(context)!.inventory,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -606,7 +638,7 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.food_bank,
-                    title: "Messing",
+                    title: AppLocalizations.of(context)!.messing,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -618,7 +650,7 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.menu_book,
-                    title: "Monthly Menu",
+                    title: AppLocalizations.of(context)!.monthlyMenu,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -630,7 +662,7 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.analytics,
-                    title: "Meal State",
+                    title: AppLocalizations.of(context)!.mealState,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -642,7 +674,7 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.thumb_up,
-                    title: "Menu Vote",
+                    title: AppLocalizations.of(context)!.menuVote,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -654,7 +686,7 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.receipt_long,
-                    title: "Bills",
+                    title: AppLocalizations.of(context)!.bills,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -666,7 +698,7 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.payment,
-                    title: "Payments",
+                    title: AppLocalizations.of(context)!.payments,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -678,7 +710,7 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.people_alt,
-                    title: "Dining Member State",
+                    title: AppLocalizations.of(context)!.diningMemberState,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -690,7 +722,7 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.manage_accounts,
-                    title: "Staff State",
+                    title: AppLocalizations.of(context)!.staffState,
                     selected: true,
                     onTap: () => Navigator.pop(context),
                   ),
@@ -710,7 +742,7 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                 ),
                 child: _buildSidebarTile(
                   icon: Icons.logout,
-                  title: "Logout",
+                  title: AppLocalizations.of(context)!.logout,
                   onTap: _logout,
                   color: Colors.red,
                 ),
@@ -773,58 +805,58 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                               columnSpacing: 12, // Reduced column spacing
                               headingRowColor: WidgetStateProperty.all(
                                   const Color(0xFF1A4D8F)),
-                              columns: const [
+                              columns: [
                                 DataColumn(
-                                    label: Text('BA/ID No',
-                                        style: TextStyle(
+                                    label: Text(AppLocalizations.of(context)!.baIdNo,
+                                        style: const TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.bold,
                                             fontSize: 12))),
                                 DataColumn(
-                                    label: Text('Rank',
-                                        style: TextStyle(
+                                    label: Text(AppLocalizations.of(context)!.rank,
+                                        style: const TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.bold,
                                             fontSize: 12))),
                                 DataColumn(
-                                    label: Text('Name',
-                                        style: TextStyle(
+                                    label: Text(AppLocalizations.of(context)!.name,
+                                        style: const TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.bold,
                                             fontSize: 12))),
                                 DataColumn(
-                                    label: Text('Unit',
-                                        style: TextStyle(
+                                    label: Text(AppLocalizations.of(context)!.unit,
+                                        style: const TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.bold,
                                             fontSize: 12))),
                                 DataColumn(
-                                    label: Text('Mobile',
-                                        style: TextStyle(
+                                    label: Text(AppLocalizations.of(context)!.mobile,
+                                        style: const TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.bold,
                                             fontSize: 12))),
                                 DataColumn(
-                                    label: Text('Email',
-                                        style: TextStyle(
+                                    label: Text(AppLocalizations.of(context)!.email,
+                                        style: const TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.bold,
                                             fontSize: 12))),
                                 DataColumn(
-                                    label: Text('Role',
-                                        style: TextStyle(
+                                    label: Text(AppLocalizations.of(context)!.role,
+                                        style: const TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.bold,
                                             fontSize: 12))),
                                 DataColumn(
-                                    label: Text('Status',
-                                        style: TextStyle(
+                                    label: Text(AppLocalizations.of(context)!.status,
+                                        style: const TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.bold,
                                             fontSize: 12))),
                                 DataColumn(
-                                    label: Text('Action',
-                                        style: TextStyle(
+                                    label: Text(AppLocalizations.of(context)!.action,
+                                        style: const TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.bold,
                                             fontSize: 12))),
@@ -1025,17 +1057,17 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                                           ? DropdownButton<String>(
                                               value: row['status'],
                                               isExpanded: true,
-                                              items: const [
+                                              items: [
                                                 DropdownMenuItem(
                                                   value: 'Active',
-                                                  child: Text('Active',
-                                                      style: TextStyle(
+                                                  child: Text(AppLocalizations.of(context)!.active,
+                                                      style: const TextStyle(
                                                           fontSize: 12)),
                                                 ),
                                                 DropdownMenuItem(
                                                   value: 'Inactive',
-                                                  child: Text('Inactive',
-                                                      style: TextStyle(
+                                                  child: Text(AppLocalizations.of(context)!.inactive,
+                                                      style: const TextStyle(
                                                           fontSize: 12)),
                                                 ),
                                               ],
@@ -1163,5 +1195,52 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
               ),
             ),
     );
+      },
+    );
   }
+}
+
+class EnglandFlagPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Draw England flag
+    Paint paint = Paint();
+    
+    // White background
+    paint.color = Colors.white;
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
+    
+    // Red cross
+    paint.color = Colors.red;
+    // Vertical line
+    canvas.drawRect(Rect.fromLTWH(size.width * 0.4, 0, size.width * 0.2, size.height), paint);
+    // Horizontal line
+    canvas.drawRect(Rect.fromLTWH(0, size.height * 0.4, size.width, size.height * 0.2), paint);
+  }
+  
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
+}
+
+class BangladeshFlagPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Draw Bangladesh flag
+    Paint paint = Paint();
+    
+    // Green background
+    paint.color = const Color(0xFF006A4E);
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
+    
+    // Red circle
+    paint.color = const Color(0xFFF42A41);
+    canvas.drawCircle(
+      Offset(size.width * 0.4, size.height * 0.5), 
+      size.height * 0.3, 
+      paint
+    );
+  }
+  
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

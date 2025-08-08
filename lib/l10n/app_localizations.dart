@@ -1783,6 +1783,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cancel'**
   String get cancelTooltip;
+
+  /// No description provided for @baIdNo.
+  ///
+  /// In en, this message translates to:
+  /// **'BA/ID No'**
+  String get baIdNo;
+
+  /// No description provided for @confirmSaveMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to save these changes?'**
+  String get confirmSaveMessage;
+
+  /// No description provided for @changesSavedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes saved successfully'**
+  String get changesSavedSuccessfully;
+
+  /// No description provided for @confirmDeleteMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this staff member?'**
+  String get confirmDeleteMessage;
+
+  /// No description provided for @permanentlyDeleteMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This will permanently delete:'**
+  String get permanentlyDeleteMessage;
+
+  /// No description provided for @actionCannotBeUndone.
+  ///
+  /// In en, this message translates to:
+  /// **'This action cannot be undone.'**
+  String get actionCannotBeUndone;
+
+  /// No description provided for @deleteRecordInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'• Staff record from database'**
+  String get deleteRecordInfo;
+
+  /// No description provided for @deleteAccountInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'• Associated user account from all collections'**
+  String get deleteAccountInfo;
+
+  /// No description provided for @deleteFirebaseInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'• Firebase authentication account (automatic)'**
+  String get deleteFirebaseInfo;
+
+  /// No description provided for @deletingStaffMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting staff member...'**
+  String get deletingStaffMember;
+
+  /// No description provided for @failedToDeleteStaffMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete staff member'**
+  String get failedToDeleteStaffMember;
+
+  /// No description provided for @failedToLoadStaffData.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load staff data'**
+  String get failedToLoadStaffData;
 }
 
 class _AppLocalizationsDelegate

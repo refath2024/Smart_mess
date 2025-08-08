@@ -886,4 +886,44 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cancelTooltip => 'Cancel';
+
+  @override
+  String get baIdNo => 'BA/ID No';
+
+  @override
+  String get confirmSaveMessage =>
+      'Are you sure you want to save these changes?';
+
+  @override
+  String get changesSavedSuccessfully => 'Changes saved successfully';
+
+  @override
+  String get confirmDeleteMessage =>
+      'Are you sure you want to delete this staff member?';
+
+  @override
+  String get permanentlyDeleteMessage => 'This will permanently delete:';
+
+  @override
+  String get actionCannotBeUndone => 'This action cannot be undone.';
+
+  @override
+  String get deleteRecordInfo => '• Staff record from database';
+
+  @override
+  String get deleteAccountInfo =>
+      '• Associated user account from all collections';
+
+  @override
+  String get deleteFirebaseInfo =>
+      '• Firebase authentication account (automatic)';
+
+  @override
+  String get deletingStaffMember => 'Deleting staff member...';
+
+  @override
+  String get failedToDeleteStaffMember => 'Failed to delete staff member';
+
+  @override
+  String get failedToLoadStaffData => 'Failed to load staff data';
 }

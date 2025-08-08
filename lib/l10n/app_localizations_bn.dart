@@ -54,7 +54,7 @@ class AppLocalizationsBn extends AppLocalizations {
   String get diningMemberState => 'ডাইনিং সদস্য অবস্থা';
 
   @override
-  String get staffState => 'কর্মচারীদের অবস্থা';
+  String get staffState => 'স্টাফ অবস্থা';
 
   @override
   String get logout => 'লগআউট';
@@ -123,7 +123,7 @@ class AppLocalizationsBn extends AppLocalizations {
   String get cancel => 'বাতিল';
 
   @override
-  String get delete => 'মুছুন';
+  String get delete => 'মুছে ফেলুন';
 
   @override
   String get confirmDelete => 'মুছে ফেলা নিশ্চিত করুন';
@@ -141,7 +141,7 @@ class AppLocalizationsBn extends AppLocalizations {
   String get type => 'ধরন';
 
   @override
-  String get action => 'কার্যক্রম';
+  String get action => 'কর্ম';
 
   @override
   String get buyerName => 'ক্রেতার নাম';
@@ -337,7 +337,7 @@ class AppLocalizationsBn extends AppLocalizations {
   String get biriyaniChickenRoastSalad => 'বিরিয়ানি, চিকেন রোস্ট, সালাদ';
 
   @override
-  String get logoutFailed => 'লগআউট ব্যর্থ হয়েছে';
+  String get logoutFailed => 'লগআউট ব্যর্থ';
 
   @override
   String get changeLanguage => 'ভাষা পরিবর্তন করুন';
@@ -433,7 +433,7 @@ class AppLocalizationsBn extends AppLocalizations {
   String get errorLoadingUsersData => 'ব্যবহারকারী ডেটা লোড করতে ত্রুটি';
 
   @override
-  String get rank => 'পদবী';
+  String get rank => 'পদবি';
 
   @override
   String get unit => 'ইউনিট';
@@ -536,7 +536,7 @@ class AppLocalizationsBn extends AppLocalizations {
       'আপনি কি নিশ্চিত যে আপনি পরিবর্তনগুলি বাতিল করতে চান?';
 
   @override
-  String get confirmSave => 'সেভ নিশ্চিত করুন';
+  String get confirmSave => 'সংরক্ষণ নিশ্চিত করুন';
 
   @override
   String get saveChanges =>
@@ -869,7 +869,7 @@ class AppLocalizationsBn extends AppLocalizations {
   String get failedToFetchUsers => 'ব্যবহারকারী আনতে ব্যর্থ';
 
   @override
-  String get failedToSaveChanges => 'পরিবর্তন সংরক্ষণ করতে ব্যর্থ';
+  String get failedToSaveChanges => 'পরিবর্তনগুলি সংরক্ষণ করতে ব্যর্থ';
 
   @override
   String get approvedBy => 'অনুমোদনকারী';
@@ -888,4 +888,43 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get cancelTooltip => 'বাতিল';
+
+  @override
+  String get baIdNo => 'বিএ/আইডি নং';
+
+  @override
+  String get confirmSaveMessage => 'আপনি কি এই পরিবর্তনগুলি সংরক্ষণ করতে চান?';
+
+  @override
+  String get changesSavedSuccessfully =>
+      'পরিবর্তনগুলি সফলভাবে সংরক্ষণ করা হয়েছে';
+
+  @override
+  String get confirmDeleteMessage => 'আপনি কি এই স্টাফ সদস্যকে মুছে ফেলতে চান?';
+
+  @override
+  String get permanentlyDeleteMessage => 'এটি স্থায়ীভাবে মুছে ফেলবে:';
+
+  @override
+  String get actionCannotBeUndone => 'এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।';
+
+  @override
+  String get deleteRecordInfo => '• ডাটাবেস থেকে স্টাফ রেকর্ড';
+
+  @override
+  String get deleteAccountInfo =>
+      '• সমস্ত সংগ্রহ থেকে সংশ্লিষ্ট ব্যবহারকারী অ্যাকাউন্ট';
+
+  @override
+  String get deleteFirebaseInfo =>
+      '• ফায়ারবেস প্রমাণীকরণ অ্যাকাউন্ট (স্বয়ংক্রিয়)';
+
+  @override
+  String get deletingStaffMember => 'স্টাফ সদস্য মুছে ফেলা হচ্ছে...';
+
+  @override
+  String get failedToDeleteStaffMember => 'স্টাফ সদস্য মুছে ফেলতে ব্যর্থ';
+
+  @override
+  String get failedToLoadStaffData => 'স্টাফ ডেটা লোড করতে ব্যর্থ';
 }
