@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/language_provider.dart';
+import '../../l10n/app_localizations.dart';
 import 'admin_home_screen.dart';
 import 'admin_users_screen.dart';
 import 'admin_pending_ids_screen.dart';
@@ -107,7 +110,7 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Logout failed: $e')),
+          SnackBar(content: Text('${AppLocalizations.of(context)!.logoutFailed}: $e')),
         );
       }
     }
@@ -129,6 +132,32 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
       ),
       title: Text(title, style: TextStyle(color: color ?? Colors.black)),
       onTap: onTap,
+    );
+  }
+
+  // Helper method to build flag toggle
+  Widget _buildFlagToggle(BuildContext context) {
+    return Consumer<LanguageProvider>(
+      builder: (context, languageProvider, child) {
+        return GestureDetector(
+          onTap: () {
+            languageProvider.changeLanguage(
+              languageProvider.currentLocale.languageCode == 'en' 
+                ? const Locale('bn') 
+                : const Locale('en')
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            child: CustomPaint(
+              size: const Size(32, 20),
+              painter: languageProvider.currentLocale.languageCode == 'en'
+                  ? BangladeshFlagPainter()
+                  : EnglandFlagPainter(),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -313,14 +342,16 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Show loading screen while checking authentication
-    if (_isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
+    return Consumer<LanguageProvider>(
+      builder: (context, languageProvider, child) {
+        // Show loading screen while checking authentication
+        if (_isLoading) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
 
     final filteredBills = bills.where((bill) {
       final combined =
@@ -389,7 +420,7 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                 children: [
                   _buildSidebarTile(
                     icon: Icons.dashboard,
-                    title: "Home",
+                    title: AppLocalizations.of(context)!.home,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -401,7 +432,7 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.people,
-                    title: "Users",
+                    title: AppLocalizations.of(context)!.users,
                     onTap: () {
                       Navigator.push(
                         context,
@@ -413,7 +444,7 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.pending,
-                    title: "Pending IDs",
+                    title: AppLocalizations.of(context)!.pendingIds,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -425,7 +456,7 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.history,
-                    title: "Shopping History",
+                    title: AppLocalizations.of(context)!.shoppingHistory,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -438,7 +469,7 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.receipt,
-                    title: "Voucher List",
+                    title: AppLocalizations.of(context)!.voucherList,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -450,7 +481,7 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.storage,
-                    title: "Inventory",
+                    title: AppLocalizations.of(context)!.inventory,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -462,7 +493,7 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.food_bank,
-                    title: "Messing",
+                    title: AppLocalizations.of(context)!.messing,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -474,7 +505,7 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.menu_book,
-                    title: "Monthly Menu",
+                    title: AppLocalizations.of(context)!.monthlyMenu,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -486,7 +517,7 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.analytics,
-                    title: "Meal State",
+                    title: AppLocalizations.of(context)!.mealState,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -498,7 +529,7 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.thumb_up,
-                    title: "Menu Vote",
+                    title: AppLocalizations.of(context)!.menuVote,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -510,13 +541,13 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.receipt_long,
-                    title: "Bills",
+                    title: AppLocalizations.of(context)!.bills,
                     selected: true,
                     onTap: () => Navigator.pop(context),
                   ),
                   _buildSidebarTile(
                     icon: Icons.payment,
-                    title: "Payments",
+                    title: AppLocalizations.of(context)!.payments,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -528,7 +559,7 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.people_alt,
-                    title: "Dining Member State",
+                    title: AppLocalizations.of(context)!.diningMemberState,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -540,7 +571,7 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.manage_accounts,
-                    title: "Staff State",
+                    title: AppLocalizations.of(context)!.staffState,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -566,7 +597,7 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                 ),
                 child: _buildSidebarTile(
                   icon: Icons.logout,
-                  title: "Logout",
+                  title: AppLocalizations.of(context)!.logout,
                   onTap: _logout,
                   color: Colors.red,
                 ),
@@ -579,14 +610,17 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
         backgroundColor: const Color(0xFF002B5B),
         iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
-        title: const Text(
-          "Bills",
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.bills,
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w600,
             fontSize: 18,
           ),
         ),
+        actions: [
+          _buildFlagToggle(context),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -599,7 +633,7 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                   width: 180, // Reduced width
                   child: TextField(
                     decoration: InputDecoration(
-                      hintText: 'Search...',
+                      hintText: AppLocalizations.of(context)!.search,
                       prefixIcon: const Icon(Icons.search, size: 20),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -620,7 +654,7 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                   onPressed: () async {
                     if (filteredBills.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("No bills to export")),
+                        SnackBar(content: Text(AppLocalizations.of(context)!.noBillsToExport)),
                       );
                     } else {
                       await _generateBillsPdf(filteredBills);
@@ -636,9 +670,9 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Text(
-                    'Export Bills',
-                    style: TextStyle(
+                  child: Text(
+                    AppLocalizations.of(context)!.exportBills,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                     ),
@@ -656,11 +690,11 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                   headingRowColor: WidgetStateProperty.all(
                     const Color(0xFF1A4D8F),
                   ),
-                  columns: const [
+                  columns: [
                     DataColumn(
                       label: Text(
-                        'BA No',
-                        style: TextStyle(
+                        AppLocalizations.of(context)!.baNo,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
@@ -668,8 +702,8 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                     ),
                     DataColumn(
                       label: Text(
-                        'Rank',
-                        style: TextStyle(
+                        AppLocalizations.of(context)!.rank,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
@@ -677,8 +711,8 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                     ),
                     DataColumn(
                       label: Text(
-                        'Name',
-                        style: TextStyle(
+                        AppLocalizations.of(context)!.name,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
@@ -686,8 +720,8 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                     ),
                     DataColumn(
                       label: Text(
-                        'Status',
-                        style: TextStyle(
+                        AppLocalizations.of(context)!.status,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
@@ -695,8 +729,8 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                     ),
                     DataColumn(
                       label: Text(
-                        'Previous Arrear',
-                        style: TextStyle(
+                        AppLocalizations.of(context)!.previousArrear,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
@@ -704,8 +738,8 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                     ),
                     DataColumn(
                       label: Text(
-                        'Current Bill',
-                        style: TextStyle(
+                        AppLocalizations.of(context)!.currentBill,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
@@ -713,8 +747,8 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                     ),
                     DataColumn(
                       label: Text(
-                        'Total Due',
-                        style: TextStyle(
+                        AppLocalizations.of(context)!.totalDue,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
@@ -722,8 +756,8 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                     ),
                     DataColumn(
                       label: Text(
-                        'Action',
-                        style: TextStyle(
+                        AppLocalizations.of(context)!.action,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
@@ -830,5 +864,49 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
         ),
       ),
     );
+      },
+    );
   }
+}
+
+// Flag painter classes
+class EnglandFlagPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Paint whitePaint = Paint()..color = Colors.white;
+    final Paint redPaint = Paint()..color = Colors.red;
+
+    // White background
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), whitePaint);
+
+    // Red cross
+    canvas.drawRect(
+        Rect.fromLTWH(size.width * 0.4, 0, size.width * 0.2, size.height),
+        redPaint);
+    canvas.drawRect(
+        Rect.fromLTWH(0, size.height * 0.4, size.width, size.height * 0.2),
+        redPaint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
+}
+
+class BangladeshFlagPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Paint greenPaint = Paint()..color = const Color(0xFF006A4E);
+    final Paint redPaint = Paint()..color = const Color(0xFFF42A41);
+
+    // Green background
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), greenPaint);
+
+    // Red circle (offset slightly to the left)
+    final double radius = size.height * 0.3;
+    final Offset center = Offset(size.width * 0.4, size.width * 0.5);
+    canvas.drawCircle(center, radius, redPaint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

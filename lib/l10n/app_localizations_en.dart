@@ -111,7 +111,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get refresh => 'Refresh';
 
   @override
-  String get search => 'Search';
+  String get search => 'Search...';
 
   @override
   String get edit => 'Edit';
@@ -792,4 +792,22 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get dataCollectionOngoing =>
       'Data collection is ongoing; encourage more members to vote to gather comprehensive insights.';
+
+  @override
+  String get exportBills => 'Export Bills';
+
+  @override
+  String get baNo => 'BA No';
+
+  @override
+  String get previousArrear => 'Previous Arrear';
+
+  @override
+  String get currentBill => 'Current Bill';
+
+  @override
+  String get totalDue => 'Total Due';
+
+  @override
+  String get noBillsToExport => 'No bills to export';
 }

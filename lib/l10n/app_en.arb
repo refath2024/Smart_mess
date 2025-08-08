@@ -268,5 +268,17 @@
   "saturdayRemark2": "Burgers are a casual and popular lunch choice for the weekend.",
   "saturdayRemark3": "Seafood Boil is a top choice for Saturday dinner, indicating a preference for special meals.",
   "noSpecificRemarks": "No specific remarks available for this day yet.",
-  "dataCollectionOngoing": "Data collection is ongoing; encourage more members to vote to gather comprehensive insights."
+  "dataCollectionOngoing": "Data collection is ongoing; encourage more members to vote to gather comprehensive insights.",
+  "bills": "Bills",
+  "exportBills": "Export Bills",
+  "baNo": "BA No",
+  "rank": "Rank",
+  "name": "Name",
+  "status": "Status",
+  "previousArrear": "Previous Arrear",
+  "currentBill": "Current Bill",
+  "totalDue": "Total Due",
+  "action": "Action",
+  "noBillsToExport": "No bills to export",
+  "search": "Search..."
 }

@@ -305,7 +305,7 @@ abstract class AppLocalizations {
   /// No description provided for @search.
   ///
   /// In en, this message translates to:
-  /// **'Search'**
+  /// **'Search...'**
   String get search;
 
   /// No description provided for @edit.
@@ -1597,6 +1597,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Data collection is ongoing; encourage more members to vote to gather comprehensive insights.'**
   String get dataCollectionOngoing;
+
+  /// No description provided for @exportBills.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Bills'**
+  String get exportBills;
+
+  /// No description provided for @baNo.
+  ///
+  /// In en, this message translates to:
+  /// **'BA No'**
+  String get baNo;
+
+  /// No description provided for @previousArrear.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous Arrear'**
+  String get previousArrear;
+
+  /// No description provided for @currentBill.
+  ///
+  /// In en, this message translates to:
+  /// **'Current Bill'**
+  String get currentBill;
+
+  /// No description provided for @totalDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Due'**
+  String get totalDue;
+
+  /// No description provided for @noBillsToExport.
+  ///
+  /// In en, this message translates to:
+  /// **'No bills to export'**
+  String get noBillsToExport;
 }
 
 class _AppLocalizationsDelegate

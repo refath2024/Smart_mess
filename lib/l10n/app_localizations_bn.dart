@@ -111,7 +111,7 @@ class AppLocalizationsBn extends AppLocalizations {
   String get refresh => 'রিফ্রেশ';
 
   @override
-  String get search => 'অনুসন্ধান';
+  String get search => 'খুঁজুন...';
 
   @override
   String get edit => 'সম্পাদনা';
@@ -794,4 +794,22 @@ class AppLocalizationsBn extends AppLocalizations {
   @override
   String get dataCollectionOngoing =>
       'ডেটা সংগ্রহ চলমান; ব্যাপক অন্তর্দৃষ্টি সংগ্রহের জন্য আরও সদস্যদের ভোট দিতে উৎসাহিত করুন।';
+
+  @override
+  String get exportBills => 'বিল রপ্তানি';
+
+  @override
+  String get baNo => 'বিএ নং';
+
+  @override
+  String get previousArrear => 'পূর্ববর্তী বকেয়া';
+
+  @override
+  String get currentBill => 'বর্তমান বিল';
+
+  @override
+  String get totalDue => 'মোট বকেয়া';
+
+  @override
+  String get noBillsToExport => 'রপ্তানি করার জন্য কোন বিল নেই';
 }
