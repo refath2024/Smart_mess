@@ -1219,6 +1219,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No'**
   String get no;
+
+  /// No description provided for @confirmSaveMealState.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to save the changes?'**
+  String get confirmSaveMealState;
+
+  /// No description provided for @recordUpdatedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Record updated successfully'**
+  String get recordUpdatedSuccessfully;
+
+  /// No description provided for @errorUpdatingRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Error updating record'**
+  String get errorUpdatingRecord;
+
+  /// No description provided for @deleteRecordConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this record?'**
+  String get deleteRecordConfirm;
+
+  /// No description provided for @recordDeletedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Record deleted successfully'**
+  String get recordDeletedSuccessfully;
+
+  /// No description provided for @errorDeletingRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Error deleting record'**
+  String get errorDeletingRecord;
+
+  /// No description provided for @selectDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Date'**
+  String get selectDate;
+
+  /// No description provided for @seeRecords.
+  ///
+  /// In en, this message translates to:
+  /// **'See Records'**
+  String get seeRecords;
+
+  /// No description provided for @eatingBreakfast.
+  ///
+  /// In en, this message translates to:
+  /// **'Eating Breakfast'**
+  String get eatingBreakfast;
+
+  /// No description provided for @eatingLunch.
+  ///
+  /// In en, this message translates to:
+  /// **'Eating Lunch'**
+  String get eatingLunch;
+
+  /// No description provided for @eatingDinner.
+  ///
+  /// In en, this message translates to:
+  /// **'Eating Dinner'**
+  String get eatingDinner;
+
+  /// No description provided for @errorFetchingMealStateData.
+  ///
+  /// In en, this message translates to:
+  /// **'Error fetching meal state data'**
+  String get errorFetchingMealStateData;
+
+  /// No description provided for @disposals.
+  ///
+  /// In en, this message translates to:
+  /// **'Disposals'**
+  String get disposals;
+
+  /// No description provided for @remarks.
+  ///
+  /// In en, this message translates to:
+  /// **'Remarks'**
+  String get remarks;
+
+  /// No description provided for @noData.
+  ///
+  /// In en, this message translates to:
+  /// **'No data'**
+  String get noData;
+
+  /// No description provided for @dash.
+  ///
+  /// In en, this message translates to:
+  /// **'-'**
+  String get dash;
+
+  /// No description provided for @siq.
+  ///
+  /// In en, this message translates to:
+  /// **'SIQ'**
+  String get siq;
+
+  /// No description provided for @leave.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave'**
+  String get leave;
 }
 
 class _AppLocalizationsDelegate

@@ -576,4 +576,60 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get no => 'No';
+
+  @override
+  String get confirmSaveMealState =>
+      'Are you sure you want to save the changes?';
+
+  @override
+  String get recordUpdatedSuccessfully => 'Record updated successfully';
+
+  @override
+  String get errorUpdatingRecord => 'Error updating record';
+
+  @override
+  String get deleteRecordConfirm =>
+      'Are you sure you want to delete this record?';
+
+  @override
+  String get recordDeletedSuccessfully => 'Record deleted successfully';
+
+  @override
+  String get errorDeletingRecord => 'Error deleting record';
+
+  @override
+  String get selectDate => 'Select Date';
+
+  @override
+  String get seeRecords => 'See Records';
+
+  @override
+  String get eatingBreakfast => 'Eating Breakfast';
+
+  @override
+  String get eatingLunch => 'Eating Lunch';
+
+  @override
+  String get eatingDinner => 'Eating Dinner';
+
+  @override
+  String get errorFetchingMealStateData => 'Error fetching meal state data';
+
+  @override
+  String get disposals => 'Disposals';
+
+  @override
+  String get remarks => 'Remarks';
+
+  @override
+  String get noData => 'No data';
+
+  @override
+  String get dash => '-';
+
+  @override
+  String get siq => 'SIQ';
+
+  @override
+  String get leave => 'Leave';
 }

@@ -337,7 +337,7 @@ class AppLocalizationsBn extends AppLocalizations {
   String get biriyaniChickenRoastSalad => 'বিরিয়ানি, চিকেন রোস্ট, সালাদ';
 
   @override
-  String get logoutFailed => 'লগআউট ব্যর্থ';
+  String get logoutFailed => 'লগআউট ব্যর্থ হয়েছে';
 
   @override
   String get changeLanguage => 'ভাষা পরিবর্তন করুন';
@@ -579,4 +579,60 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get no => 'না';
+
+  @override
+  String get confirmSaveMealState =>
+      'আপনি কি নিশ্চিত যে আপনি পরিবর্তনগুলি সংরক্ষণ করতে চান?';
+
+  @override
+  String get recordUpdatedSuccessfully => 'রেকর্ড সফলভাবে আপডেট হয়েছে';
+
+  @override
+  String get errorUpdatingRecord => 'রেকর্ড আপডেট করতে ত্রুটি';
+
+  @override
+  String get deleteRecordConfirm =>
+      'আপনি কি নিশ্চিত যে আপনি এই রেকর্ডটি মুছে ফেলতে চান?';
+
+  @override
+  String get recordDeletedSuccessfully => 'রেকর্ড সফলভাবে মুছে ফেলা হয়েছে';
+
+  @override
+  String get errorDeletingRecord => 'রেকর্ড মুছে ফেলতে ত্রুটি';
+
+  @override
+  String get selectDate => 'তারিখ নির্বাচন করুন';
+
+  @override
+  String get seeRecords => 'রেকর্ড দেখুন';
+
+  @override
+  String get eatingBreakfast => 'নাস্তা খাওয়া';
+
+  @override
+  String get eatingLunch => 'দুপুরের খাবার খাওয়া';
+
+  @override
+  String get eatingDinner => 'রাতের খাবার খাওয়া';
+
+  @override
+  String get errorFetchingMealStateData => 'খাবারের অবস্থার ডেটা আনতে ত্রুটি';
+
+  @override
+  String get disposals => 'ডিসপোজাল';
+
+  @override
+  String get remarks => 'মন্তব্য';
+
+  @override
+  String get noData => 'কোন তথ্য নেই';
+
+  @override
+  String get dash => '-';
+
+  @override
+  String get siq => 'SIQ';
+
+  @override
+  String get leave => 'ছুটি';
 }
