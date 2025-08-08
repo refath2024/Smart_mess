@@ -280,5 +280,12 @@
   "totalDue": "Total Due",
   "action": "Action",
   "noBillsToExport": "No bills to export",
-  "search": "Search..."
+  "search": "Search...",
+  "paymentsHistory": "Payments History",
+  "insertTransaction": "Insert Transaction",
+  "paymentAmountBdt": "Payment Amount (BDT)",
+  "paymentTime": "Payment Time",
+  "paymentMethod": "Payment Method",
+  "actions": "Actions",
+  "loading": "Loading..."
 }

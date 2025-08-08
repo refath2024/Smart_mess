@@ -812,4 +812,22 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get noBillsToExport => 'রপ্তানি করার জন্য কোন বিল নেই';
+
+  @override
+  String get paymentsHistory => 'পেমেন্ট ইতিহাস';
+
+  @override
+  String get insertTransaction => 'লেনদেন যোগ করুন';
+
+  @override
+  String get paymentAmountBdt => 'পেমেন্ট পরিমাণ (টাকা)';
+
+  @override
+  String get paymentTime => 'পেমেন্ট সময়';
+
+  @override
+  String get paymentMethod => 'পেমেন্ট পদ্ধতি';
+
+  @override
+  String get loading => 'লোড হচ্ছে...';
 }

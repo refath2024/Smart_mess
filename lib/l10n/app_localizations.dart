@@ -1633,6 +1633,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No bills to export'**
   String get noBillsToExport;
+
+  /// No description provided for @paymentsHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Payments History'**
+  String get paymentsHistory;
+
+  /// No description provided for @insertTransaction.
+  ///
+  /// In en, this message translates to:
+  /// **'Insert Transaction'**
+  String get insertTransaction;
+
+  /// No description provided for @paymentAmountBdt.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment Amount (BDT)'**
+  String get paymentAmountBdt;
+
+  /// No description provided for @paymentTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment Time'**
+  String get paymentTime;
+
+  /// No description provided for @paymentMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment Method'**
+  String get paymentMethod;
+
+  /// No description provided for @loading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading...'**
+  String get loading;
 }
 
 class _AppLocalizationsDelegate

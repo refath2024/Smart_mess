@@ -280,5 +280,12 @@
   "totalDue": "মোট বকেয়া",
   "action": "কার্যক্রম",
   "noBillsToExport": "রপ্তানি করার জন্য কোন বিল নেই",
-  "search": "খুঁজুন..."
+  "search": "খুঁজুন...",
+  "paymentsHistory": "পেমেন্ট ইতিহাস",
+  "insertTransaction": "লেনদেন যোগ করুন",
+  "paymentAmountBdt": "পেমেন্ট পরিমাণ (টাকা)",
+  "paymentTime": "পেমেন্ট সময়",
+  "paymentMethod": "পেমেন্ট পদ্ধতি",
+  "actions": "কার্যক্রম",
+  "loading": "লোড হচ্ছে..."
 }

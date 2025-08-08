@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/language_provider.dart';
+import '../../l10n/app_localizations.dart';
 import 'package:smart_mess/services/admin_auth_service.dart';
 
 import 'admin_home_screen.dart';
@@ -178,13 +181,13 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirm Delete'),
+        title: Text(AppLocalizations.of(context)!.confirmDelete),
         content:
-            const Text('Are you sure you want to delete this transaction?'),
+            Text('${AppLocalizations.of(context)!.areYouSureYouWantToDelete} this transaction?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           TextButton(
             onPressed: () {
@@ -194,7 +197,7 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
               Navigator.pop(context);
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
+            child: Text(AppLocalizations.of(context)!.delete),
           ),
         ],
       ),
@@ -249,15 +252,43 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
     );
   }
 
+  // Helper method to build flag toggle
+  Widget _buildFlagToggle(BuildContext context) {
+    return Consumer<LanguageProvider>(
+      builder: (context, languageProvider, child) {
+        return GestureDetector(
+          onTap: () {
+            languageProvider.changeLanguage(
+              languageProvider.currentLocale.languageCode == 'en' 
+                ? const Locale('bn') 
+                : const Locale('en')
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            child: CustomPaint(
+              size: const Size(32, 20),
+              painter: languageProvider.currentLocale.languageCode == 'en'
+                  ? BangladeshFlagPainter()
+                  : EnglandFlagPainter(),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
+    return Consumer<LanguageProvider>(
+      builder: (context, languageProvider, child) {
+        if (_isLoading) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
 
     final filtered = transactions.where((txn) {
       final searchLower = searchQuery.toLowerCase();
@@ -328,73 +359,73 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
                 children: [
                   _buildSidebarTile(
                     icon: Icons.dashboard,
-                    title: "Home",
+                    title: AppLocalizations.of(context)!.home,
                     onTap: () => _navigate(const AdminHomeScreen()),
                   ),
                   _buildSidebarTile(
                     icon: Icons.people,
-                    title: "Users",
+                    title: AppLocalizations.of(context)!.users,
                     onTap: () => _navigate(const AdminUsersScreen()),
                   ),
                   _buildSidebarTile(
                     icon: Icons.pending,
-                    title: "Pending IDs",
+                    title: AppLocalizations.of(context)!.pendingIds,
                     onTap: () => _navigate(const AdminPendingIdsScreen()),
                   ),
                   _buildSidebarTile(
                     icon: Icons.history,
-                    title: "Shopping History",
+                    title: AppLocalizations.of(context)!.shoppingHistory,
                     onTap: () => _navigate(const AdminShoppingHistoryScreen()),
                   ),
                   _buildSidebarTile(
                     icon: Icons.receipt,
-                    title: "Voucher List",
+                    title: AppLocalizations.of(context)!.voucherList,
                     onTap: () => _navigate(const AdminVoucherScreen()),
                   ),
                   _buildSidebarTile(
                     icon: Icons.storage,
-                    title: "Inventory",
+                    title: AppLocalizations.of(context)!.inventory,
                     onTap: () => _navigate(const AdminInventoryScreen()),
                   ),
                   _buildSidebarTile(
                     icon: Icons.food_bank,
-                    title: "Messing",
+                    title: AppLocalizations.of(context)!.messing,
                     onTap: () => _navigate(const AdminMessingScreen()),
                   ),
                   _buildSidebarTile(
                     icon: Icons.menu_book,
-                    title: "Monthly Menu",
+                    title: AppLocalizations.of(context)!.monthlyMenu,
                     onTap: () => _navigate(const EditMenuScreen()),
                   ),
                   _buildSidebarTile(
                     icon: Icons.analytics,
-                    title: "Meal State",
+                    title: AppLocalizations.of(context)!.mealState,
                     onTap: () => _navigate(const AdminMealStateScreen()),
                   ),
                   _buildSidebarTile(
                     icon: Icons.thumb_up,
-                    title: "Menu Vote",
+                    title: AppLocalizations.of(context)!.menuVote,
                     onTap: () => _navigate(const MenuVoteScreen()),
                   ),
                   _buildSidebarTile(
                     icon: Icons.receipt_long,
-                    title: "Bills",
+                    title: AppLocalizations.of(context)!.bills,
                     onTap: () => _navigate(const AdminBillScreen()),
                   ),
                   _buildSidebarTile(
                     icon: Icons.payment,
-                    title: "Payments",
+                    title: AppLocalizations.of(context)!.payments,
                     selected: true,
                     onTap: () => Navigator.pop(context),
                   ),
                   _buildSidebarTile(
                     icon: Icons.people_alt,
-                    title: "Dining Member State",
+                    title: AppLocalizations.of(context)!.diningMemberState,
                     onTap: () => _navigate(const DiningMemberStatePage()),
                   ),
                   _buildSidebarTile(
                     icon: Icons.manage_accounts,
-                    title: "Staff State",
+                    title: AppLocalizations.of(context)!.staffState,
                     onTap: () => _navigate(const AdminStaffStateScreen()),
                   ),
                 ],
@@ -413,7 +444,7 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
                 ),
                 child: _buildSidebarTile(
                   icon: Icons.logout,
-                  title: "Logout",
+                  title: AppLocalizations.of(context)!.logout,
                   onTap: _logout,
                   color: Colors.red,
                 ),
@@ -426,14 +457,17 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
         backgroundColor: const Color(0xFF002B5B),
         iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
-        title: const Text(
-          "Payments History",
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.paymentsHistory,
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w600,
             fontSize: 18,
           ),
         ),
+        actions: [
+          _buildFlagToggle(context),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -445,7 +479,7 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
                 Expanded(
                   child: TextField(
                     decoration: InputDecoration(
-                      hintText: 'Search...',
+                      hintText: AppLocalizations.of(context)!.search,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -474,7 +508,7 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
                     }
                   },
                   icon: const Icon(Icons.add),
-                  label: const Text('Insert Transaction'),
+                  label: Text(AppLocalizations.of(context)!.insertTransaction),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     padding: const EdgeInsets.symmetric(
@@ -503,28 +537,28 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
                   child: DataTable(
                     headingRowColor:
                         WidgetStateProperty.all(const Color(0xFFF4F4F4)),
-                    columns: const [
+                    columns: [
                       DataColumn(
-                          label: Text('Payment Amount (BDT)',
-                              style: TextStyle(fontWeight: FontWeight.bold))),
+                          label: Text(AppLocalizations.of(context)!.paymentAmountBdt,
+                              style: const TextStyle(fontWeight: FontWeight.bold))),
                       DataColumn(
-                          label: Text('Payment Time',
-                              style: TextStyle(fontWeight: FontWeight.bold))),
+                          label: Text(AppLocalizations.of(context)!.paymentTime,
+                              style: const TextStyle(fontWeight: FontWeight.bold))),
                       DataColumn(
-                          label: Text('Payment Method',
-                              style: TextStyle(fontWeight: FontWeight.bold))),
+                          label: Text(AppLocalizations.of(context)!.paymentMethod,
+                              style: const TextStyle(fontWeight: FontWeight.bold))),
                       DataColumn(
-                          label: Text('BA No',
-                              style: TextStyle(fontWeight: FontWeight.bold))),
+                          label: Text(AppLocalizations.of(context)!.baNo,
+                              style: const TextStyle(fontWeight: FontWeight.bold))),
                       DataColumn(
-                          label: Text('Rank',
-                              style: TextStyle(fontWeight: FontWeight.bold))),
+                          label: Text(AppLocalizations.of(context)!.rank,
+                              style: const TextStyle(fontWeight: FontWeight.bold))),
                       DataColumn(
-                          label: Text('Name',
-                              style: TextStyle(fontWeight: FontWeight.bold))),
+                          label: Text(AppLocalizations.of(context)!.name,
+                              style: const TextStyle(fontWeight: FontWeight.bold))),
                       DataColumn(
-                          label: Text('Actions',
-                              style: TextStyle(fontWeight: FontWeight.bold))),
+                          label: Text(AppLocalizations.of(context)!.actions,
+                              style: const TextStyle(fontWeight: FontWeight.bold))),
                     ],
                     rows: List.generate(filtered.length, (index) {
                       final txn = filtered[index];
@@ -631,5 +665,49 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
         ),
       ),
     );
+      },
+    );
   }
+}
+
+// Flag painter classes
+class EnglandFlagPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Paint whitePaint = Paint()..color = Colors.white;
+    final Paint redPaint = Paint()..color = Colors.red;
+
+    // White background
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), whitePaint);
+
+    // Red cross
+    canvas.drawRect(
+        Rect.fromLTWH(size.width * 0.4, 0, size.width * 0.2, size.height),
+        redPaint);
+    canvas.drawRect(
+        Rect.fromLTWH(0, size.height * 0.4, size.width, size.height * 0.2),
+        redPaint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
+}
+
+class BangladeshFlagPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Paint greenPaint = Paint()..color = const Color(0xFF006A4E);
+    final Paint redPaint = Paint()..color = const Color(0xFFF42A41);
+
+    // Green background
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), greenPaint);
+
+    // Red circle (offset slightly to the left)
+    final double radius = size.height * 0.3;
+    final Offset center = Offset(size.width * 0.4, size.height * 0.5);
+    canvas.drawCircle(center, radius, redPaint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

@@ -810,4 +810,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noBillsToExport => 'No bills to export';
+
+  @override
+  String get paymentsHistory => 'Payments History';
+
+  @override
+  String get insertTransaction => 'Insert Transaction';
+
+  @override
+  String get paymentAmountBdt => 'Payment Amount (BDT)';
+
+  @override
+  String get paymentTime => 'Payment Time';
+
+  @override
+  String get paymentMethod => 'Payment Method';
+
+  @override
+  String get loading => 'Loading...';
 }
