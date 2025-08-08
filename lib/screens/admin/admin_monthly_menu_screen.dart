@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
 
+import '../../l10n/app_localizations.dart';
+import '../../providers/language_provider.dart';
 import 'add_menu_list.dart';
 import 'admin_users_screen.dart';
 import 'admin_pending_ids_screen.dart';
@@ -171,7 +174,7 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
-          'Edit Menu for ${item['date']}',
+          '${AppLocalizations.of(context)!.editMenuFor} ${item['date']}',
           style: const TextStyle(
             color: Color(0xFF002B5B),
             fontWeight: FontWeight.bold,
@@ -182,11 +185,11 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               buildEditField(
-                  'Breakfast', breakfastController, breakfastPriceController),
+                  AppLocalizations.of(context)!.breakfast, breakfastController, breakfastPriceController),
               const SizedBox(height: 16),
-              buildEditField('Lunch', lunchController, lunchPriceController),
+              buildEditField(AppLocalizations.of(context)!.lunch, lunchController, lunchPriceController),
               const SizedBox(height: 16),
-              buildEditField('Dinner', dinnerController, dinnerPriceController),
+              buildEditField(AppLocalizations.of(context)!.dinner, dinnerController, dinnerPriceController),
             ],
           ),
         ),
@@ -196,18 +199,18 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
               final bool? confirm = await showDialog<bool>(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title: const Text('Confirm Cancel'),
+                  title: Text(AppLocalizations.of(context)!.confirmCancel),
                   content:
-                      const Text('Are you sure you want to discard changes?'),
+                      Text(AppLocalizations.of(context)!.discardChanges),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.of(context).pop(false),
-                      child: const Text('No'),
+                      child: Text(AppLocalizations.of(context)!.no),
                     ),
                     TextButton(
                       onPressed: () => Navigator.of(context).pop(true),
                       style: TextButton.styleFrom(foregroundColor: Colors.red),
-                      child: const Text('Yes'),
+                      child: Text(AppLocalizations.of(context)!.yes),
                     ),
                   ],
                 ),
@@ -220,25 +223,25 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
               backgroundColor: Colors.grey,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           TextButton(
             onPressed: () async {
               final bool? confirm = await showDialog<bool>(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title: const Text('Confirm Save'),
-                  content: const Text('Are you sure you want to save changes?'),
+                  title: Text(AppLocalizations.of(context)!.confirmSave),
+                  content: Text(AppLocalizations.of(context)!.saveChanges),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.of(context).pop(false),
-                      child: const Text('No'),
+                      child: Text(AppLocalizations.of(context)!.no),
                     ),
                     TextButton(
                       onPressed: () => Navigator.of(context).pop(true),
                       style:
                           TextButton.styleFrom(foregroundColor: Colors.green),
-                      child: const Text('Yes'),
+                      child: Text(AppLocalizations.of(context)!.yes),
                     ),
                   ],
                 ),
@@ -251,7 +254,7 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
               backgroundColor: Colors.green,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Save'),
+            child: Text(AppLocalizations.of(context)!.save),
           ),
         ],
       ),
@@ -264,12 +267,12 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
           showDialog(
             context: context,
             barrierDismissible: false,
-            builder: (context) => const AlertDialog(
+            builder: (context) => AlertDialog(
               content: Row(
                 children: [
-                  CircularProgressIndicator(),
-                  SizedBox(width: 16),
-                  Text('Saving changes...'),
+                  const CircularProgressIndicator(),
+                  const SizedBox(width: 16),
+                  Text(AppLocalizations.of(context)!.savingChanges),
                 ],
               ),
             ),
@@ -350,7 +353,7 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
         if (mounted) {
           Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Menu updated successfully!')),
+            SnackBar(content: Text(AppLocalizations.of(context)!.menuUpdatedSuccessfully)),
           );
         }
       } catch (e) {
@@ -381,7 +384,7 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
         TextField(
           controller: nameController,
           decoration: InputDecoration(
-            labelText: 'Item Name',
+            labelText: AppLocalizations.of(context)!.itemName,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
             ),
@@ -391,7 +394,7 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
         TextField(
           controller: priceController,
           decoration: InputDecoration(
-            labelText: 'Price',
+            labelText: AppLocalizations.of(context)!.price,
             prefixText: '৳',
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
@@ -407,12 +410,12 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
     final bool? confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirm Delete'),
-        content: const Text('Are you sure you want to delete this menu item?'),
+        title: Text(AppLocalizations.of(context)!.confirmDelete),
+        content: Text(AppLocalizations.of(context)!.deleteMenuItemConfirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('No'),
+            child: Text(AppLocalizations.of(context)!.no),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
@@ -420,7 +423,7 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
               foregroundColor: Colors.red,
               textStyle: const TextStyle(fontWeight: FontWeight.bold),
             ),
-            child: const Text('Yes'),
+            child: Text(AppLocalizations.of(context)!.yes),
           ),
         ],
       ),
@@ -433,12 +436,12 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
           showDialog(
             context: context,
             barrierDismissible: false,
-            builder: (context) => const AlertDialog(
+            builder: (context) => AlertDialog(
               content: Row(
                 children: [
-                  CircularProgressIndicator(),
-                  SizedBox(width: 16),
-                  Text('Deleting menu...'),
+                  const CircularProgressIndicator(),
+                  const SizedBox(width: 16),
+                  Text(AppLocalizations.of(context)!.deletingMenu),
                 ],
               ),
             ),
@@ -460,7 +463,7 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
         if (mounted) {
           Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Menu item deleted successfully')),
+            SnackBar(content: Text(AppLocalizations.of(context)!.menuItemDeletedSuccessfully)),
           );
         }
       } catch (e) {
@@ -524,7 +527,9 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
       );
     }
 
-    return Scaffold(
+    return Consumer<LanguageProvider>(
+      builder: (context, languageProvider, child) {
+        return Scaffold(
       drawer: Drawer(
         child: Column(
           children: [
@@ -566,7 +571,7 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                             ),
                           ),
                           Text(
-                            'BA: ${_currentUserData!['ba_no'] ?? ''}',
+                            '${AppLocalizations.of(context)!.baNumber}: ${_currentUserData!['ba_no'] ?? ''}',
                             style: const TextStyle(
                               color: Colors.white70,
                               fontSize: 12,
@@ -585,7 +590,7 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                 children: [
                   _buildSidebarTile(
                     icon: Icons.dashboard,
-                    title: "Home",
+                    title: AppLocalizations.of(context)!.home,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -597,7 +602,7 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.people,
-                    title: "Users",
+                    title: AppLocalizations.of(context)!.users,
                     onTap: () {
                       Navigator.push(
                         context,
@@ -609,7 +614,7 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.pending,
-                    title: "Pending IDs",
+                    title: AppLocalizations.of(context)!.pendingIds,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -621,7 +626,7 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.history,
-                    title: "Shopping History",
+                    title: AppLocalizations.of(context)!.shoppingHistory,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -634,7 +639,7 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.receipt,
-                    title: "Voucher List",
+                    title: AppLocalizations.of(context)!.voucherList,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -646,7 +651,7 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.storage,
-                    title: "Inventory",
+                    title: AppLocalizations.of(context)!.inventory,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -658,7 +663,7 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.food_bank,
-                    title: "Messing",
+                    title: AppLocalizations.of(context)!.messing,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -670,13 +675,13 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.menu_book,
-                    title: "Monthly Menu",
+                    title: AppLocalizations.of(context)!.monthlyMenu,
                     onTap: () => Navigator.pop(context),
                     selected: true,
                   ),
                   _buildSidebarTile(
                     icon: Icons.analytics,
-                    title: "Meal State",
+                    title: AppLocalizations.of(context)!.mealState,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -688,7 +693,7 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.thumb_up,
-                    title: "Menu Vote",
+                    title: AppLocalizations.of(context)!.menuVote,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -700,7 +705,7 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.receipt_long,
-                    title: "Bills",
+                    title: AppLocalizations.of(context)!.bills,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -712,7 +717,7 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.payment,
-                    title: "Payments",
+                    title: AppLocalizations.of(context)!.payments,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -724,7 +729,7 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.people_alt,
-                    title: "Dining Member State",
+                    title: AppLocalizations.of(context)!.diningMemberState,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -736,7 +741,7 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.manage_accounts,
-                    title: "Staff State",
+                    title: AppLocalizations.of(context)!.staffState,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -762,7 +767,7 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                 ),
                 child: _buildSidebarTile(
                   icon: Icons.logout,
-                  title: "Logout",
+                  title: AppLocalizations.of(context)!.logout,
                   onTap: _logout,
                   color: Colors.red,
                 ),
@@ -775,23 +780,104 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
         backgroundColor: const Color(0xFF002B5B),
         iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
-        title: const Text(
-          "Monthly Menu",
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.monthlyMenu,
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w600,
             fontSize: 18,
           ),
         ),
+        actions: [
+          PopupMenuButton<String>(
+            icon: Container(
+              width: 32,
+              height: 24,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(3),
+                border: Border.all(color: Colors.white70, width: 0.5),
+              ),
+              child: languageProvider.isEnglish
+                  ? CustomPaint(
+                      painter: _EnglandFlagPainter(),
+                      size: const Size(32, 24),
+                    )
+                  : CustomPaint(
+                      painter: _BangladeshFlagPainter(),
+                      size: const Size(32, 24),
+                    ),
+            ),
+            onSelected: (String value) {
+              if (value == 'english') {
+                languageProvider.changeLanguage(const Locale('en'));
+              } else if (value == 'bangla') {
+                languageProvider.changeLanguage(const Locale('bn'));
+              }
+            },
+            itemBuilder: (BuildContext context) => [
+              PopupMenuItem<String>(
+                value: 'english',
+                child: Row(
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 18,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(2),
+                        border: Border.all(color: Colors.grey.shade300, width: 0.5),
+                      ),
+                      child: CustomPaint(
+                        painter: _EnglandFlagPainter(),
+                        size: const Size(24, 18),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Text('English'),
+                    if (languageProvider.isEnglish) ...[
+                      const Spacer(),
+                      Icon(Icons.check, color: Colors.green.shade600, size: 18),
+                    ],
+                  ],
+                ),
+              ),
+              PopupMenuItem<String>(
+                value: 'bangla',
+                child: Row(
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 18,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(2),
+                        border: Border.all(color: Colors.grey.shade300, width: 0.5),
+                      ),
+                      child: CustomPaint(
+                        painter: _BangladeshFlagPainter(),
+                        size: const Size(24, 18),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Text('বাংলা'),
+                    if (languageProvider.isBangla) ...[
+                      const Spacer(),
+                      Icon(Icons.check, color: Colors.green.shade600, size: 18),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Menu',
-              style: TextStyle(
+            Text(
+              AppLocalizations.of(context)!.menu,
+              style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF002B5B),
@@ -816,7 +902,7 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                     ),
                     child: TextField(
                       decoration: InputDecoration(
-                        hintText: 'Search...',
+                        hintText: AppLocalizations.of(context)!.search,
                         prefixIcon: const Icon(Icons.search),
                         border: InputBorder.none,
                         hintStyle: TextStyle(color: Colors.grey[400]),
@@ -835,8 +921,7 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child:
-                      const Text('Go', style: TextStyle(color: Colors.white)),
+                  child: Text(AppLocalizations.of(context)!.go, style: const TextStyle(color: Colors.white)),
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton(
@@ -861,8 +946,8 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Text('Create',
-                      style: TextStyle(color: Colors.white)),
+                  child: Text(AppLocalizations.of(context)!.create,
+                      style: const TextStyle(color: Colors.white)),
                 ),
               ],
             ),
@@ -890,11 +975,11 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                             dataRowMaxHeight: 80,
                             columnSpacing: 40,
                             horizontalMargin: 24,
-                            columns: const [
+                            columns: [
                               DataColumn(
                                 label: Text(
-                                  'Date',
-                                  style: TextStyle(
+                                  AppLocalizations.of(context)!.date,
+                                  style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: Color(0xFF002B5B),
                                   ),
@@ -902,8 +987,8 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                               ),
                               DataColumn(
                                 label: Text(
-                                  'Breakfast',
-                                  style: TextStyle(
+                                  AppLocalizations.of(context)!.breakfast,
+                                  style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: Color(0xFF002B5B),
                                   ),
@@ -911,8 +996,8 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                               ),
                               DataColumn(
                                 label: Text(
-                                  'Lunch',
-                                  style: TextStyle(
+                                  AppLocalizations.of(context)!.lunch,
+                                  style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: Color(0xFF002B5B),
                                   ),
@@ -920,8 +1005,8 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                               ),
                               DataColumn(
                                 label: Text(
-                                  'Dinner',
-                                  style: TextStyle(
+                                  AppLocalizations.of(context)!.dinner,
+                                  style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: Color(0xFF002B5B),
                                   ),
@@ -929,8 +1014,8 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                               ),
                               DataColumn(
                                 label: Text(
-                                  'Actions',
-                                  style: TextStyle(
+                                  AppLocalizations.of(context)!.actions,
+                                  style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: Color(0xFF002B5B),
                                   ),
@@ -989,8 +1074,8 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                                             padding: const EdgeInsets.symmetric(
                                                 horizontal: 16, vertical: 8),
                                           ),
-                                          child: const Text('Edit',
-                                              style: TextStyle(
+                                          child: Text(AppLocalizations.of(context)!.edit,
+                                              style: const TextStyle(
                                                   color: Colors.white)),
                                         ),
                                         const SizedBox(width: 8),
@@ -1002,8 +1087,8 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                                             padding: const EdgeInsets.symmetric(
                                                 horizontal: 16, vertical: 8),
                                           ),
-                                          child: const Text('Delete',
-                                              style: TextStyle(
+                                          child: Text(AppLocalizations.of(context)!.delete,
+                                              style: const TextStyle(
                                                   color: Colors.white)),
                                         ),
                                       ],
@@ -1024,5 +1109,69 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
         ),
       ),
     );
+      },
+    );
   }
+}
+
+class _EnglandFlagPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint();
+    
+    // Blue background
+    paint.color = const Color(0xFF012169);
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
+    
+    // White diagonal stripes
+    paint.color = Colors.white;
+    paint.strokeWidth = size.height * 0.15;
+    
+    // Draw diagonal white stripes
+    canvas.drawLine(Offset(0, 0), Offset(size.width, size.height), paint);
+    canvas.drawLine(Offset(size.width, 0), Offset(0, size.height), paint);
+    
+    // White cross
+    paint.strokeWidth = size.height * 0.25;
+    // Vertical line
+    canvas.drawLine(Offset(size.width / 2, 0), Offset(size.width / 2, size.height), paint);
+    // Horizontal line
+    canvas.drawLine(Offset(0, size.height / 2), Offset(size.width, size.height / 2), paint);
+    
+    // Red cross
+    paint.color = const Color(0xFFC8102E);
+    paint.strokeWidth = size.height * 0.15;
+    // Vertical line
+    canvas.drawLine(Offset(size.width / 2, 0), Offset(size.width / 2, size.height), paint);
+    // Horizontal line
+    canvas.drawLine(Offset(0, size.height / 2), Offset(size.width, size.height / 2), paint);
+    
+    // Red diagonal stripes
+    paint.strokeWidth = size.height * 0.08;
+    canvas.drawLine(Offset(0, 0), Offset(size.width, size.height), paint);
+    canvas.drawLine(Offset(size.width, 0), Offset(0, size.height), paint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
+}
+
+class _BangladeshFlagPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint();
+    
+    // Green background
+    paint.color = const Color(0xFF006A4E);
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
+    
+    // Red circle
+    paint.color = const Color(0xFFF42A41);
+    final center = Offset(size.width * 0.45, size.height * 0.5); // Slightly left of center
+    final radius = size.height * 0.3;
+    canvas.drawCircle(center, radius, paint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

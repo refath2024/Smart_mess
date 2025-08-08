@@ -1105,6 +1105,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Total Price per Member'**
   String get totalPricePerMember;
+
+  /// No description provided for @editMenuFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Menu for'**
+  String get editMenuFor;
+
+  /// No description provided for @itemName.
+  ///
+  /// In en, this message translates to:
+  /// **'Item Name'**
+  String get itemName;
+
+  /// No description provided for @price.
+  ///
+  /// In en, this message translates to:
+  /// **'Price'**
+  String get price;
+
+  /// No description provided for @confirmCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Cancel'**
+  String get confirmCancel;
+
+  /// No description provided for @discardChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to discard changes?'**
+  String get discardChanges;
+
+  /// No description provided for @confirmSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Save'**
+  String get confirmSave;
+
+  /// No description provided for @saveChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to save changes?'**
+  String get saveChanges;
+
+  /// No description provided for @savingChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving changes...'**
+  String get savingChanges;
+
+  /// No description provided for @menuUpdatedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Menu updated successfully!'**
+  String get menuUpdatedSuccessfully;
+
+  /// No description provided for @errorUpdatingMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Error updating menu'**
+  String get errorUpdatingMenu;
+
+  /// No description provided for @deleteMenuItemConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this menu item?'**
+  String get deleteMenuItemConfirm;
+
+  /// No description provided for @deletingMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting menu...'**
+  String get deletingMenu;
+
+  /// No description provided for @menuItemDeletedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Menu item deleted successfully'**
+  String get menuItemDeletedSuccessfully;
+
+  /// No description provided for @errorDeletingMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Error deleting menu'**
+  String get errorDeletingMenu;
+
+  /// No description provided for @menu.
+  ///
+  /// In en, this message translates to:
+  /// **'Menu'**
+  String get menu;
+
+  /// No description provided for @go.
+  ///
+  /// In en, this message translates to:
+  /// **'Go'**
+  String get go;
+
+  /// No description provided for @actions.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get actions;
+
+  /// No description provided for @yes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get yes;
+
+  /// No description provided for @no.
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get no;
 }
 
 class _AppLocalizationsDelegate

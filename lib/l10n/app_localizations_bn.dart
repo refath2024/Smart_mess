@@ -126,7 +126,7 @@ class AppLocalizationsBn extends AppLocalizations {
   String get delete => 'মুছুন';
 
   @override
-  String get confirmDelete => 'মুছুন নিশ্চিত করুন';
+  String get confirmDelete => 'মুছে ফেলা নিশ্চিত করুন';
 
   @override
   String get index => 'সূচক';
@@ -518,4 +518,65 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get totalPricePerMember => 'প্রতি সদস্যের মোট মূল্য';
+
+  @override
+  String get editMenuFor => 'মেনু সম্পাদনা করুন';
+
+  @override
+  String get itemName => 'আইটেমের নাম';
+
+  @override
+  String get price => 'মূল্য';
+
+  @override
+  String get confirmCancel => 'বাতিল নিশ্চিত করুন';
+
+  @override
+  String get discardChanges =>
+      'আপনি কি নিশ্চিত যে আপনি পরিবর্তনগুলি বাতিল করতে চান?';
+
+  @override
+  String get confirmSave => 'সংরক্ষণ নিশ্চিত করুন';
+
+  @override
+  String get saveChanges =>
+      'আপনি কি নিশ্চিত যে আপনি পরিবর্তনগুলি সংরক্ষণ করতে চান?';
+
+  @override
+  String get savingChanges => 'পরিবর্তন সংরক্ষণ করা হচ্ছে...';
+
+  @override
+  String get menuUpdatedSuccessfully => 'মেনু সফলভাবে আপডেট হয়েছে!';
+
+  @override
+  String get errorUpdatingMenu => 'মেনু আপডেট করতে ত্রুটি';
+
+  @override
+  String get deleteMenuItemConfirm =>
+      'আপনি কি নিশ্চিত যে আপনি এই মেনু আইটেমটি মুছে ফেলতে চান?';
+
+  @override
+  String get deletingMenu => 'মেনু মুছে ফেলা হচ্ছে...';
+
+  @override
+  String get menuItemDeletedSuccessfully =>
+      'মেনু আইটেম সফলভাবে মুছে ফেলা হয়েছে';
+
+  @override
+  String get errorDeletingMenu => 'মেনু মুছে ফেলতে ত্রুটি';
+
+  @override
+  String get menu => 'মেনু';
+
+  @override
+  String get go => 'যান';
+
+  @override
+  String get actions => 'কার্যক্রম';
+
+  @override
+  String get yes => 'হ্যাঁ';
+
+  @override
+  String get no => 'না';
 }

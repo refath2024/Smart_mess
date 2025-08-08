@@ -518,4 +518,62 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get totalPricePerMember => 'Total Price per Member';
+
+  @override
+  String get editMenuFor => 'Edit Menu for';
+
+  @override
+  String get itemName => 'Item Name';
+
+  @override
+  String get price => 'Price';
+
+  @override
+  String get confirmCancel => 'Confirm Cancel';
+
+  @override
+  String get discardChanges => 'Are you sure you want to discard changes?';
+
+  @override
+  String get confirmSave => 'Confirm Save';
+
+  @override
+  String get saveChanges => 'Are you sure you want to save changes?';
+
+  @override
+  String get savingChanges => 'Saving changes...';
+
+  @override
+  String get menuUpdatedSuccessfully => 'Menu updated successfully!';
+
+  @override
+  String get errorUpdatingMenu => 'Error updating menu';
+
+  @override
+  String get deleteMenuItemConfirm =>
+      'Are you sure you want to delete this menu item?';
+
+  @override
+  String get deletingMenu => 'Deleting menu...';
+
+  @override
+  String get menuItemDeletedSuccessfully => 'Menu item deleted successfully';
+
+  @override
+  String get errorDeletingMenu => 'Error deleting menu';
+
+  @override
+  String get menu => 'Menu';
+
+  @override
+  String get go => 'Go';
+
+  @override
+  String get actions => 'Actions';
+
+  @override
+  String get yes => 'Yes';
+
+  @override
+  String get no => 'No';
 }
