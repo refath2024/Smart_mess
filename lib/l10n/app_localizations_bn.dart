@@ -51,7 +51,7 @@ class AppLocalizationsBn extends AppLocalizations {
   String get payments => 'পেমেন্ট';
 
   @override
-  String get diningMemberState => 'ডাইনিং সদস্যের অবস্থা';
+  String get diningMemberState => 'ডাইনিং সদস্য অবস্থা';
 
   @override
   String get staffState => 'কর্মচারীদের অবস্থা';
@@ -391,7 +391,7 @@ class AppLocalizationsBn extends AppLocalizations {
   String get role => 'ভূমিকা';
 
   @override
-  String get baNumber => 'বিএ নম্বর';
+  String get baNumber => 'বিএ নং';
 
   @override
   String get status => 'অবস্থা';
@@ -536,7 +536,7 @@ class AppLocalizationsBn extends AppLocalizations {
       'আপনি কি নিশ্চিত যে আপনি পরিবর্তনগুলি বাতিল করতে চান?';
 
   @override
-  String get confirmSave => 'সংরক্ষণ নিশ্চিত করুন';
+  String get confirmSave => 'সেভ নিশ্চিত করুন';
 
   @override
   String get saveChanges =>
@@ -830,4 +830,62 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get loading => 'লোড হচ্ছে...';
+
+  @override
+  String get searchAllTextColumns => 'সকল টেক্সট কলাম অনুসন্ধান';
+
+  @override
+  String get allStatus => 'সকল অবস্থা';
+
+  @override
+  String get activeOnly => 'শুধুমাত্র সক্রিয়';
+
+  @override
+  String get inactiveOnly => 'শুধুমাত্র নিষ্ক্রিয়';
+
+  @override
+  String get addDiningMember => 'ডাইনিং সদস্য যোগ করুন';
+
+  @override
+  String get memberDeletedSuccessfully => 'সদস্য সফলভাবে মুছে ফেলা হয়েছে';
+
+  @override
+  String get failedToDeleteMember => 'সদস্য মুছে ফেলতে ব্যর্থ';
+
+  @override
+  String get saveChangesQuestion =>
+      'আপনি কি নিশ্চিত যে আপনি এই পরিবর্তনগুলি সংরক্ষণ করতে চান?';
+
+  @override
+  String get memberUpdatedSuccessfully => 'সদস্য সফলভাবে আপডেট হয়েছে';
+
+  @override
+  String get failedToUpdateMember => 'সদস্য আপডেট করতে ব্যর্থ';
+
+  @override
+  String get filterByStatus => 'অবস্থা অনুযায়ী ফিল্টার';
+
+  @override
+  String get failedToFetchUsers => 'ব্যবহারকারী আনতে ব্যর্থ';
+
+  @override
+  String get failedToSaveChanges => 'পরিবর্তন সংরক্ষণ করতে ব্যর্থ';
+
+  @override
+  String get approvedBy => 'অনুমোদনকারী';
+
+  @override
+  String get diningMember => 'ডাইনিং সদস্য';
+
+  @override
+  String get editTooltip => 'সম্পাদনা';
+
+  @override
+  String get deleteTooltip => 'মুছুন';
+
+  @override
+  String get saveTooltip => 'সংরক্ষণ';
+
+  @override
+  String get cancelTooltip => 'বাতিল';
 }

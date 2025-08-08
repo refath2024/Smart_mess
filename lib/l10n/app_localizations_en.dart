@@ -391,7 +391,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get role => 'Role';
 
   @override
-  String get baNumber => 'BA Number';
+  String get baNumber => 'BA No';
 
   @override
   String get status => 'Status';
@@ -828,4 +828,62 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get loading => 'Loading...';
+
+  @override
+  String get searchAllTextColumns => 'Search All Text Columns';
+
+  @override
+  String get allStatus => 'All Status';
+
+  @override
+  String get activeOnly => 'Active Only';
+
+  @override
+  String get inactiveOnly => 'Inactive Only';
+
+  @override
+  String get addDiningMember => 'Add Dining Member';
+
+  @override
+  String get memberDeletedSuccessfully => 'Member deleted successfully';
+
+  @override
+  String get failedToDeleteMember => 'Failed to delete member';
+
+  @override
+  String get saveChangesQuestion =>
+      'Are you sure you want to save these changes?';
+
+  @override
+  String get memberUpdatedSuccessfully => 'Member updated successfully';
+
+  @override
+  String get failedToUpdateMember => 'Failed to update member';
+
+  @override
+  String get filterByStatus => 'Filter by Status';
+
+  @override
+  String get failedToFetchUsers => 'Failed to fetch users';
+
+  @override
+  String get failedToSaveChanges => 'Failed to save changes';
+
+  @override
+  String get approvedBy => 'Approved By';
+
+  @override
+  String get diningMember => 'Dining Member';
+
+  @override
+  String get editTooltip => 'Edit';
+
+  @override
+  String get deleteTooltip => 'Delete';
+
+  @override
+  String get saveTooltip => 'Save';
+
+  @override
+  String get cancelTooltip => 'Cancel';
 }

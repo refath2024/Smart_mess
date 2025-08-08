@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+import '../../l10n/app_localizations.dart';
+import '../../providers/language_provider.dart';
 import 'admin_home_screen.dart';
 import 'admin_users_screen.dart';
 import 'admin_pending_ids_screen.dart';
@@ -126,7 +129,7 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to fetch users: $e')),
+          SnackBar(content: Text('${AppLocalizations.of(context)!.failedToFetchUsers}: $e')),
         );
       }
     }
@@ -145,7 +148,7 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Logout failed: $e')),
+          SnackBar(content: Text('${AppLocalizations.of(context)!.logoutFailed}: $e')),
         );
       }
     }
@@ -177,17 +180,17 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Confirm Delete'),
-          content: Text('Are you sure you want to delete "${row['name']}"?'),
+          title: Text(AppLocalizations.of(context)!.confirmDelete),
+          content: Text('${AppLocalizations.of(context)!.areYouSureYouWantToDelete} "${row['name']}"?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
+              child: Text(AppLocalizations.of(context)!.cancel),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
               style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Delete'),
+              child: Text(AppLocalizations.of(context)!.delete),
             ),
           ],
         );
@@ -211,13 +214,13 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Member deleted successfully')),
+            SnackBar(content: Text(AppLocalizations.of(context)!.memberDeletedSuccessfully)),
           );
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to delete member: $e')),
+            SnackBar(content: Text('${AppLocalizations.of(context)!.failedToDeleteMember}: $e')),
           );
         }
       }
@@ -229,17 +232,17 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Confirm Save'),
-          content: const Text('Are you sure you want to save these changes?'),
+          title: Text(AppLocalizations.of(context)!.confirmSave),
+          content: Text(AppLocalizations.of(context)!.saveChangesQuestion),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
+              child: Text(AppLocalizations.of(context)!.cancel),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
               style: TextButton.styleFrom(foregroundColor: Colors.blue),
-              child: const Text('Save'),
+              child: Text(AppLocalizations.of(context)!.save),
             ),
           ],
         );
@@ -270,13 +273,13 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Changes saved successfully')),
+            SnackBar(content: Text(AppLocalizations.of(context)!.memberUpdatedSuccessfully)),
           );
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to save changes: $e')),
+            SnackBar(content: Text('${AppLocalizations.of(context)!.failedToSaveChanges}: $e')),
           );
         }
       }
@@ -324,16 +327,39 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
     );
   }
 
+  Widget _buildFlagToggle(LanguageProvider languageProvider) {
+    return GestureDetector(
+      onTap: () {
+        languageProvider.changeLanguage(
+          languageProvider.isEnglish ? const Locale('bn') : const Locale('en')
+        );
+      },
+      child: Container(
+        width: 40,
+        height: 25,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: Colors.white, width: 1),
+        ),
+        child: CustomPaint(
+          painter: languageProvider.isEnglish ? EnglandFlagPainter() : BangladeshFlagPainter(),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Show loading screen while checking authentication
-    if (_isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
+    return Consumer<LanguageProvider>(
+      builder: (context, languageProvider, child) {
+        // Show loading screen while checking authentication
+        if (_isLoading) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
 
     return Scaffold(
       drawer: Drawer(
@@ -396,14 +422,14 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                 children: [
                   _buildSidebarTile(
                       icon: Icons.dashboard,
-                      title: "Home",
+                      title: AppLocalizations.of(context)!.home,
                       onTap: () => Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
                               builder: (context) => const AdminHomeScreen()))),
                   _buildSidebarTile(
                     icon: Icons.people,
-                    title: "Users",
+                    title: AppLocalizations.of(context)!.users,
                     onTap: () {
                       Navigator.push(
                         context,
@@ -415,7 +441,7 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.pending,
-                    title: "Pending IDs",
+                    title: AppLocalizations.of(context)!.pendingIds,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -427,7 +453,7 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.history,
-                    title: "Shopping History",
+                    title: AppLocalizations.of(context)!.shoppingHistory,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -440,7 +466,7 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.receipt,
-                    title: "Voucher List",
+                    title: AppLocalizations.of(context)!.voucherList,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -452,7 +478,7 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.storage,
-                    title: "Inventory",
+                    title: AppLocalizations.of(context)!.inventory,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -464,7 +490,7 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.food_bank,
-                    title: "Messing",
+                    title: AppLocalizations.of(context)!.messing,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -476,7 +502,7 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.menu_book,
-                    title: "Monthly Menu",
+                    title: AppLocalizations.of(context)!.monthlyMenu,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -488,7 +514,7 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.analytics,
-                    title: "Meal State",
+                    title: AppLocalizations.of(context)!.mealState,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -500,7 +526,7 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.thumb_up,
-                    title: "Menu Vote",
+                    title: AppLocalizations.of(context)!.menuVote,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -512,7 +538,7 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.receipt_long,
-                    title: "Bills",
+                    title: AppLocalizations.of(context)!.bills,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -524,7 +550,7 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                   ),
                   _buildSidebarTile(
                     icon: Icons.payment,
-                    title: "Payments",
+                    title: AppLocalizations.of(context)!.payments,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -536,12 +562,12 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                   ),
                   _buildSidebarTile(
                       icon: Icons.people_alt,
-                      title: "Dining Member State",
+                      title: AppLocalizations.of(context)!.diningMemberState,
                       selected: true,
                       onTap: () => Navigator.pop(context)),
                   _buildSidebarTile(
                     icon: Icons.manage_accounts,
-                    title: "Staff State",
+                    title: AppLocalizations.of(context)!.staffState,
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
@@ -567,7 +593,7 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                 ),
                 child: _buildSidebarTile(
                   icon: Icons.logout,
-                  title: "Logout",
+                  title: AppLocalizations.of(context)!.logout,
                   onTap: _logout,
                   color: Colors.red,
                 ),
@@ -580,14 +606,20 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
         backgroundColor: const Color(0xFF002B5B),
         iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
-        title: const Text(
-          "Dining Member State",
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.diningMemberState,
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w600,
             fontSize: 18,
           ),
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: _buildFlagToggle(languageProvider),
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -607,11 +639,11 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                         child: TextField(
                           controller: _searchController,
                           onChanged: _search,
-                          decoration: const InputDecoration(
-                            labelText: 'Search All Text Columns',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.search),
-                            contentPadding: EdgeInsets.symmetric(
+                          decoration: InputDecoration(
+                            labelText: AppLocalizations.of(context)!.searchAllTextColumns,
+                            border: const OutlineInputBorder(),
+                            prefixIcon: const Icon(Icons.search),
+                            contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 12, vertical: 8),
                           ),
                         ),
@@ -621,28 +653,28 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                         flex: 2,
                         child: DropdownButtonFormField<String>(
                           value: statusFilter,
-                          decoration: const InputDecoration(
-                            labelText: 'Filter by Status',
-                            border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(
+                          decoration: InputDecoration(
+                            labelText: AppLocalizations.of(context)!.filterByStatus,
+                            border: const OutlineInputBorder(),
+                            contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 8),
                           ),
                           style: const TextStyle(fontSize: 14),
-                          items: const [
+                          items: [
                             DropdownMenuItem(
                               value: 'all',
-                              child: Text('All Status',
-                                  style: TextStyle(fontSize: 14)),
+                              child: Text(AppLocalizations.of(context)!.allStatus,
+                                  style: const TextStyle(fontSize: 14)),
                             ),
                             DropdownMenuItem(
                               value: 'active',
-                              child: Text('Active Only',
-                                  style: TextStyle(fontSize: 14)),
+                              child: Text(AppLocalizations.of(context)!.activeOnly,
+                                  style: const TextStyle(fontSize: 14)),
                             ),
                             DropdownMenuItem(
                               value: 'inactive',
-                              child: Text('Inactive Only',
-                                  style: TextStyle(fontSize: 14)),
+                              child: Text(AppLocalizations.of(context)!.inactiveOnly,
+                                  style: const TextStyle(fontSize: 14)),
                             ),
                           ],
                           onChanged: (String? newValue) {
@@ -664,35 +696,35 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                       TextField(
                         controller: _searchController,
                         onChanged: _search,
-                        decoration: const InputDecoration(
-                          labelText: 'Search All Text Columns',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.search),
+                        decoration: InputDecoration(
+                          labelText: AppLocalizations.of(context)!.searchAllTextColumns,
+                          border: const OutlineInputBorder(),
+                          prefixIcon: const Icon(Icons.search),
                           contentPadding:
-                              EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         ),
                       ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
                         value: statusFilter,
-                        decoration: const InputDecoration(
-                          labelText: 'Filter by Status',
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          labelText: AppLocalizations.of(context)!.filterByStatus,
+                          border: const OutlineInputBorder(),
                           contentPadding:
-                              EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         ),
-                        items: const [
+                        items: [
                           DropdownMenuItem(
                             value: 'all',
-                            child: Text('All Status'),
+                            child: Text(AppLocalizations.of(context)!.allStatus),
                           ),
                           DropdownMenuItem(
                             value: 'active',
-                            child: Text('Active Only'),
+                            child: Text(AppLocalizations.of(context)!.activeOnly),
                           ),
                           DropdownMenuItem(
                             value: 'inactive',
-                            child: Text('Inactive Only'),
+                            child: Text(AppLocalizations.of(context)!.inactiveOnly),
                           ),
                         ],
                         onChanged: (String? newValue) {
@@ -736,7 +768,7 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                     ),
                   ),
                   icon: const Icon(Icons.add, size: 18),
-                  label: const Text("Add Dining Member",
+                  label: Text(AppLocalizations.of(context)!.addDiningMember,
                       style: TextStyle(fontSize: 14)),
                 ),
               ],
@@ -759,64 +791,64 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                         columnSpacing: 12, // Reduced column spacing
                         headingRowColor:
                             WidgetStateProperty.all(const Color(0xFF1A4D8F)),
-                        columns: const [
+                        columns: [
                           DataColumn(
-                              label: Text('BA No',
-                                  style: TextStyle(
+                              label: Text(AppLocalizations.of(context)!.baNumber,
+                                  style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 12))),
                           DataColumn(
-                              label: Text('Rank',
-                                  style: TextStyle(
+                              label: Text(AppLocalizations.of(context)!.rank,
+                                  style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 12))),
                           DataColumn(
-                              label: Text('Name',
-                                  style: TextStyle(
+                              label: Text(AppLocalizations.of(context)!.name,
+                                  style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 12))),
                           DataColumn(
-                              label: Text('Unit',
-                                  style: TextStyle(
+                              label: Text(AppLocalizations.of(context)!.unit,
+                                  style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 12))),
                           DataColumn(
-                              label: Text('Mobile',
-                                  style: TextStyle(
+                              label: Text(AppLocalizations.of(context)!.mobile,
+                                  style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 12))),
                           DataColumn(
-                              label: Text('Email',
-                                  style: TextStyle(
+                              label: Text(AppLocalizations.of(context)!.email,
+                                  style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 12))),
                           DataColumn(
-                              label: Text('Role',
-                                  style: TextStyle(
+                              label: Text(AppLocalizations.of(context)!.role,
+                                  style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 12))),
                           DataColumn(
-                              label: Text('Status',
-                                  style: TextStyle(
+                              label: Text(AppLocalizations.of(context)!.status,
+                                  style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 12))),
                           DataColumn(
-                              label: Text('Approved By',
-                                  style: TextStyle(
+                              label: Text(AppLocalizations.of(context)!.approvedBy,
+                                  style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 12))),
                           DataColumn(
-                              label: Text('Action',
-                                  style: TextStyle(
+                              label: Text(AppLocalizations.of(context)!.action,
+                                  style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 12))),
@@ -938,11 +970,11 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                                         overflow: TextOverflow.ellipsis),
                               ),
                             ),
-                            const DataCell(
+                            DataCell(
                               SizedBox(
                                 width: 100,
-                                child: Text('Dining Member',
-                                    style: TextStyle(fontSize: 12)),
+                                child: Text(AppLocalizations.of(context)!.diningMember,
+                                    style: const TextStyle(fontSize: 12)),
                               ),
                             ),
                             DataCell(
@@ -952,16 +984,16 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                                     ? DropdownButton<String>(
                                         value: row['status'],
                                         isExpanded: true,
-                                        items: const [
+                                        items: [
                                           DropdownMenuItem(
                                             value: 'active',
-                                            child: Text('Active',
-                                                style: TextStyle(fontSize: 12)),
+                                            child: Text(AppLocalizations.of(context)!.active,
+                                                style: const TextStyle(fontSize: 12)),
                                           ),
                                           DropdownMenuItem(
                                             value: 'inactive',
-                                            child: Text('Inactive',
-                                                style: TextStyle(fontSize: 12)),
+                                            child: Text(AppLocalizations.of(context)!.inactive,
+                                                style: const TextStyle(fontSize: 12)),
                                           ),
                                         ],
                                         onChanged: (String? newValue) {
@@ -990,8 +1022,8 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                                         ),
                                         child: Text(
                                           row['status'] == 'active'
-                                              ? 'Active'
-                                              : 'Inactive',
+                                              ? AppLocalizations.of(context)!.active
+                                              : AppLocalizations.of(context)!.inactive,
                                           style: TextStyle(
                                             color: row['status'] == 'active'
                                                 ? Colors.green.shade800
@@ -1024,7 +1056,7 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                                         icon: const Icon(Icons.save, size: 18),
                                         color: Colors.green,
                                         onPressed: () => _saveEdit(row),
-                                        tooltip: 'Save',
+                                        tooltip: AppLocalizations.of(context)!.saveTooltip,
                                         padding: const EdgeInsets.all(4),
                                         constraints: const BoxConstraints(
                                             minWidth: 32, minHeight: 32),
@@ -1034,7 +1066,7 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                                             const Icon(Icons.cancel, size: 18),
                                         color: Colors.red,
                                         onPressed: () => _cancelEdit(row),
-                                        tooltip: 'Cancel',
+                                        tooltip: AppLocalizations.of(context)!.cancelTooltip,
                                         padding: const EdgeInsets.all(4),
                                         constraints: const BoxConstraints(
                                             minWidth: 32, minHeight: 32),
@@ -1044,7 +1076,7 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                                         icon: const Icon(Icons.edit, size: 18),
                                         color: Colors.blue,
                                         onPressed: () => _startEdit(row),
-                                        tooltip: 'Edit',
+                                        tooltip: AppLocalizations.of(context)!.editTooltip,
                                         padding: const EdgeInsets.all(4),
                                         constraints: const BoxConstraints(
                                             minWidth: 32, minHeight: 32),
@@ -1054,7 +1086,7 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                                             const Icon(Icons.delete, size: 18),
                                         color: Colors.red,
                                         onPressed: () => _deleteStaff(row),
-                                        tooltip: 'Delete',
+                                        tooltip: AppLocalizations.of(context)!.deleteTooltip,
                                         padding: const EdgeInsets.all(4),
                                         constraints: const BoxConstraints(
                                             minWidth: 32, minHeight: 32),
@@ -1076,5 +1108,52 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
         ),
       ),
     );
+      },
+    );
   }
+}
+
+class EnglandFlagPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Draw England flag
+    Paint paint = Paint();
+    
+    // White background
+    paint.color = Colors.white;
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
+    
+    // Red cross
+    paint.color = Colors.red;
+    // Vertical line
+    canvas.drawRect(Rect.fromLTWH(size.width * 0.4, 0, size.width * 0.2, size.height), paint);
+    // Horizontal line
+    canvas.drawRect(Rect.fromLTWH(0, size.height * 0.4, size.width, size.height * 0.2), paint);
+  }
+  
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
+}
+
+class BangladeshFlagPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Draw Bangladesh flag
+    Paint paint = Paint();
+    
+    // Green background
+    paint.color = const Color(0xFF006A4E);
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
+    
+    // Red circle
+    paint.color = const Color(0xFFF42A41);
+    canvas.drawCircle(
+      Offset(size.width * 0.4, size.height * 0.5), 
+      size.height * 0.3, 
+      paint
+    );
+  }
+  
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

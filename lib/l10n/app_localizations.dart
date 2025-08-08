@@ -857,7 +857,7 @@ abstract class AppLocalizations {
   /// No description provided for @baNumber.
   ///
   /// In en, this message translates to:
-  /// **'BA Number'**
+  /// **'BA No'**
   String get baNumber;
 
   /// No description provided for @status.
@@ -1669,6 +1669,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Loading...'**
   String get loading;
+
+  /// No description provided for @searchAllTextColumns.
+  ///
+  /// In en, this message translates to:
+  /// **'Search All Text Columns'**
+  String get searchAllTextColumns;
+
+  /// No description provided for @allStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'All Status'**
+  String get allStatus;
+
+  /// No description provided for @activeOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Active Only'**
+  String get activeOnly;
+
+  /// No description provided for @inactiveOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive Only'**
+  String get inactiveOnly;
+
+  /// No description provided for @addDiningMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Dining Member'**
+  String get addDiningMember;
+
+  /// No description provided for @memberDeletedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Member deleted successfully'**
+  String get memberDeletedSuccessfully;
+
+  /// No description provided for @failedToDeleteMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete member'**
+  String get failedToDeleteMember;
+
+  /// No description provided for @saveChangesQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to save these changes?'**
+  String get saveChangesQuestion;
+
+  /// No description provided for @memberUpdatedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Member updated successfully'**
+  String get memberUpdatedSuccessfully;
+
+  /// No description provided for @failedToUpdateMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update member'**
+  String get failedToUpdateMember;
+
+  /// No description provided for @filterByStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by Status'**
+  String get filterByStatus;
+
+  /// No description provided for @failedToFetchUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to fetch users'**
+  String get failedToFetchUsers;
+
+  /// No description provided for @failedToSaveChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save changes'**
+  String get failedToSaveChanges;
+
+  /// No description provided for @approvedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved By'**
+  String get approvedBy;
+
+  /// No description provided for @diningMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Dining Member'**
+  String get diningMember;
+
+  /// No description provided for @editTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get editTooltip;
+
+  /// No description provided for @deleteTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get deleteTooltip;
+
+  /// No description provided for @saveTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get saveTooltip;
+
+  /// No description provided for @cancelTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancelTooltip;
 }
 
 class _AppLocalizationsDelegate
