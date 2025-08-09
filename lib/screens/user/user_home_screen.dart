@@ -285,7 +285,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
 }
 
 // Update your HomeContent widget imports and class name accordingly:
-class HomeContent extends StatelessWidget {
+class HomeContent extends StatefulWidget {
   final VoidCallback onBillingPressed;
 
   const HomeContent({
@@ -293,45 +293,279 @@ class HomeContent extends StatelessWidget {
     required this.onBillingPressed,
   });
 
-  Widget _buildMenuCard(String title, String subtitle, String imagePath) {
+  @override
+  State<HomeContent> createState() => _HomeContentState();
+}
+
+class _HomeContentState extends State<HomeContent> {
+  Map<String, dynamic>? todayMenu;
+  Map<String, dynamic>? tomorrowMenu;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchMenuData();
+  }
+
+  String _formatDateForFirestore(DateTime date) {
+    return "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+  }
+
+  Future<void> _fetchMenuData() async {
+    try {
+      final today = DateTime.now();
+      final tomorrow = today.add(const Duration(days: 1));
+
+      final todayStr = _formatDateForFirestore(today);
+      final tomorrowStr = _formatDateForFirestore(tomorrow);
+
+      // Fetch today's menu
+      final todayDoc = await FirebaseFirestore.instance
+          .collection('monthly_menu')
+          .doc(todayStr)
+          .get();
+
+      // Fetch tomorrow's menu
+      final tomorrowDoc = await FirebaseFirestore.instance
+          .collection('monthly_menu')
+          .doc(tomorrowStr)
+          .get();
+
+      setState(() {
+        todayMenu = todayDoc.exists ? todayDoc.data() : null;
+        tomorrowMenu = tomorrowDoc.exists ? tomorrowDoc.data() : null;
+        isLoading = false;
+      });
+    } catch (e) {
+      debugPrint("Error fetching menu data: $e");
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  Widget _buildMenuCard(
+      String mealType, Map<String, dynamic>? mealData, bool isToday) {
+    final IconData mealIcon;
+    final Color cardColor;
+
+    switch (mealType.toLowerCase()) {
+      case 'breakfast':
+        mealIcon = Icons.free_breakfast;
+        cardColor = Colors.orange.shade50;
+        break;
+      case 'lunch':
+        mealIcon = Icons.lunch_dining;
+        cardColor = Colors.green.shade50;
+        break;
+      case 'dinner':
+        mealIcon = Icons.dinner_dining;
+        cardColor = Colors.blue.shade50;
+        break;
+      default:
+        mealIcon = Icons.restaurant;
+        cardColor = Colors.grey.shade50;
+    }
+
     return Card(
+      elevation: 4,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
       ),
-      elevation: 4,
-      child: Column(
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-            child: Image.asset(
-              'assets/$imagePath',
-              height: 100,
-              width: double.infinity,
-              fit: BoxFit.cover,
-            ),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(15),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              cardColor,
+              cardColor.withOpacity(0.3),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Meal type icon with larger size
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
                     ),
-                    textAlign: TextAlign.center),
-                Text(subtitle,
+                  ],
+                ),
+                child: Icon(
+                  mealIcon,
+                  size: 32,
+                  color: _getMealTypeColor(mealType),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Meal type title
+              Text(
+                _capitalizeMealType(mealType),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Color(0xFF002B5B),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+
+              // Menu item and price
+              if (mealData != null) ...[
+                Text(
+                  mealData['item'] ?? 'Not Available',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade700,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '৳ ${(mealData['price'] as num?)?.toStringAsFixed(0) ?? '0'}',
                     style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey.shade700,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green.shade700,
                     ),
-                    textAlign: TextAlign.center),
+                  ),
+                ),
+              ] else ...[
+                Text(
+                  'Menu not available',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                    fontStyle: FontStyle.italic,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '৳ --',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ),
               ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Color _getMealTypeColor(String mealType) {
+    switch (mealType.toLowerCase()) {
+      case 'breakfast':
+        return Colors.orange.shade600;
+      case 'lunch':
+        return Colors.green.shade600;
+      case 'dinner':
+        return Colors.blue.shade600;
+      default:
+        return Colors.grey.shade600;
+    }
+  }
+
+  String _capitalizeMealType(String mealType) {
+    return mealType[0].toUpperCase() + mealType.substring(1).toLowerCase();
+  }
+
+  Widget _buildMenuSection(
+      String title, Map<String, dynamic>? menuData, bool isToday) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              isToday ? Icons.today : Icons.event,
+              color: const Color(0xFF002B5B),
+              size: 24,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF002B5B),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (isLoading)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(20.0),
+              child: CircularProgressIndicator(),
             ),
           )
-        ],
-      ),
+        else
+          Row(
+            children: [
+              Expanded(
+                child: _buildMenuCard(
+                  'breakfast',
+                  menuData?['breakfast'],
+                  isToday,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildMenuCard(
+                  'lunch',
+                  menuData?['lunch'],
+                  isToday,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildMenuCard(
+                  'dinner',
+                  menuData?['dinner'],
+                  isToday,
+                ),
+              ),
+            ],
+          ),
+      ],
     );
   }
 
@@ -343,47 +577,18 @@ class HomeContent extends StatelessWidget {
         child: ListView(
           children: [
             const SizedBox(height: 24),
-            const Text(
-              "Today's Menu",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                    child: _buildMenuCard(
-                        "Breakfast", "Alu Paratha with Beef", "2.png")),
-                const SizedBox(width: 10),
-                Expanded(
-                    child: _buildMenuCard(
-                        "Lunch", "Khichuri with Chicken", "1.png")),
-                const SizedBox(width: 10),
-                Expanded(
-                    child: _buildMenuCard(
-                        "Dinner", "Ruti with dal and vaji", "3.png")),
-              ],
-            ),
+
+            // Today's Menu Section
+            _buildMenuSection("Today's Menu", todayMenu, true),
+
+            const SizedBox(height: 32),
+
+            // Tomorrow's Menu Section
+            _buildMenuSection("Tomorrow's Menu", tomorrowMenu, false),
+
             const SizedBox(height: 24),
-            const Text(
-              "Tomorrow's Menu",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                    child: _buildMenuCard(
-                        "Breakfast", "Roti with Beef Curry", "4.png")),
-                const SizedBox(width: 10),
-                Expanded(
-                    child: _buildMenuCard("Lunch", "Rice with Curry", "5.png")),
-                const SizedBox(width: 10),
-                Expanded(
-                    child: _buildMenuCard(
-                        "Dinner", "Paratha with Chicken", "6.png")),
-              ],
-            ),
-            const SizedBox(height: 24),
+
+            // Bill Payment Card
             Card(
               color: Colors.red.shade50,
               elevation: 2,
@@ -414,7 +619,7 @@ class HomeContent extends StatelessWidget {
                       ),
                     ),
                     ElevatedButton(
-                      onPressed: onBillingPressed,
+                      onPressed: widget.onBillingPressed,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                         shape: RoundedRectangleBorder(

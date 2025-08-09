@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
 
 class MealStateRecordScreen extends StatefulWidget {
   const MealStateRecordScreen({super.key});
@@ -9,79 +11,151 @@ class MealStateRecordScreen extends StatefulWidget {
 
 class _MealStateRecordScreenState extends State<MealStateRecordScreen> {
   final TextEditingController _searchController = TextEditingController();
-  DateTime? selectedDate = DateTime.now(); // Made nullable
+  DateTime? selectedDate = DateTime.now();
   List<Map<String, dynamic>> filteredRecords = [];
+  List<Map<String, dynamic>> allRecords = [];
   int? editingIndex;
+  bool _isLoading = false;
+
+  // Controllers for editing
   final TextEditingController _breakfastController = TextEditingController();
   final TextEditingController _lunchController = TextEditingController();
   final TextEditingController _dinnerController = TextEditingController();
-  final TextEditingController _disposalsController = TextEditingController();
+  final TextEditingController _disposalTypeController = TextEditingController();
   final TextEditingController _remarksController = TextEditingController();
-
-  // Sample data with different dates
-  final List<Map<String, dynamic>> allRecords = [
-    {
-      'BA No': 'BA-1234',
-      'Rk': 'Maj',
-      'Name': 'John Smith',
-      'Date': '2025-07-20',
-      'Breakfast': 'Yes',
-      'Lunch': 'No',
-      'Dinner': 'Yes',
-      'Disposals': 'None',
-      'Remarks': 'Extra egg',
-    },
-    {
-      'BA No': 'BA-5678',
-      'Rk': 'Capt',
-      'Name': 'Jane Doe',
-      'Date': '2025-07-20',
-      'Breakfast': 'No',
-      'Lunch': 'Yes',
-      'Dinner': 'Yes',
-      'Disposals': 'SIQ',
-      'Remarks': '',
-    },
-    {
-      'BA No': 'BA-9012',
-      'Rk': 'Lt',
-      'Name': 'Mike Johnson',
-      'Date': '2025-07-19',
-      'Breakfast': 'Yes',
-      'Lunch': 'Yes',
-      'Dinner': 'No',
-      'Disposals': 'Leave',
-      'Remarks': 'Extra fish',
-    },
-    {
-      'BA No': 'BA-3456',
-      'Rk': 'Capt',
-      'Name': 'Sarah Wilson',
-      'Date': '2025-07-19',
-      'Breakfast': 'Yes',
-      'Lunch': 'Yes',
-      'Dinner': 'Yes',
-      'Disposals': 'None',
-      'Remarks': '',
-    },
-    {
-      'BA No': 'BA-7890',
-      'Rk': 'Maj',
-      'Name': 'David Brown',
-      'Date': '2025-07-18',
-      'Breakfast': 'No',
-      'Lunch': 'Yes',
-      'Dinner': 'Yes',
-      'Disposals': 'Mess Out',
-      'Remarks': 'Late dinner',
-    },
-  ];
+  DateTime? _disposalFromDate;
+  DateTime? _disposalToDate;
 
   @override
   void initState() {
     super.initState();
-    filteredRecords = List.from(allRecords);
-    _filterRecords(_searchController.text);
+    _fetchAllMealRecords();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _breakfastController.dispose();
+    _lunchController.dispose();
+    _dinnerController.dispose();
+    _disposalTypeController.dispose();
+    _remarksController.dispose();
+    super.dispose();
+  }
+
+  String _formatDateForFirestore(DateTime date) {
+    return "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+  }
+
+  String _formatDisposalDate(String dateStr) {
+    if (dateStr.isEmpty) return '';
+    try {
+      final parts = dateStr.split('-');
+      if (parts.length == 3) {
+        return "${parts[2]}/${parts[1]}/${parts[0]}";
+      }
+      return dateStr;
+    } catch (e) {
+      return dateStr;
+    }
+  }
+
+  Future<void> _showCreateMealStateDialog() async {
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return CreateMealStateDialog(
+          onMealStateCreated: () {
+            _fetchAllMealRecords(); // Refresh data after creation
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _fetchAllMealRecords() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      allRecords.clear();
+
+      // Get all meal state documents without ordering (to avoid index requirement)
+      final querySnapshot =
+          await FirebaseFirestore.instance.collection('user_meal_state').get();
+
+      for (var doc in querySnapshot.docs) {
+        final dateStr = doc.id;
+        final data = doc.data();
+
+        for (String baNo in data.keys) {
+          final userData = data[baNo] as Map<String, dynamic>;
+
+          // Format disposal information
+          String disposalInfo = 'N/A';
+          String disposalFromTo = '';
+
+          if (userData['disposal'] == true &&
+              userData['disposal_type'] != null &&
+              userData['disposal_type'].toString().isNotEmpty) {
+            disposalInfo = userData['disposal_type'].toString();
+            if (userData['disposal_from'] != null &&
+                userData['disposal_to'] != null &&
+                userData['disposal_from'].toString().isNotEmpty &&
+                userData['disposal_to'].toString().isNotEmpty) {
+              final fromDate =
+                  _formatDisposalDate(userData['disposal_from'].toString());
+              final toDate =
+                  _formatDisposalDate(userData['disposal_to'].toString());
+              if (fromDate.isNotEmpty && toDate.isNotEmpty) {
+                disposalFromTo = '$fromDate - $toDate';
+              }
+            }
+          }
+
+          // Format remarks
+          String remarks = userData['remarks']?.toString() ?? '';
+          if (remarks.trim().isEmpty) {
+            remarks = 'N/A';
+          }
+
+          allRecords.add({
+            'BA No': baNo,
+            'Rk': userData['rank'] ?? '',
+            'Name': userData['name'] ?? '',
+            'Date': dateStr,
+            'Breakfast': userData['breakfast'] == true ? 'Yes' : 'No',
+            'Lunch': userData['lunch'] == true ? 'Yes' : 'No',
+            'Dinner': userData['dinner'] == true ? 'Yes' : 'No',
+            'Disposals': disposalInfo,
+            'Disposal Dates': disposalFromTo,
+            'Remarks': remarks,
+            'Admin Generated': userData['admin_generated'] == true,
+            'original_data': userData, // Keep original for editing
+          });
+        }
+      }
+
+      // Sort records by date in descending order (most recent first)
+      allRecords
+          .sort((a, b) => b['Date'].toString().compareTo(a['Date'].toString()));
+
+      _filterRecords(_searchController.text);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error fetching meal records: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   void _startEditing(int index, Map<String, dynamic> record) {
@@ -90,13 +164,39 @@ class _MealStateRecordScreenState extends State<MealStateRecordScreen> {
       _breakfastController.text = record['Breakfast'];
       _lunchController.text = record['Lunch'];
       _dinnerController.text = record['Dinner'];
-      _disposalsController.text = record['Disposals'];
-      _remarksController.text = record['Remarks'];
+      _disposalTypeController.text = record['Disposals'];
+      _remarksController.text =
+          record['Remarks'] == 'N/A' ? '' : record['Remarks'];
+
+      // Parse disposal dates
+      if (record['Disposal Dates'].toString().isNotEmpty &&
+          record['Disposal Dates'] != '') {
+        final dates = record['Disposal Dates'].toString().split(' - ');
+        if (dates.length == 2) {
+          try {
+            // Convert from DD/MM/YYYY to DateTime
+            final fromParts = dates[0].split('/');
+            final toParts = dates[1].split('/');
+            if (fromParts.length == 3 && toParts.length == 3) {
+              _disposalFromDate = DateTime(int.parse(fromParts[2]),
+                  int.parse(fromParts[1]), int.parse(fromParts[0]));
+              _disposalToDate = DateTime(int.parse(toParts[2]),
+                  int.parse(toParts[1]), int.parse(toParts[0]));
+            }
+          } catch (e) {
+            _disposalFromDate = null;
+            _disposalToDate = null;
+          }
+        }
+      } else {
+        _disposalFromDate = null;
+        _disposalToDate = null;
+      }
     });
   }
 
-  void _saveEditing(int index) {
-    showDialog(
+  Future<void> _saveEditing(int index) async {
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Confirm Save'),
@@ -116,52 +216,159 @@ class _MealStateRecordScreenState extends State<MealStateRecordScreen> {
           ),
         ],
       ),
-    ).then((confirmed) {
-      if (confirmed == true) {
-        setState(() {
-          allRecords[index]['Breakfast'] = _breakfastController.text;
-          allRecords[index]['Lunch'] = _lunchController.text;
-          allRecords[index]['Dinner'] = _dinnerController.text;
-          allRecords[index]['Disposals'] = _disposalsController.text;
-          allRecords[index]['Remarks'] = _remarksController.text;
-          editingIndex = null;
-          _filterRecords(_searchController.text);
+    );
+
+    if (confirmed == true) {
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        final record = filteredRecords[index];
+        final dateStr = record['Date'];
+        final baNo = record['BA No'];
+
+        // Format remarks - auto convert to N/A if empty or variations of n/a
+        String finalRemarks = _remarksController.text.trim();
+        if (finalRemarks.isEmpty ||
+            finalRemarks.toLowerCase() == 'n/a' ||
+            finalRemarks.toLowerCase() == 'na') {
+          finalRemarks = '';
+        }
+
+        // Format disposal dates
+        String disposalFrom = '';
+        String disposalTo = '';
+        if (_disposalTypeController.text != 'N/A' &&
+            _disposalFromDate != null &&
+            _disposalToDate != null) {
+          disposalFrom = _formatDateForFirestore(_disposalFromDate!);
+          disposalTo = _formatDateForFirestore(_disposalToDate!);
+        }
+
+        // Update Firebase
+        await FirebaseFirestore.instance
+            .collection('user_meal_state')
+            .doc(dateStr)
+            .update({
+          '$baNo.breakfast': _breakfastController.text == 'Yes',
+          '$baNo.lunch': _lunchController.text == 'Yes',
+          '$baNo.dinner': _dinnerController.text == 'Yes',
+          '$baNo.disposal': _disposalTypeController.text != 'N/A',
+          '$baNo.disposal_type': _disposalTypeController.text == 'N/A'
+              ? ''
+              : _disposalTypeController.text,
+          '$baNo.disposal_from': disposalFrom,
+          '$baNo.disposal_to': disposalTo,
+          '$baNo.remarks': finalRemarks,
+          '$baNo.timestamp': FieldValue.serverTimestamp(),
+          '$baNo.admin_generated': false, // Mark as manually edited
         });
+
+        // Refresh data
+        await _fetchAllMealRecords();
+
+        setState(() {
+          editingIndex = null;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Record updated successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error updating record: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
-    });
+
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   void _cancelEditing() {
     setState(() {
       editingIndex = null;
+      _disposalFromDate = null;
+      _disposalToDate = null;
     });
   }
 
-  void _deleteRecord(int index) {
-    showDialog(
+  Future<void> _deleteRecord(int index) async {
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Confirm Delete'),
         content: const Text('Are you sure you want to delete this record?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              setState(() {
-                allRecords.removeAt(index);
-                _filterRecords(_searchController.text);
-              });
-              Navigator.pop(context);
-            },
+            onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Delete'),
           ),
         ],
       ),
     );
+
+    if (confirmed == true) {
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        final record = filteredRecords[index];
+        final dateStr = record['Date'];
+        final baNo = record['BA No'];
+
+        // Delete from Firebase
+        await FirebaseFirestore.instance
+            .collection('user_meal_state')
+            .doc(dateStr)
+            .update({
+          baNo: FieldValue.delete(),
+        });
+
+        // Refresh data
+        await _fetchAllMealRecords();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Record deleted successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error deleting record: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   void _filterRecords(String query) {
@@ -177,8 +384,7 @@ class _MealStateRecordScreenState extends State<MealStateRecordScreen> {
         }
 
         // If date is selected, filter by both query and date
-        final date =
-            '${selectedDate!.year}-${selectedDate!.month.toString().padLeft(2, '0')}-${selectedDate!.day.toString().padLeft(2, '0')}';
+        final date = _formatDateForFirestore(selectedDate!);
         final matchesDate = record['Date'] == date;
 
         return matchesQuery && matchesDate;
@@ -189,7 +395,7 @@ class _MealStateRecordScreenState extends State<MealStateRecordScreen> {
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: selectedDate,
+      initialDate: selectedDate ?? DateTime.now(),
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
     );
@@ -200,6 +406,42 @@ class _MealStateRecordScreenState extends State<MealStateRecordScreen> {
       });
     }
   }
+
+  Future<void> _pickDisposalDate({required bool isFrom}) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: isFrom
+          ? (_disposalFromDate ?? selectedDate ?? DateTime.now())
+          : (_disposalToDate ?? selectedDate ?? DateTime.now()),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+    );
+
+    if (picked != null) {
+      setState(() {
+        if (isFrom) {
+          _disposalFromDate = picked;
+          // If to date is before from date, clear it
+          if (_disposalToDate != null && _disposalToDate!.isBefore(picked)) {
+            _disposalToDate = null;
+          }
+        } else {
+          _disposalToDate = picked;
+        }
+      });
+    }
+  }
+
+  // Summary calculation functions
+  int get totalRecords => filteredRecords.length;
+
+  int get adminGeneratedCount => filteredRecords
+      .where((record) => record['Admin Generated'] == true)
+      .length;
+
+  int get userSubmittedCount => filteredRecords
+      .where((record) => record['Admin Generated'] != true)
+      .length;
 
   @override
   Widget build(BuildContext context) {
@@ -216,12 +458,20 @@ class _MealStateRecordScreenState extends State<MealStateRecordScreen> {
             fontSize: 18,
           ),
         ),
+        actions: [
+          IconButton(
+            onPressed: _fetchAllMealRecords,
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            tooltip: 'Refresh',
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Top controls row
             Row(
               children: [
                 Expanded(
@@ -243,8 +493,9 @@ class _MealStateRecordScreenState extends State<MealStateRecordScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
+                // Date selector
                 SizedBox(
-                  width: 200, // Fixed width for date section
+                  width: 200,
                   child: Row(
                     children: [
                       Expanded(
@@ -298,256 +549,769 @@ class _MealStateRecordScreenState extends State<MealStateRecordScreen> {
                     ],
                   ),
                 ),
+                const SizedBox(width: 12),
+                // Create Meal State button
+                ElevatedButton.icon(
+                  onPressed: _isLoading ? null : _showCreateMealStateDialog,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Create Meal State'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1A4D8F),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 16),
-            Expanded(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: SingleChildScrollView(
-                  child: DataTable(
-                    headingRowColor: WidgetStateProperty.all(
-                      const Color(0xFF1A4D8F),
-                    ),
-                    columns: const [
-                      DataColumn(
-                        label: Text('BA No',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold)),
-                      ),
-                      DataColumn(
-                        label: Text('Rk',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold)),
-                      ),
-                      DataColumn(
-                        label: Text('Name',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold)),
-                      ),
-                      DataColumn(
-                        label: Text('Date',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold)),
-                      ),
-                      DataColumn(
-                        label: Text('Breakfast',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold)),
-                      ),
-                      DataColumn(
-                        label: Text('Lunch',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold)),
-                      ),
-                      DataColumn(
-                        label: Text('Dinner',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold)),
-                      ),
-                      DataColumn(
-                        label: Text('Disposals',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold)),
-                      ),
-                      DataColumn(
-                        label: Text('Remarks',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold)),
-                      ),
-                      DataColumn(
-                        label: Text('Action',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold)),
-                      ),
-                    ],
-                    rows: filteredRecords.isEmpty
-                        ? [
-                            const DataRow(
-                              cells: [
-                                DataCell(Text('-')),
-                                DataCell(Text('-')),
-                                DataCell(Text('-')),
-                                DataCell(Text('-')),
-                                DataCell(Text('-')),
-                                DataCell(Text('-')),
-                                DataCell(Text('-')),
-                                DataCell(Text('-')),
-                                DataCell(Text('-')),
-                                DataCell(Text('-')),
-                              ],
-                            ),
-                          ]
-                        : List.generate(filteredRecords.length, (index) {
-                            final record = filteredRecords[index];
-                            final isEditing = editingIndex == index;
 
-                            return DataRow(
-                              cells: [
-                                DataCell(Text(record['BA No'].toString())),
-                                DataCell(Text(record['Rk'].toString())),
-                                DataCell(Text(record['Name'].toString())),
-                                DataCell(Text(record['Date'].toString())),
-                                DataCell(
-                                  isEditing
-                                      ? DropdownButton<String>(
-                                          value: _breakfastController.text,
-                                          items: const [
-                                            DropdownMenuItem(
-                                                value: 'Yes',
-                                                child: Text('Yes')),
-                                            DropdownMenuItem(
-                                                value: 'No', child: Text('No')),
-                                          ],
-                                          onChanged: (value) {
-                                            setState(() {
-                                              _breakfastController.text =
-                                                  value!;
-                                              filteredRecords[index]
-                                                  ['Breakfast'] = value;
-                                            });
-                                          },
-                                        )
-                                      : Text(record['Breakfast'].toString()),
-                                ),
-                                DataCell(
-                                  isEditing
-                                      ? DropdownButton<String>(
-                                          value: _lunchController.text,
-                                          items: const [
-                                            DropdownMenuItem(
-                                                value: 'Yes',
-                                                child: Text('Yes')),
-                                            DropdownMenuItem(
-                                                value: 'No', child: Text('No')),
-                                          ],
-                                          onChanged: (value) {
-                                            setState(() {
-                                              _lunchController.text = value!;
-                                              filteredRecords[index]['Lunch'] =
-                                                  value;
-                                            });
-                                          },
-                                        )
-                                      : Text(record['Lunch'].toString()),
-                                ),
-                                DataCell(
-                                  isEditing
-                                      ? DropdownButton<String>(
-                                          value: _dinnerController.text,
-                                          items: const [
-                                            DropdownMenuItem(
-                                                value: 'Yes',
-                                                child: Text('Yes')),
-                                            DropdownMenuItem(
-                                                value: 'No', child: Text('No')),
-                                          ],
-                                          onChanged: (value) {
-                                            setState(() {
-                                              _dinnerController.text = value!;
-                                              filteredRecords[index]['Dinner'] =
-                                                  value;
-                                            });
-                                          },
-                                        )
-                                      : Text(record['Dinner'].toString()),
-                                ),
-                                DataCell(
-                                  isEditing
-                                      ? DropdownButton<String>(
-                                          value: _disposalsController.text,
-                                          items: const [
-                                            DropdownMenuItem(
-                                                value: 'None',
-                                                child: Text('None')),
-                                            DropdownMenuItem(
-                                                value: 'SIQ',
-                                                child: Text('SIQ')),
-                                            DropdownMenuItem(
-                                                value: 'Leave',
-                                                child: Text('Leave')),
-                                            DropdownMenuItem(
-                                                value: 'Mess Out',
-                                                child: Text('Mess Out')),
-                                          ],
-                                          onChanged: (value) {
-                                            setState(() {
-                                              _disposalsController.text =
-                                                  value!;
-                                              filteredRecords[index]
-                                                  ['Disposals'] = value;
-                                            });
-                                          },
-                                        )
-                                      : Text(record['Disposals'].toString()),
-                                ),
-                                DataCell(
-                                  isEditing
-                                      ? TextField(
-                                          controller: _remarksController,
-                                          decoration: const InputDecoration(
-                                            hintText: 'Enter remarks',
-                                          ),
-                                          onChanged: (value) {
-                                            setState(() {
-                                              filteredRecords[index]
-                                                  ['Remarks'] = value;
-                                            });
-                                          },
-                                        )
-                                      : Text(record['Remarks'].toString()),
-                                ),
-                                DataCell(
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      if (isEditing) ...[
-                                        IconButton(
-                                          icon: const Icon(Icons.save,
-                                              color: Colors.green),
-                                          onPressed: () => _saveEditing(index),
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(Icons.cancel,
-                                              color: Colors.red),
-                                          onPressed: _cancelEditing,
-                                        ),
-                                      ] else ...[
-                                        IconButton(
-                                          icon: const Icon(Icons.edit,
-                                              color: Color(0xFF1A4D8F)),
-                                          onPressed: () =>
-                                              _startEditing(index, record),
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(Icons.delete,
-                                              color: Colors.red),
-                                          onPressed: () => _deleteRecord(index),
-                                        ),
-                                      ],
+            // Data table section
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: SingleChildScrollView(
+                        child: DataTable(
+                          dataRowMinHeight: 60,
+                          dataRowMaxHeight: editingIndex != null ? 200 : 60,
+                          headingRowColor: WidgetStateProperty.all(
+                            const Color(0xFF1A4D8F),
+                          ),
+                          columns: const [
+                            DataColumn(
+                              label: Text('BA No',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold)),
+                            ),
+                            DataColumn(
+                              label: Text('Rk',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold)),
+                            ),
+                            DataColumn(
+                              label: Text('Name',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold)),
+                            ),
+                            DataColumn(
+                              label: Text('Date',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold)),
+                            ),
+                            DataColumn(
+                              label: Text('Breakfast',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold)),
+                            ),
+                            DataColumn(
+                              label: Text('Lunch',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold)),
+                            ),
+                            DataColumn(
+                              label: Text('Dinner',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold)),
+                            ),
+                            DataColumn(
+                              label: Text('Disposals',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold)),
+                            ),
+                            DataColumn(
+                              label: Text('Disposal Dates',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold)),
+                            ),
+                            DataColumn(
+                              label: Text('Remarks',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold)),
+                            ),
+                            DataColumn(
+                              label: Text('Action',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold)),
+                            ),
+                          ],
+                          rows: filteredRecords.isEmpty
+                              ? [
+                                  const DataRow(
+                                    cells: [
+                                      DataCell(Text('No records found')),
+                                      DataCell(Text('-')),
+                                      DataCell(Text('-')),
+                                      DataCell(Text('-')),
+                                      DataCell(Text('-')),
+                                      DataCell(Text('-')),
+                                      DataCell(Text('-')),
+                                      DataCell(Text('-')),
+                                      DataCell(Text('-')),
+                                      DataCell(Text('-')),
+                                      DataCell(Text('-')),
                                     ],
                                   ),
-                                ),
-                              ],
-                            );
-                          }).toList(),
+                                ]
+                              : List.generate(filteredRecords.length, (index) {
+                                  final record = filteredRecords[index];
+                                  final isEditing = editingIndex == index;
+                                  final isAdminGenerated =
+                                      record['Admin Generated'] == true;
+
+                                  return DataRow(
+                                    color: WidgetStateProperty.all(
+                                      isAdminGenerated
+                                          ? Colors.blue.shade50
+                                          : Colors.green.shade50,
+                                    ),
+                                    cells: [
+                                      DataCell(
+                                        Row(
+                                          children: [
+                                            Text(record['BA No'].toString()),
+                                            if (isAdminGenerated) ...[
+                                              const SizedBox(width: 4),
+                                              const Icon(
+                                                Icons.admin_panel_settings,
+                                                size: 16,
+                                                color: Colors.blue,
+                                              ),
+                                            ] else ...[
+                                              const SizedBox(width: 4),
+                                              const Icon(
+                                                Icons.person,
+                                                size: 16,
+                                                color: Colors.green,
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                      DataCell(Text(record['Rk'].toString())),
+                                      DataCell(Text(record['Name'].toString())),
+                                      DataCell(Text(record['Date'].toString())),
+                                      // Breakfast cell
+                                      DataCell(
+                                        isEditing
+                                            ? DropdownButton<String>(
+                                                value:
+                                                    _breakfastController.text,
+                                                items: const [
+                                                  DropdownMenuItem(
+                                                      value: 'Yes',
+                                                      child: Text('Yes')),
+                                                  DropdownMenuItem(
+                                                      value: 'No',
+                                                      child: Text('No')),
+                                                ],
+                                                onChanged: (value) {
+                                                  setState(() {
+                                                    _breakfastController.text =
+                                                        value!;
+                                                  });
+                                                },
+                                              )
+                                            : Text(
+                                                record['Breakfast'].toString()),
+                                      ),
+                                      // Lunch cell
+                                      DataCell(
+                                        isEditing
+                                            ? DropdownButton<String>(
+                                                value: _lunchController.text,
+                                                items: const [
+                                                  DropdownMenuItem(
+                                                      value: 'Yes',
+                                                      child: Text('Yes')),
+                                                  DropdownMenuItem(
+                                                      value: 'No',
+                                                      child: Text('No')),
+                                                ],
+                                                onChanged: (value) {
+                                                  setState(() {
+                                                    _lunchController.text =
+                                                        value!;
+                                                  });
+                                                },
+                                              )
+                                            : Text(record['Lunch'].toString()),
+                                      ),
+                                      // Dinner cell
+                                      DataCell(
+                                        isEditing
+                                            ? DropdownButton<String>(
+                                                value: _dinnerController.text,
+                                                items: const [
+                                                  DropdownMenuItem(
+                                                      value: 'Yes',
+                                                      child: Text('Yes')),
+                                                  DropdownMenuItem(
+                                                      value: 'No',
+                                                      child: Text('No')),
+                                                ],
+                                                onChanged: (value) {
+                                                  setState(() {
+                                                    _dinnerController.text =
+                                                        value!;
+                                                  });
+                                                },
+                                              )
+                                            : Text(record['Dinner'].toString()),
+                                      ),
+                                      // Disposal type cell
+                                      DataCell(
+                                        isEditing
+                                            ? DropdownButton<String>(
+                                                value: _disposalTypeController
+                                                    .text,
+                                                items: const [
+                                                  DropdownMenuItem(
+                                                      value: 'N/A',
+                                                      child: Text('N/A')),
+                                                  DropdownMenuItem(
+                                                      value: 'SIQ',
+                                                      child: Text('SIQ')),
+                                                  DropdownMenuItem(
+                                                      value: 'Leave',
+                                                      child: Text('Leave')),
+                                                ],
+                                                onChanged: (value) {
+                                                  setState(() {
+                                                    _disposalTypeController
+                                                        .text = value!;
+                                                  });
+                                                },
+                                              )
+                                            : Text(
+                                                record['Disposals'].toString()),
+                                      ),
+                                      // Disposal dates cell
+                                      DataCell(
+                                        isEditing
+                                            ? Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Row(
+                                                    children: [
+                                                      Expanded(
+                                                        child: InkWell(
+                                                          onTap: () =>
+                                                              _pickDisposalDate(
+                                                                  isFrom: true),
+                                                          child: Container(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .all(8),
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              border: Border.all(
+                                                                  color: Colors
+                                                                      .grey),
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          4),
+                                                            ),
+                                                            child: Text(
+                                                              _disposalFromDate !=
+                                                                      null
+                                                                  ? '${_disposalFromDate!.day}/${_disposalFromDate!.month}/${_disposalFromDate!.year}'
+                                                                  : 'From',
+                                                              style:
+                                                                  const TextStyle(
+                                                                      fontSize:
+                                                                          12),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 4),
+                                                      Expanded(
+                                                        child: InkWell(
+                                                          onTap: () =>
+                                                              _pickDisposalDate(
+                                                                  isFrom:
+                                                                      false),
+                                                          child: Container(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .all(8),
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              border: Border.all(
+                                                                  color: Colors
+                                                                      .grey),
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          4),
+                                                            ),
+                                                            child: Text(
+                                                              _disposalToDate !=
+                                                                      null
+                                                                  ? '${_disposalToDate!.day}/${_disposalToDate!.month}/${_disposalToDate!.year}'
+                                                                  : 'To',
+                                                              style:
+                                                                  const TextStyle(
+                                                                      fontSize:
+                                                                          12),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ],
+                                              )
+                                            : Text(
+                                                record['Disposal Dates']
+                                                    .toString(),
+                                                style: const TextStyle(
+                                                    fontSize: 12),
+                                              ),
+                                      ),
+                                      // Remarks cell
+                                      DataCell(
+                                        isEditing
+                                            ? TextField(
+                                                controller: _remarksController,
+                                                decoration:
+                                                    const InputDecoration(
+                                                  hintText: 'Enter remarks',
+                                                  border: OutlineInputBorder(),
+                                                  contentPadding:
+                                                      EdgeInsets.all(8),
+                                                ),
+                                                maxLines: 2,
+                                              )
+                                            : Text(
+                                                record['Remarks'].toString()),
+                                      ),
+                                      // Action cell
+                                      DataCell(
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            if (isEditing) ...[
+                                              IconButton(
+                                                icon: const Icon(Icons.save,
+                                                    color: Colors.green),
+                                                onPressed: () =>
+                                                    _saveEditing(index),
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(Icons.cancel,
+                                                    color: Colors.red),
+                                                onPressed: _cancelEditing,
+                                              ),
+                                            ] else ...[
+                                              IconButton(
+                                                icon: const Icon(Icons.edit,
+                                                    color: Color(0xFF1A4D8F)),
+                                                onPressed: () => _startEditing(
+                                                    index, record),
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(Icons.delete,
+                                                    color: Colors.red),
+                                                onPressed: () =>
+                                                    _deleteRecord(index),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                }).toList(),
+                        ),
+                      ),
+                    ),
+            ),
+            const SizedBox(height: 16),
+
+            // Summary section
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Records Summary',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Total Records: $totalRecords',
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          'Admin Generated: $adminGeneratedCount',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.blue,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          'User Submitted: $userSubmittedCount',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.green,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ],
         ),
       ),
     );
+  }
+}
+
+class CreateMealStateDialog extends StatefulWidget {
+  final VoidCallback onMealStateCreated;
+
+  const CreateMealStateDialog({
+    super.key,
+    required this.onMealStateCreated,
+  });
+
+  @override
+  State<CreateMealStateDialog> createState() => _CreateMealStateDialogState();
+}
+
+class _CreateMealStateDialogState extends State<CreateMealStateDialog> {
+  DateTime selectedDate = DateTime.now();
+  String? selectedUserId;
+  Map<String, dynamic>? selectedUser;
+  List<Map<String, dynamic>> availableUsers = [];
+  bool isLoading = false;
+  bool isLoadingUsers = true;
+  TextEditingController searchController = TextEditingController();
+  List<Map<String, dynamic>> filteredUsers = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAvailableUsers();
+  }
+
+  String _formatDateForFirestore(DateTime date) {
+    return "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+  }
+
+  Future<void> _loadAvailableUsers() async {
+    try {
+      final usersSnapshot = await FirebaseFirestore.instance
+          .collection('user_requests')
+          .where('approved', isEqualTo: true)
+          .where('status', isEqualTo: 'active')
+          .get();
+
+      availableUsers = usersSnapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'id': doc.id,
+          'ba_no': data['ba_no'] ?? '',
+          'name': data['name'] ?? '',
+          'rank': data['rank'] ?? '',
+        };
+      }).toList();
+
+      // Sort by BA number
+      availableUsers.sort((a, b) => a['ba_no'].compareTo(b['ba_no']));
+      filteredUsers = List.from(availableUsers);
+
+      setState(() {
+        isLoadingUsers = false;
+      });
+    } catch (e) {
+      setState(() {
+        isLoadingUsers = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading users: $e')),
+        );
+      }
+    }
+  }
+
+  void _filterUsers(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        filteredUsers = List.from(availableUsers);
+      } else {
+        filteredUsers = availableUsers.where((user) {
+          final baNo = user['ba_no'].toString().toLowerCase();
+          final name = user['name'].toString().toLowerCase();
+          final rank = user['rank'].toString().toLowerCase();
+          final searchQuery = query.toLowerCase();
+          return baNo.contains(searchQuery) ||
+              name.contains(searchQuery) ||
+              rank.contains(searchQuery);
+        }).toList();
+      }
+    });
+  }
+
+  Future<void> _createMealState() async {
+    if (selectedUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a user')),
+      );
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      final dateStr = _formatDateForFirestore(selectedDate);
+      final baNo = selectedUser!['ba_no'];
+
+      // Check if meal state already exists for this user on this date
+      final existingDoc = await FirebaseFirestore.instance
+          .collection('user_meal_state')
+          .doc(dateStr)
+          .get();
+
+      if (existingDoc.exists) {
+        final data = existingDoc.data() as Map<String, dynamic>;
+        if (data.containsKey(baNo)) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                    'Meal state already exists for this user on this date'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          }
+          setState(() {
+            isLoading = false;
+          });
+          return;
+        }
+      }
+
+      // Create new meal state entry
+      final mealStateData = <String, dynamic>{
+        baNo: {
+          'breakfast': false,
+          'lunch': false,
+          'dinner': false,
+          'disposal': false,
+          'disposal_type': '',
+          'disposal_from': '',
+          'disposal_to': '',
+          'remarks': '',
+          'name': selectedUser!['name'],
+          'rank': selectedUser!['rank'],
+          'timestamp': FieldValue.serverTimestamp(),
+          'admin_generated': true, // Admin created
+        }
+      };
+
+      await FirebaseFirestore.instance
+          .collection('user_meal_state')
+          .doc(dateStr)
+          .set(mealStateData, SetOptions(merge: true));
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Meal state created successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        widget.onMealStateCreated();
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error creating meal state: $e')),
+        );
+      }
+    }
+
+    setState(() {
+      isLoading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Create Meal State'),
+      content: SizedBox(
+        width: 400,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Date Picker
+            const Text('Date:', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            InkWell(
+              onTap: () async {
+                final date = await showDatePicker(
+                  context: context,
+                  initialDate: selectedDate,
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime(2030),
+                );
+                if (date != null) {
+                  setState(() {
+                    selectedDate = date;
+                  });
+                }
+              },
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.calendar_today, size: 16),
+                    const SizedBox(width: 8),
+                    Text(_formatDateForFirestore(selectedDate)),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // User Selection
+            const Text('Select User:',
+                style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+
+            // Search field
+            TextField(
+              controller: searchController,
+              decoration: const InputDecoration(
+                hintText: 'Search by BA No, Name, or Rank',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+              ),
+              onChanged: _filterUsers,
+            ),
+            const SizedBox(height: 8),
+
+            // User dropdown
+            Container(
+              height: 200,
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: isLoadingUsers
+                  ? const Center(child: CircularProgressIndicator())
+                  : filteredUsers.isEmpty
+                      ? const Center(child: Text('No users found'))
+                      : ListView.builder(
+                          itemCount: filteredUsers.length,
+                          itemBuilder: (context, index) {
+                            final user = filteredUsers[index];
+                            final isSelected =
+                                selectedUser?['id'] == user['id'];
+                            return ListTile(
+                              selected: isSelected,
+                              onTap: () {
+                                setState(() {
+                                  selectedUser = user;
+                                  selectedUserId = user['id'];
+                                });
+                              },
+                              title: Text(
+                                '${user['ba_no']} - ${user['name']}',
+                                style: TextStyle(
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                              subtitle: Text(user['rank']),
+                              trailing: isSelected
+                                  ? const Icon(Icons.check, color: Colors.green)
+                                  : null,
+                            );
+                          },
+                        ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: isLoading ? null : _createMealState,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF1A4D8F),
+            foregroundColor: Colors.white,
+          ),
+          child: isLoading
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Create'),
+        ),
+      ],
+    );
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
   }
 }

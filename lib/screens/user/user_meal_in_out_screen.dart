@@ -37,7 +37,11 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
 
   String get _mealDate {
     final now = DateTime.now();
-    final target = now.hour >= 21 ? now.add(const Duration(days: 1)) : now;
+    // Before 21:00: Submit for next day
+    // After 21:00: Submit for day after next (next day submission is closed)
+    final target = now.hour >= 21
+        ? now.add(const Duration(days: 2)) // Day after next
+        : now.add(const Duration(days: 1)); // Next day
     return _formatDate(target);
   }
 
@@ -227,6 +231,7 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
         'disposal_from': _disposalYes ? _formatDate(_fromDate!) : '',
         'disposal_to': _disposalYes ? _formatDate(_toDate!) : '',
         'timestamp': FieldValue.serverTimestamp(),
+        'admin_generated': false, // User submitted
       };
 
       // Save to user_meal_state collection
@@ -390,8 +395,9 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
                                 ),
                                 content: const Text(
                                   "• These are approximate bills and may vary based on your meal participation and daily market prices of fresh ingredients.\n\n"
-                                  "• Last time to enroll for meals is 21:00 (9:00 PM) of the current day.\n\n"
-                                  "• The page will automatically refresh for the next day after 21:00.\n\n"
+                                  "• Before 21:00 (9:00 PM): You can enroll for NEXT day's meals.\n\n"
+                                  "• After 21:00: You can only enroll for the DAY AFTER NEXT (next day's enrollment is closed).\n\n"
+                                  "• This allows cooks adequate time to prepare meals based on enrollment numbers.\n\n"
                                   "• Please ensure timely enrollment to avoid meal schedule conflicts.",
                                   style: TextStyle(fontSize: 14, height: 1.5),
                                 ),
@@ -416,8 +422,47 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Text("For: $_mealDate",
-                      style: const TextStyle(color: Colors.grey)),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: DateTime.now().hour >= 21
+                          ? Colors.orange.shade50
+                          : Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: DateTime.now().hour >= 21
+                            ? Colors.orange.shade200
+                            : Colors.green.shade200,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.schedule,
+                          size: 16,
+                          color: DateTime.now().hour >= 21
+                              ? Colors.orange.shade700
+                              : Colors.green.shade700,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            DateTime.now().hour >= 21
+                                ? "⚠️ After 21:00 - Submitting for: $_mealDate (Day after next)"
+                                : "✅ Before 21:00 - Submitting for: $_mealDate (Next day)",
+                            style: TextStyle(
+                              color: DateTime.now().hour >= 21
+                                  ? Colors.orange.shade700
+                                  : Colors.green.shade700,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 16),
 
                   // Professional meal cards
