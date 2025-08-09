@@ -298,10 +298,17 @@ class _MealStateRecordScreenState extends State<MealStateRecordScreen> {
   }
 
   void _cancelEditing() {
+    if (!mounted) return;
     setState(() {
       editingIndex = null;
       _disposalFromDate = null;
       _disposalToDate = null;
+      // Clear all controllers
+      _breakfastController.clear();
+      _lunchController.clear();
+      _dinnerController.clear();
+      _disposalTypeController.clear();
+      _remarksController.clear();
     });
   }
 
@@ -408,6 +415,8 @@ class _MealStateRecordScreenState extends State<MealStateRecordScreen> {
   }
 
   Future<void> _pickDisposalDate({required bool isFrom}) async {
+    if (!mounted) return;
+
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: isFrom
@@ -417,7 +426,7 @@ class _MealStateRecordScreenState extends State<MealStateRecordScreen> {
       lastDate: DateTime(2030),
     );
 
-    if (picked != null) {
+    if (picked != null && mounted) {
       setState(() {
         if (isFrom) {
           _disposalFromDate = picked;
@@ -426,6 +435,18 @@ class _MealStateRecordScreenState extends State<MealStateRecordScreen> {
             _disposalToDate = null;
           }
         } else {
+          // Validate that to date is not before from date
+          if (_disposalFromDate != null &&
+              picked.isBefore(_disposalFromDate!)) {
+            // Show warning and don't set the date
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('To date cannot be before from date'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+            return;
+          }
           _disposalToDate = picked;
         }
       });
@@ -794,10 +815,18 @@ class _MealStateRecordScreenState extends State<MealStateRecordScreen> {
                                                       child: Text('Leave')),
                                                 ],
                                                 onChanged: (value) {
-                                                  setState(() {
-                                                    _disposalTypeController
-                                                        .text = value!;
-                                                  });
+                                                  if (mounted) {
+                                                    setState(() {
+                                                      _disposalTypeController
+                                                          .text = value!;
+                                                      // Clear disposal dates when changing type
+                                                      if (value == 'N/A') {
+                                                        _disposalFromDate =
+                                                            null;
+                                                        _disposalToDate = null;
+                                                      }
+                                                    });
+                                                  }
                                                 },
                                               )
                                             : Text(
@@ -1343,6 +1372,8 @@ class _DetailedMealEntryScreenState extends State<DetailedMealEntryScreen> {
   }
 
   Future<void> _pickDisposalDate({required bool isFrom}) async {
+    if (!mounted) return;
+
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: isFrom
@@ -1352,7 +1383,7 @@ class _DetailedMealEntryScreenState extends State<DetailedMealEntryScreen> {
       lastDate: DateTime(2030),
     );
 
-    if (picked != null) {
+    if (picked != null && mounted) {
       setState(() {
         if (isFrom) {
           disposalFromDate = picked;
@@ -1361,6 +1392,17 @@ class _DetailedMealEntryScreenState extends State<DetailedMealEntryScreen> {
             disposalToDate = null;
           }
         } else {
+          // Validate that to date is not before from date
+          if (disposalFromDate != null && picked.isBefore(disposalFromDate!)) {
+            // Show warning and don't set the date
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('To date cannot be before from date'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+            return;
+          }
           disposalToDate = picked;
         }
       });
@@ -1368,6 +1410,8 @@ class _DetailedMealEntryScreenState extends State<DetailedMealEntryScreen> {
   }
 
   Future<void> _submitMealState() async {
+    if (!mounted) return;
+
     setState(() {
       isSubmitting = true;
     });
@@ -1376,18 +1420,33 @@ class _DetailedMealEntryScreenState extends State<DetailedMealEntryScreen> {
       final baNo = widget.selectedUser['ba_no'];
 
       // Validate disposal dates if disposal is enabled
-      if (disposalEnabled &&
-          (disposalFromDate == null || disposalToDate == null)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please select both disposal from and to dates'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-        setState(() {
-          isSubmitting = false;
-        });
-        return;
+      if (disposalEnabled) {
+        if (disposalFromDate == null || disposalToDate == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please select both disposal from and to dates'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          setState(() {
+            isSubmitting = false;
+          });
+          return;
+        }
+
+        // Check if from date is before to date
+        if (disposalFromDate!.isAfter(disposalToDate!)) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('From date cannot be after to date'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          setState(() {
+            isSubmitting = false;
+          });
+          return;
+        }
       }
 
       // Create meal state data
@@ -1438,374 +1497,408 @@ class _DetailedMealEntryScreenState extends State<DetailedMealEntryScreen> {
       }
     }
 
-    setState(() {
-      isSubmitting = false;
-    });
+    if (mounted) {
+      setState(() {
+        isSubmitting = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Create Meal State'),
-        backgroundColor: const Color(0xFF1A4D8F),
-        foregroundColor: Colors.white,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // User and Date Info Card
-            Card(
-              elevation: 4,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.person, color: Color(0xFF1A4D8F)),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'User Information',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1A4D8F),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('BA No: ${widget.selectedUser['ba_no']}'),
-                              Text('Name: ${widget.selectedUser['name']}'),
-                              Text('Rank: ${widget.selectedUser['rank']}'),
-                            ],
-                          ),
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            const Text('Date:',
-                                style: TextStyle(fontWeight: FontWeight.bold)),
-                            Text(_formatDisplayDate(widget.selectedDate)),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+    return PopScope(
+      canPop: !isSubmitting,
+      onPopInvoked: (didPop) {
+        if (!didPop && isSubmitting) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please wait while creating meal state...'),
+              backgroundColor: Colors.orange,
             ),
-            const SizedBox(height: 20),
-
-            // Meal Selection Card
-            Card(
-              elevation: 4,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.restaurant, color: Color(0xFF1A4D8F)),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'Meal Selection',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1A4D8F),
+          );
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Create Meal State'),
+          backgroundColor: const Color(0xFF1A4D8F),
+          foregroundColor: Colors.white,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: isSubmitting ? null : () => Navigator.of(context).pop(),
+          ),
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // User and Date Info Card
+              Card(
+                elevation: 4,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.person, color: Color(0xFF1A4D8F)),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'User Information',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1A4D8F),
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Breakfast
-                    Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(8),
+                        ],
                       ),
-                      child: CheckboxListTile(
-                        title: const Row(
-                          children: [
-                            Icon(Icons.free_breakfast, color: Colors.orange),
-                            SizedBox(width: 8),
-                            Text('Breakfast'),
-                          ],
-                        ),
-                        value: breakfastSelected,
-                        onChanged: (value) {
-                          setState(() {
-                            breakfastSelected = value ?? false;
-                          });
-                        },
-                        activeColor: const Color(0xFF1A4D8F),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Lunch
-                    Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: CheckboxListTile(
-                        title: const Row(
-                          children: [
-                            Icon(Icons.lunch_dining, color: Colors.green),
-                            SizedBox(width: 8),
-                            Text('Lunch'),
-                          ],
-                        ),
-                        value: lunchSelected,
-                        onChanged: (value) {
-                          setState(() {
-                            lunchSelected = value ?? false;
-                          });
-                        },
-                        activeColor: const Color(0xFF1A4D8F),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Dinner
-                    Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: CheckboxListTile(
-                        title: const Row(
-                          children: [
-                            Icon(Icons.dinner_dining, color: Colors.blue),
-                            SizedBox(width: 8),
-                            Text('Dinner'),
-                          ],
-                        ),
-                        value: dinnerSelected,
-                        onChanged: (value) {
-                          setState(() {
-                            dinnerSelected = value ?? false;
-                          });
-                        },
-                        activeColor: const Color(0xFF1A4D8F),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Disposal Information Card
-            Card(
-              elevation: 4,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.event_busy, color: Color(0xFF1A4D8F)),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'Disposal Information',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1A4D8F),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Disposal Enable/Disable
-                    SwitchListTile(
-                      title: const Text('Enable Disposal'),
-                      subtitle: const Text('Turn on if user will be away'),
-                      value: disposalEnabled,
-                      onChanged: (value) {
-                        setState(() {
-                          disposalEnabled = value;
-                          if (!value) {
-                            disposalFromDate = null;
-                            disposalToDate = null;
-                          }
-                        });
-                      },
-                      activeColor: const Color(0xFF1A4D8F),
-                    ),
-
-                    if (disposalEnabled) ...[
-                      const SizedBox(height: 16),
-
-                      // Disposal Type
-                      const Text('Disposal Type:',
-                          style: TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 8),
-                      DropdownButtonFormField<String>(
-                        value: disposalType,
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          contentPadding:
-                              EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        ),
-                        items: ['SIQ', 'Leave']
-                            .map((type) => DropdownMenuItem(
-                                  value: type,
-                                  child: Text(type),
-                                ))
-                            .toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            disposalType = value ?? 'SIQ';
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Date Selection
-                      const Text('Disposal Period:',
-                          style: TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
                       Row(
                         children: [
                           Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () => _pickDisposalDate(isFrom: true),
-                              icon: const Icon(Icons.calendar_today, size: 18),
-                              label: Text(
-                                disposalFromDate != null
-                                    ? _formatDisplayDate(disposalFromDate!)
-                                    : 'From Date',
-                              ),
-                              style: OutlinedButton.styleFrom(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 12),
-                              ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('BA No: ${widget.selectedUser['ba_no']}'),
+                                Text('Name: ${widget.selectedUser['name']}'),
+                                Text('Rank: ${widget.selectedUser['rank']}'),
+                              ],
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () => _pickDisposalDate(isFrom: false),
-                              icon: const Icon(Icons.calendar_today, size: 18),
-                              label: Text(
-                                disposalToDate != null
-                                    ? _formatDisplayDate(disposalToDate!)
-                                    : 'To Date',
-                              ),
-                              style: OutlinedButton.styleFrom(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 12),
-                              ),
-                            ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              const Text('Date:',
+                                  style:
+                                      TextStyle(fontWeight: FontWeight.bold)),
+                              Text(_formatDisplayDate(widget.selectedDate)),
+                            ],
                           ),
                         ],
                       ),
                     ],
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Remarks Card
-            Card(
-              elevation: 4,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.note, color: Color(0xFF1A4D8F)),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'Remarks',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1A4D8F),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: remarksController,
-                      maxLines: 3,
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        hintText: 'Enter any additional remarks or notes...',
-                        contentPadding: EdgeInsets.all(12),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 30),
-
-            // Submit Button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: isSubmitting ? null : _submitMealState,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1A4D8F),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: isSubmitting
-                    ? const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+              ),
+              const SizedBox(height: 20),
+
+              // Meal Selection Card
+              Card(
+                elevation: 4,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
                         children: [
-                          SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
+                          const Icon(Icons.restaurant,
+                              color: Color(0xFF1A4D8F)),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Meal Selection',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1A4D8F),
                             ),
                           ),
-                          SizedBox(width: 12),
-                          Text('Creating...'),
                         ],
-                      )
-                    : const Text(
-                        'Create Meal State',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Breakfast
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: CheckboxListTile(
+                          title: const Row(
+                            children: [
+                              Icon(Icons.free_breakfast, color: Colors.orange),
+                              SizedBox(width: 8),
+                              Text('Breakfast'),
+                            ],
+                          ),
+                          value: breakfastSelected,
+                          onChanged: (value) {
+                            setState(() {
+                              breakfastSelected = value ?? false;
+                            });
+                          },
+                          activeColor: const Color(0xFF1A4D8F),
                         ),
                       ),
+                      const SizedBox(height: 8),
+
+                      // Lunch
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: CheckboxListTile(
+                          title: const Row(
+                            children: [
+                              Icon(Icons.lunch_dining, color: Colors.green),
+                              SizedBox(width: 8),
+                              Text('Lunch'),
+                            ],
+                          ),
+                          value: lunchSelected,
+                          onChanged: (value) {
+                            setState(() {
+                              lunchSelected = value ?? false;
+                            });
+                          },
+                          activeColor: const Color(0xFF1A4D8F),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Dinner
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: CheckboxListTile(
+                          title: const Row(
+                            children: [
+                              Icon(Icons.dinner_dining, color: Colors.blue),
+                              SizedBox(width: 8),
+                              Text('Dinner'),
+                            ],
+                          ),
+                          value: dinnerSelected,
+                          onChanged: (value) {
+                            setState(() {
+                              dinnerSelected = value ?? false;
+                            });
+                          },
+                          activeColor: const Color(0xFF1A4D8F),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: 20),
-          ],
+              const SizedBox(height: 20),
+
+              // Disposal Information Card
+              Card(
+                elevation: 4,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.event_busy,
+                              color: Color(0xFF1A4D8F)),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Disposal Information',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1A4D8F),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Disposal Enable/Disable
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: SwitchListTile(
+                          title: const Text('Enable Disposal'),
+                          subtitle: const Text('Turn on if user will be away'),
+                          value: disposalEnabled,
+                          onChanged: (value) {
+                            setState(() {
+                              disposalEnabled = value;
+                              if (!value) {
+                                // Clear disposal data when disabled
+                                disposalFromDate = null;
+                                disposalToDate = null;
+                                disposalType = 'SIQ'; // Reset to default
+                              }
+                            });
+                          },
+                          activeColor: const Color(0xFF1A4D8F),
+                        ),
+                      ),
+
+                      if (disposalEnabled) ...[
+                        const SizedBox(height: 16),
+
+                        // Disposal Type
+                        const Text('Disposal Type:',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        DropdownButtonFormField<String>(
+                          value: disposalType,
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                          ),
+                          items: ['SIQ', 'Leave']
+                              .map((type) => DropdownMenuItem(
+                                    value: type,
+                                    child: Text(type),
+                                  ))
+                              .toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              disposalType = value ?? 'SIQ';
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Date Selection
+                        const Text('Disposal Period:',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () =>
+                                    _pickDisposalDate(isFrom: true),
+                                icon:
+                                    const Icon(Icons.calendar_today, size: 18),
+                                label: Text(
+                                  disposalFromDate != null
+                                      ? _formatDisplayDate(disposalFromDate!)
+                                      : 'From Date',
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 12),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () =>
+                                    _pickDisposalDate(isFrom: false),
+                                icon:
+                                    const Icon(Icons.calendar_today, size: 18),
+                                label: Text(
+                                  disposalToDate != null
+                                      ? _formatDisplayDate(disposalToDate!)
+                                      : 'To Date',
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 12),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Remarks Card
+              Card(
+                elevation: 4,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.note, color: Color(0xFF1A4D8F)),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Remarks',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1A4D8F),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: remarksController,
+                        maxLines: 3,
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          hintText: 'Enter any additional remarks or notes...',
+                          contentPadding: EdgeInsets.all(12),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 30),
+
+              // Submit Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: isSubmitting ? null : _submitMealState,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1A4D8F),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: isSubmitting
+                      ? const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            Text('Creating...'),
+                          ],
+                        )
+                      : const Text(
+                          'Create Meal State',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
-      ),
-    );
+      ), // Scaffold closing
+    ); // PopScope closing
   }
 
   @override
