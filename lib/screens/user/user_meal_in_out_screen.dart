@@ -20,6 +20,10 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
   bool _isSubmitting = false;
   bool _isLoading = true;
 
+  // Auto Loop variables
+  bool _autoLoopEnabled = false;
+  bool _isLoadingAutoLoop = false;
+
   // Menu data from Firebase
   List<Map<String, dynamic>> _availableMeals = [];
 
@@ -28,6 +32,97 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchMenuData();
+      _loadAutoLoopSettings();
+    });
+  }
+
+  Future<void> _loadAutoLoopSettings() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('user_requests')
+          .doc(user.uid)
+          .get();
+
+      if (userDoc.exists) {
+        final userData = userDoc.data() as Map<String, dynamic>;
+        final autoLoopDoc = await FirebaseFirestore.instance
+            .collection('user_auto_loop')
+            .doc(userData['ba_no'])
+            .get();
+
+        if (autoLoopDoc.exists) {
+          final loopData = autoLoopDoc.data() as Map<String, dynamic>;
+          setState(() {
+            _autoLoopEnabled = loopData['enabled'] ?? false;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading auto loop settings: $e');
+    }
+  }
+
+  Future<void> _toggleAutoLoop(bool enabled) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    setState(() {
+      _isLoadingAutoLoop = true;
+    });
+
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('user_requests')
+          .doc(user.uid)
+          .get();
+
+      if (!userDoc.exists) {
+        throw 'User profile not found';
+      }
+
+      final userData = userDoc.data() as Map<String, dynamic>;
+      final baNo = userData['ba_no'] as String? ?? '';
+
+      if (enabled) {
+        // Will be handled in submit function
+        setState(() {
+          _autoLoopEnabled = true;
+        });
+      } else {
+        // Disable auto loop
+        await FirebaseFirestore.instance
+            .collection('user_auto_loop')
+            .doc(baNo)
+            .update({
+          'enabled': false,
+          'updated_at': FieldValue.serverTimestamp(),
+        });
+
+        setState(() {
+          _autoLoopEnabled = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Auto Loop disabled successfully'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error toggling auto loop: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+
+    setState(() {
+      _isLoadingAutoLoop = false;
     });
   }
 
@@ -147,6 +242,144 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
       );
       return;
     }
+
+    // If auto loop is enabled, handle it differently
+    if (_autoLoopEnabled) {
+      await _submitAutoLoop();
+    } else {
+      await _submitRegular();
+    }
+  }
+
+  Future<void> _submitAutoLoop() async {
+    if (_selectedMeals.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content:
+                Text("Select at least one meal for your Auto Loop pattern.")),
+      );
+      return;
+    }
+
+    if (_disposalYes &&
+        (_fromDate == null ||
+            _toDate == null ||
+            _toDate!.isBefore(_fromDate!))) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text("Please select valid From/To dates for disposal.")));
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      final user = FirebaseAuth.instance.currentUser!;
+
+      // Get user profile data
+      final userDoc = await FirebaseFirestore.instance
+          .collection('user_requests')
+          .doc(user.uid)
+          .get();
+
+      if (!userDoc.exists) {
+        throw 'User profile not found. Please complete your profile first.';
+      }
+
+      final userData = userDoc.data() as Map<String, dynamic>;
+      final baNo = userData['ba_no'] as String? ?? '';
+      final userName = userData['name'] as String? ?? '';
+      final userRank = userData['rank'] as String? ?? '';
+
+      if (baNo.isEmpty) {
+        throw 'BA number not found in profile. Please update your profile.';
+      }
+
+      // Prepare meal pattern for auto loop
+      final mealPattern = {
+        'breakfast': _selectedMeals.contains('breakfast'),
+        'lunch': _selectedMeals.contains('lunch'),
+        'dinner': _selectedMeals.contains('dinner'),
+      };
+
+      // Save auto loop settings
+      await FirebaseFirestore.instance
+          .collection('user_auto_loop')
+          .doc(baNo)
+          .set({
+        'enabled': true,
+        'user_id': user.uid,
+        'ba_no': baNo,
+        'name': userName,
+        'rank': userRank,
+        'meal_pattern': mealPattern,
+        'created_at': FieldValue.serverTimestamp(),
+        'updated_at': FieldValue.serverTimestamp(),
+      });
+
+      // Submit for today with disposal and remarks if provided
+      final todayData = {
+        'name': userName,
+        'rank': userRank,
+        'breakfast': mealPattern['breakfast'] ?? false,
+        'lunch': mealPattern['lunch'] ?? false,
+        'dinner': mealPattern['dinner'] ?? false,
+        'remarks': _remarksController.text.trim(),
+        'disposal': _disposalYes,
+        'disposal_type': _disposalYes ? _disposalType : '',
+        'disposal_from': _disposalYes ? _formatDate(_fromDate!) : '',
+        'disposal_to': _disposalYes ? _formatDate(_toDate!) : '',
+        'timestamp': FieldValue.serverTimestamp(),
+        'admin_generated': false,
+        'auto_loop_generated': false, // This submission is manual
+      };
+
+      await FirebaseFirestore.instance
+          .collection('user_meal_state')
+          .doc(_mealDate)
+          .set({
+        baNo: todayData,
+      }, SetOptions(merge: true));
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                'Auto Loop enabled! Your meal pattern will be repeated daily at 21:00.\n'
+                'Today\'s submission saved successfully.'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+
+        // Clear form but keep auto loop enabled
+        setState(() {
+          _selectedMeals.clear();
+          _remarksController.clear();
+          _disposalYes = false;
+          _fromDate = null;
+          _toDate = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+
+    setState(() {
+      _isSubmitting = false;
+    });
+  }
+
+  Future<void> _submitRegular() async {
+    final user = FirebaseAuth.instance.currentUser!;
 
     if (_selectedMeals.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -393,13 +626,34 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
                                     color: Color(0xFF002B5B),
                                   ),
                                 ),
-                                content: const Text(
-                                  "• These are approximate bills and may vary based on your meal participation and daily market prices of fresh ingredients.\n\n"
-                                  "• Before 21:00 (9:00 PM): You can enroll for NEXT day's meals.\n\n"
-                                  "• After 21:00: You can only enroll for the DAY AFTER NEXT (next day's enrollment is closed).\n\n"
-                                  "• This allows cooks adequate time to prepare meals based on enrollment numbers.\n\n"
-                                  "• Please ensure timely enrollment to avoid meal schedule conflicts.",
-                                  style: TextStyle(fontSize: 14, height: 1.5),
+                                content: SizedBox(
+                                  width: double.maxFinite,
+                                  height:
+                                      MediaQuery.of(context).size.height * 0.6,
+                                  child: SingleChildScrollView(
+                                    child: const Text(
+                                      "• These are approximate bills and may vary based on your meal participation and daily market prices of fresh ingredients.\n\n"
+                                      "• Before 21:00 (9:00 PM): You can enroll for NEXT day's meals.\n\n"
+                                      "• After 21:00: You can only enroll for the DAY AFTER NEXT (next day's enrollment is closed).\n\n"
+                                      "• This allows cooks adequate time to prepare meals based on enrollment numbers.\n\n"
+                                      "• Please ensure timely enrollment to avoid meal schedule conflicts.\n\n"
+                                      "🔄 AUTO LOOP MODE:\n"
+                                      "• Enable Auto Loop to automatically repeat your meal pattern daily at 21:00\n"
+                                      "• Select your preferred meals (breakfast, lunch, dinner) and enable Auto Loop\n"
+                                      "• Your meal pattern will be automatically applied every day\n"
+                                      "• Disposal and remarks apply only to the current submission date\n"
+                                      "• To change your pattern: Enable Auto Loop again with new meal selections\n"
+                                      "• Manual submissions (without Auto Loop) will override the loop for that specific day only\n"
+                                      "• Disable Auto Loop anytime to stop automatic meal enrollment\n\n"
+                                      "📖 EXAMPLES:\n"
+                                      "• Auto Loop ON with Breakfast + Lunch: Every day you'll get breakfast and lunch automatically\n"
+                                      "• Need dinner one day? Submit manually with dinner included, Auto Loop continues next day\n"
+                                      "• Want to change to all meals? Enable Auto Loop again with all meals selected\n"
+                                      "• Going on leave? Submit with disposal info, Auto Loop continues after leave",
+                                      style:
+                                          TextStyle(fontSize: 13, height: 1.5),
+                                    ),
+                                  ),
                                 ),
                                 actions: [
                                   TextButton(
@@ -461,6 +715,95 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
                           ),
                         ),
                       ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Auto Loop Section
+                  Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.loop,
+                                color: _autoLoopEnabled
+                                    ? const Color(0xFF002B5B)
+                                    : Colors.grey.shade600,
+                                size: 24,
+                              ),
+                              const SizedBox(width: 12),
+                              const Expanded(
+                                child: Text(
+                                  'Auto Loop Mode',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF002B5B),
+                                  ),
+                                ),
+                              ),
+                              if (_isLoadingAutoLoop)
+                                const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              else
+                                Switch(
+                                  value: _autoLoopEnabled,
+                                  onChanged: _toggleAutoLoop,
+                                  activeColor: const Color(0xFF002B5B),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _autoLoopEnabled
+                                ? '✅ Auto Loop is ON - Your selected meals will be automatically repeated daily at 21:00'
+                                : 'Enable Auto Loop to automatically repeat your meal pattern daily',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: _autoLoopEnabled
+                                  ? Colors.green.shade700
+                                  : Colors.grey.shade600,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                          if (_autoLoopEnabled) ...[
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.shade50,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.blue.shade200),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.info_outline,
+                                      color: Colors.blue.shade700, size: 16),
+                                  const SizedBox(width: 8),
+                                  const Expanded(
+                                    child: Text(
+                                      'Disposal and remarks will only apply to today. Meal pattern will continue automatically.',
+                                      style: TextStyle(fontSize: 12),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
