@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'user_meal_records_screen.dart';
 
 class MealInOutScreen extends StatefulWidget {
   const MealInOutScreen({super.key});
@@ -608,6 +609,26 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
                                   fontSize: 20, fontWeight: FontWeight.bold),
                         ),
                       ),
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const UserMealRecordsScreen(),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.history, size: 18),
+                        label: const Text('My Records'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF002B5B),
+                          side: const BorderSide(color: Color(0xFF002B5B)),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       IconButton(
                         icon: const Icon(
                           Icons.help_outline,
