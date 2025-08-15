@@ -179,7 +179,19 @@ class _AddMessingScreenState extends State<AddMessingScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$_selectedMealType item added successfully!')),
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text('$_selectedMealType item saved successfully! ✓'),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 3),
+        ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -324,8 +336,9 @@ class _AddMessingScreenState extends State<AddMessingScreen> {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.close, color: Colors.white),
+            icon: const Icon(Icons.done, color: Colors.white),
             onPressed: _cancelToMain,
+            tooltip: 'Done',
           ),
         ],
       ),
@@ -579,7 +592,8 @@ class _AddMessingScreenState extends State<AddMessingScreen> {
                         ),
                       )
                     : const Icon(Icons.save),
-                label: Text(_isSubmitting ? 'Saving...' : 'Save & Add More'),
+                label: Text(
+                    _isSubmitting ? 'Saving Data...' : 'Save Item & Add More'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
