@@ -208,7 +208,7 @@ export const dailyAutoLoop = onSchedule({
         disposal_from: '',
         disposal_to: '',
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
-        admin_generated: false,
+        admin_generated: loopData.admin_created || false, // Set based on who created the Auto Loop
         auto_loop_generated: true, // Mark as auto loop generated
       };
 

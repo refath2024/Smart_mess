@@ -1198,105 +1198,110 @@ class _CreateMealStateDialogState extends State<CreateMealStateDialog> {
     return AlertDialog(
       title: const Text('Create Meal State'),
       content: SizedBox(
-        width: 400,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Date Picker
-            const Text('Date:', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            InkWell(
-              onTap: () async {
-                final date = await showDatePicker(
-                  context: context,
-                  initialDate: selectedDate,
-                  firstDate: DateTime(2020),
-                  lastDate: DateTime(2030),
-                );
-                if (date != null) {
-                  setState(() {
-                    selectedDate = date;
-                  });
-                }
-              },
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        width: double.maxFinite,
+        height: MediaQuery.of(context).size.height * 0.6,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Date Picker
+              const Text('Date:',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              InkWell(
+                onTap: () async {
+                  final date = await showDatePicker(
+                    context: context,
+                    initialDate: selectedDate,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2030),
+                  );
+                  if (date != null) {
+                    setState(() {
+                      selectedDate = date;
+                    });
+                  }
+                },
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.calendar_today, size: 16),
+                      const SizedBox(width: 8),
+                      Text(_formatDateForFirestore(selectedDate)),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // User Selection
+              const Text('Select User:',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+
+              // Search field
+              TextField(
+                controller: searchController,
+                decoration: const InputDecoration(
+                  hintText: 'Search by BA No, Name, or Rank',
+                  prefixIcon: Icon(Icons.search),
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: _filterUsers,
+              ),
+              const SizedBox(height: 8),
+
+              // User dropdown
+              Container(
+                height: 250,
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.grey),
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.calendar_today, size: 16),
-                    const SizedBox(width: 8),
-                    Text(_formatDateForFirestore(selectedDate)),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // User Selection
-            const Text('Select User:',
-                style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-
-            // Search field
-            TextField(
-              controller: searchController,
-              decoration: const InputDecoration(
-                hintText: 'Search by BA No, Name, or Rank',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
-              ),
-              onChanged: _filterUsers,
-            ),
-            const SizedBox(height: 8),
-
-            // User dropdown
-            Container(
-              height: 200,
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: isLoadingUsers
-                  ? const Center(child: CircularProgressIndicator())
-                  : filteredUsers.isEmpty
-                      ? const Center(child: Text('No users found'))
-                      : ListView.builder(
-                          itemCount: filteredUsers.length,
-                          itemBuilder: (context, index) {
-                            final user = filteredUsers[index];
-                            final isSelected =
-                                selectedUser?['id'] == user['id'];
-                            return ListTile(
-                              selected: isSelected,
-                              onTap: () {
-                                setState(() {
-                                  selectedUser = user;
-                                  selectedUserId = user['id'];
-                                });
-                              },
-                              title: Text(
-                                '${user['ba_no']} - ${user['name']}',
-                                style: TextStyle(
-                                  fontWeight: isSelected
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
+                child: isLoadingUsers
+                    ? const Center(child: CircularProgressIndicator())
+                    : filteredUsers.isEmpty
+                        ? const Center(child: Text('No users found'))
+                        : ListView.builder(
+                            itemCount: filteredUsers.length,
+                            itemBuilder: (context, index) {
+                              final user = filteredUsers[index];
+                              final isSelected =
+                                  selectedUser?['id'] == user['id'];
+                              return ListTile(
+                                selected: isSelected,
+                                onTap: () {
+                                  setState(() {
+                                    selectedUser = user;
+                                    selectedUserId = user['id'];
+                                  });
+                                },
+                                title: Text(
+                                  '${user['ba_no']} - ${user['name']}',
+                                  style: TextStyle(
+                                    fontWeight: isSelected
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                  ),
                                 ),
-                              ),
-                              subtitle: Text(user['rank']),
-                              trailing: isSelected
-                                  ? const Icon(Icons.check, color: Colors.green)
-                                  : null,
-                            );
-                          },
-                        ),
-            ),
-          ],
+                                subtitle: Text(user['rank']),
+                                trailing: isSelected
+                                    ? const Icon(Icons.check,
+                                        color: Colors.green)
+                                    : null,
+                              );
+                            },
+                          ),
+              ),
+            ],
+          ),
         ),
       ),
       actions: [
@@ -1352,6 +1357,12 @@ class _DetailedMealEntryScreenState extends State<DetailedMealEntryScreen> {
   bool lunchSelected = false;
   bool dinnerSelected = false;
 
+  // Auto Loop variables
+  bool _autoLoopEnabled = false;
+  bool _isLoadingAutoLoop = false;
+  bool _manualOverrideMode =
+      false; // New: Track if admin is making a manual override
+
   // Disposal information
   bool disposalEnabled = false;
   String disposalType = 'SIQ';
@@ -1362,6 +1373,188 @@ class _DetailedMealEntryScreenState extends State<DetailedMealEntryScreen> {
   final TextEditingController remarksController = TextEditingController();
 
   bool isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAutoLoopSettings();
+  }
+
+  Future<void> _loadAutoLoopSettings() async {
+    try {
+      final baNo = widget.selectedUser['ba_no'];
+      final autoLoopDoc = await FirebaseFirestore.instance
+          .collection('user_auto_loop')
+          .doc(baNo)
+          .get();
+
+      if (autoLoopDoc.exists) {
+        final loopData = autoLoopDoc.data() as Map<String, dynamic>;
+        setState(() {
+          _autoLoopEnabled = loopData['enabled'] ?? false;
+        });
+      }
+    } catch (e) {
+      // Handle error silently
+    }
+  }
+
+  Future<void> _toggleAutoLoop(bool enabled) async {
+    // If Auto Loop is currently enabled and admin toggles it off,
+    // show options: Manual Override or Permanent Disable
+    if (_autoLoopEnabled && !enabled) {
+      final choice = await _showAutoLoopDisableOptions();
+
+      if (choice == 'manual_override') {
+        setState(() {
+          _manualOverrideMode = true;
+          _autoLoopEnabled =
+              false; // Visually show as off, but don't update database
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Manual Override Mode: Submit different meals for today only. User\'s Auto Loop continues tomorrow.'),
+            backgroundColor: Colors.blue,
+            duration: Duration(seconds: 4),
+          ),
+        );
+      } else if (choice == 'permanent_disable') {
+        await _permanentlyDisableAutoLoop();
+      }
+      // If choice is null (user cancelled), do nothing
+      return;
+    }
+
+    setState(() {
+      _isLoadingAutoLoop = true;
+    });
+
+    try {
+      if (enabled) {
+        // Exit manual override mode and enable auto loop normally
+        setState(() {
+          _manualOverrideMode = false;
+          _autoLoopEnabled = true;
+        });
+
+        // Note: If this is re-enabling a loop, it will be handled in submit function
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Auto Loop mode activated. Submit to create/update user\'s loop pattern.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error toggling auto loop: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+
+    setState(() {
+      _isLoadingAutoLoop = false;
+    });
+  }
+
+  Future<String?> _showAutoLoopDisableOptions() async {
+    return await showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text(
+            'Auto Loop Options',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1A4D8F),
+            ),
+          ),
+          content: Text(
+            'What would you like to do for ${widget.selectedUser['name']}?\n\n'
+            '• Manual Override: Submit different meals for today only, Auto Loop continues tomorrow\n\n'
+            '• Disable Auto Loop: Permanently stop the automatic meal enrollment',
+            style: const TextStyle(fontSize: 14, height: 1.5),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(null),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop('manual_override'),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.blue,
+                textStyle: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              child: const Text('Manual Override'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop('permanent_disable'),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red,
+                textStyle: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              child: const Text('Disable Auto Loop'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _permanentlyDisableAutoLoop() async {
+    setState(() {
+      _isLoadingAutoLoop = true;
+    });
+
+    try {
+      final baNo = widget.selectedUser['ba_no'];
+
+      // Permanently disable auto loop in database
+      await FirebaseFirestore.instance
+          .collection('user_auto_loop')
+          .doc(baNo)
+          .set({
+        'enabled': false,
+        'updated_at': FieldValue.serverTimestamp(),
+        'user_id': widget.selectedUser['id'],
+        'ba_no': baNo,
+        'name': widget.selectedUser['name'],
+        'rank': widget.selectedUser['rank'],
+        'admin_created': true,
+      }, SetOptions(merge: true));
+
+      setState(() {
+        _autoLoopEnabled = false;
+        _manualOverrideMode = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              'Auto Loop disabled permanently for ${widget.selectedUser['name']}. You can re-enable it anytime.'),
+          backgroundColor: Colors.orange,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error disabling auto loop: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+
+    setState(() {
+      _isLoadingAutoLoop = false;
+    });
+  }
 
   String _formatDateForFirestore(DateTime date) {
     return "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
@@ -1412,6 +1605,213 @@ class _DetailedMealEntryScreenState extends State<DetailedMealEntryScreen> {
   Future<void> _submitMealState() async {
     if (!mounted) return;
 
+    // Check if any meal is selected - but allow Auto Loop with no meals
+    if (!breakfastSelected &&
+        !lunchSelected &&
+        !dinnerSelected &&
+        !_autoLoopEnabled &&
+        !_manualOverrideMode) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Please select at least one meal or enable Auto Loop for no-meal pattern'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // Handle manual override mode - submit for today only
+    if (_manualOverrideMode) {
+      await _submitManualOverride();
+      return;
+    }
+
+    // If auto loop is enabled, handle it differently
+    if (_autoLoopEnabled) {
+      await _submitAutoLoop();
+    } else {
+      await _submitRegular();
+    }
+  }
+
+  Future<void> _submitManualOverride() async {
+    setState(() {
+      isSubmitting = true;
+    });
+
+    try {
+      final baNo = widget.selectedUser['ba_no'];
+      final userName = widget.selectedUser['name'];
+      final userRank = widget.selectedUser['rank'];
+
+      // Submit only for the selected date (manual override for today)
+      final mealStateData = {
+        'name': userName,
+        'rank': userRank,
+        'breakfast': breakfastSelected,
+        'lunch': lunchSelected,
+        'dinner': dinnerSelected,
+        'remarks': remarksController.text.trim(),
+        'disposal': disposalEnabled,
+        'disposal_type': disposalEnabled ? disposalType : '',
+        'disposal_from': disposalEnabled && disposalFromDate != null
+            ? _formatDateForFirestore(disposalFromDate!)
+            : '',
+        'disposal_to': disposalEnabled && disposalToDate != null
+            ? _formatDateForFirestore(disposalToDate!)
+            : '',
+        'timestamp': FieldValue.serverTimestamp(),
+        'admin_generated': true,
+        'auto_loop_generated': false,
+        'manual_override': true, // Mark as manual override
+      };
+
+      await FirebaseFirestore.instance
+          .collection('user_meal_state')
+          .doc(widget.dateStr)
+          .set({
+        baNo: mealStateData,
+      }, SetOptions(merge: true));
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                'Manual Override: Meals updated for ${widget.selectedUser['name']} on ${widget.dateStr}.\n'
+                'Auto Loop will continue tomorrow with the original pattern.'),
+            backgroundColor: Colors.blue,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+
+        Navigator.of(context).pop(true); // Return success
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error submitting manual override: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+
+    setState(() {
+      isSubmitting = false;
+    });
+  }
+
+  Future<void> _submitAutoLoop() async {
+    // Validate disposal dates if disposal is enabled
+    if (disposalEnabled &&
+        (disposalFromDate == null ||
+            disposalToDate == null ||
+            disposalFromDate!.isAfter(disposalToDate!))) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select valid disposal dates'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      isSubmitting = true;
+    });
+
+    try {
+      final baNo = widget.selectedUser['ba_no'];
+      final userName = widget.selectedUser['name'];
+      final userRank = widget.selectedUser['rank'];
+      final userId =
+          widget.selectedUser['id']; // Get the actual Firebase Auth user ID
+
+      // Prepare meal pattern for auto loop
+      final mealPattern = {
+        'breakfast': breakfastSelected,
+        'lunch': lunchSelected,
+        'dinner': dinnerSelected,
+      };
+
+      // Save auto loop settings
+      await FirebaseFirestore.instance
+          .collection('user_auto_loop')
+          .doc(baNo)
+          .set({
+        'enabled': true,
+        'user_id': userId, // Use actual Firebase Auth user ID
+        'ba_no': baNo,
+        'name': userName,
+        'rank': userRank,
+        'meal_pattern': mealPattern,
+        'created_at': FieldValue.serverTimestamp(),
+        'updated_at': FieldValue.serverTimestamp(),
+        'admin_created': true, // Mark as admin-created for tracking
+      });
+
+      // Submit for the selected date with disposal and remarks if provided
+      final mealStateData = {
+        'name': userName,
+        'rank': userRank,
+        'breakfast': breakfastSelected,
+        'lunch': lunchSelected,
+        'dinner': dinnerSelected,
+        'remarks': remarksController.text.trim(),
+        'disposal': disposalEnabled,
+        'disposal_type': disposalEnabled ? disposalType : '',
+        'disposal_from': disposalEnabled && disposalFromDate != null
+            ? _formatDateForFirestore(disposalFromDate!)
+            : '',
+        'disposal_to': disposalEnabled && disposalToDate != null
+            ? _formatDateForFirestore(disposalToDate!)
+            : '',
+        'timestamp': FieldValue.serverTimestamp(),
+        'admin_generated': true,
+        'auto_loop_generated': false, // This submission is manual by admin
+      };
+
+      await FirebaseFirestore.instance
+          .collection('user_meal_state')
+          .doc(widget.dateStr)
+          .set({
+        baNo: mealStateData,
+      }, SetOptions(merge: true));
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Auto Loop enabled! User\'s meal pattern will be repeated daily at 21:00.\n'
+                'Today\'s submission saved successfully.'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 4),
+          ),
+        );
+
+        Navigator.of(context).pop(true); // Return success
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error creating auto loop: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        isSubmitting = false;
+      });
+    }
+  }
+
+  Future<void> _submitRegular() async {
     setState(() {
       isSubmitting = true;
     });
@@ -1527,6 +1927,68 @@ class _DetailedMealEntryScreenState extends State<DetailedMealEntryScreen> {
             icon: const Icon(Icons.arrow_back),
             onPressed: isSubmitting ? null : () => Navigator.of(context).pop(),
           ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.help_outline),
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      title: const Text(
+                        "Admin Auto Loop Information",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1A4D8F),
+                        ),
+                      ),
+                      content: SizedBox(
+                        width: double.maxFinite,
+                        height: MediaQuery.of(context).size.height * 0.6,
+                        child: const SingleChildScrollView(
+                          child: Text(
+                            "🔄 ADMIN AUTO LOOP MODE:\n"
+                            "• As an admin, you can enable Auto Loop for users to automatically repeat their meal pattern daily at 21:00\n"
+                            "• Select the user's preferred meals (breakfast, lunch, dinner) and enable Auto Loop\n"
+                            "• The user's meal pattern will be automatically applied every day\n"
+                            "• You can also enable Auto Loop with NO MEALS selected to automatically submit 'no meals' daily\n"
+                            "• Disposal and remarks apply only to the current submission date\n"
+                            "• To change the pattern: Enable Auto Loop again with new meal selections\n"
+                            "• Manual submissions will override the loop for that specific day only\n"
+                            "• Disable Auto Loop anytime to stop automatic meal enrollment\n"
+                            "• All admin-created Auto Loops are marked as 'admin_generated: true'\n\n"
+                            "📖 ADMIN EXAMPLES:\n"
+                            "• Admin sets Auto Loop ON with Breakfast + Lunch for a user: User will get breakfast and lunch automatically every day\n"
+                            "• Admin sets Auto Loop ON with NO MEALS selected: User will automatically be marked as 'no meals' every day\n"
+                            "• If user needs dinner one day, they can submit manually with dinner included, Auto Loop continues next day\n"
+                            "• Admin wants to change user's pattern to all meals: Enable Auto Loop again with all meals selected\n"
+                            "• User going on leave: Admin can submit with disposal info, Auto Loop continues after leave\n\n"
+                            "⚠️ IMPORTANT:\n"
+                            "• Admin-created Auto Loops will be managed by the system daily at 21:00\n"
+                            "• Users can see their Auto Loop status but admin has override control\n"
+                            "• Use this feature to help users who have difficulty managing their meal enrollment",
+                            style: TextStyle(fontSize: 13, height: 1.5),
+                          ),
+                        ),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text(
+                            "Got it",
+                            style: TextStyle(
+                              color: Color(0xFF1A4D8F),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+            ),
+          ],
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -1579,6 +2041,127 @@ class _DetailedMealEntryScreenState extends State<DetailedMealEntryScreen> {
                           ),
                         ],
                       ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Auto Loop Section
+              Card(
+                elevation: 4,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.loop,
+                            color: _autoLoopEnabled
+                                ? const Color(0xFF1A4D8F)
+                                : Colors.grey.shade600,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Text(
+                              'Auto Loop Mode',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1A4D8F),
+                              ),
+                            ),
+                          ),
+                          if (_isLoadingAutoLoop)
+                            const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          else
+                            Switch(
+                              value: _autoLoopEnabled,
+                              onChanged: _toggleAutoLoop,
+                              activeColor: const Color(0xFF1A4D8F),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _manualOverrideMode
+                            ? '🔧 Manual Override Mode - Submit meals for today only, Auto Loop continues tomorrow'
+                            : _autoLoopEnabled
+                                ? '✅ Auto Loop is ON - Selected meal pattern will be automatically repeated daily at 21:00'
+                                : 'Enable Auto Loop to automatically repeat the meal pattern daily (can include no meals)',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: _manualOverrideMode
+                              ? Colors.blue.shade700
+                              : _autoLoopEnabled
+                                  ? Colors.green.shade700
+                                  : Colors.grey.shade600,
+                          fontStyle: FontStyle.italic,
+                          fontWeight: _manualOverrideMode
+                              ? FontWeight.w500
+                              : FontWeight.normal,
+                        ),
+                      ),
+                      if (_autoLoopEnabled) ...[
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.blue.shade200),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.info_outline,
+                                  color: Colors.blue.shade700, size: 16),
+                              const SizedBox(width: 8),
+                              const Expanded(
+                                child: Text(
+                                  'Disposal and remarks will only apply to this submission. Meal pattern will continue automatically.',
+                                  style: TextStyle(fontSize: 12),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Show special message when no meals are selected but Auto Loop is enabled
+                        if (!breakfastSelected &&
+                            !lunchSelected &&
+                            !dinnerSelected) ...[
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.orange.shade200),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.warning_amber,
+                                    color: Colors.orange.shade700, size: 16),
+                                const SizedBox(width: 8),
+                                const Expanded(
+                                  child: Text(
+                                    'Auto Loop with NO MEALS: User will automatically be marked as "no meals" every day at 21:00',
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
                     ],
                   ),
                 ),
@@ -1884,9 +2467,11 @@ class _DetailedMealEntryScreenState extends State<DetailedMealEntryScreen> {
                             Text('Creating...'),
                           ],
                         )
-                      : const Text(
-                          'Create Meal State',
-                          style: TextStyle(
+                      : Text(
+                          _manualOverrideMode
+                              ? 'Submit Manual Override (Today Only)'
+                              : 'Create Meal State',
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),

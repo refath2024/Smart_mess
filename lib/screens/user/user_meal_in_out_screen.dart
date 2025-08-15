@@ -24,6 +24,8 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
   // Auto Loop variables
   bool _autoLoopEnabled = false;
   bool _isLoadingAutoLoop = false;
+  bool _manualOverrideMode =
+      false; // New: Track if user is making a manual override
 
   // Menu data from Firebase
   List<Map<String, dynamic>> _availableMeals = [];
@@ -70,6 +72,129 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
+    // If Auto Loop is currently enabled and user toggles it off,
+    // show options: Manual Override or Permanent Disable
+    if (_autoLoopEnabled && !enabled) {
+      final choice = await _showAutoLoopDisableOptions();
+
+      if (choice == 'manual_override') {
+        setState(() {
+          _manualOverrideMode = true;
+          _autoLoopEnabled =
+              false; // Visually show as off, but don't update database
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Manual Override Mode: Submit different meals for today only. Auto Loop continues tomorrow.'),
+            backgroundColor: Colors.blue,
+            duration: Duration(seconds: 4),
+          ),
+        );
+      } else if (choice == 'permanent_disable') {
+        await _permanentlyDisableAutoLoop();
+      }
+      // If choice is null (user cancelled), do nothing
+      return;
+    }
+
+    setState(() {
+      _isLoadingAutoLoop = true;
+    });
+
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('user_requests')
+          .doc(user.uid)
+          .get();
+
+      if (!userDoc.exists) {
+        throw 'User profile not found';
+      }
+
+      // Get user data (currently only needed for real disable case)
+      // final userData = userDoc.data() as Map<String, dynamic>;
+
+      if (enabled) {
+        // Exit manual override mode and enable auto loop normally
+        setState(() {
+          _manualOverrideMode = false;
+          _autoLoopEnabled = true;
+        });
+
+        // Note: If this is re-enabling a loop, it will be handled in submit function
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Auto Loop mode activated. Submit to create/update your loop pattern.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error toggling auto loop: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+
+    setState(() {
+      _isLoadingAutoLoop = false;
+    });
+  }
+
+  Future<String?> _showAutoLoopDisableOptions() async {
+    return await showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text(
+            'Auto Loop Options',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF002B5B),
+            ),
+          ),
+          content: const Text(
+            'What would you like to do?\n\n'
+            '• Manual Override: Submit different meals for today only, Auto Loop continues tomorrow\n\n'
+            '• Disable Auto Loop: Permanently stop the automatic meal enrollment',
+            style: TextStyle(fontSize: 14, height: 1.5),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(null),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop('manual_override'),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.blue,
+                textStyle: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              child: const Text('Manual Override'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop('permanent_disable'),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red,
+                textStyle: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              child: const Text('Disable Auto Loop'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _permanentlyDisableAutoLoop() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
     setState(() {
       _isLoadingAutoLoop = true;
     });
@@ -87,36 +212,32 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
       final userData = userDoc.data() as Map<String, dynamic>;
       final baNo = userData['ba_no'] as String? ?? '';
 
-      if (enabled) {
-        // Will be handled in submit function
-        setState(() {
-          _autoLoopEnabled = true;
-        });
-      } else {
-        // Disable auto loop
-        await FirebaseFirestore.instance
-            .collection('user_auto_loop')
-            .doc(baNo)
-            .update({
-          'enabled': false,
-          'updated_at': FieldValue.serverTimestamp(),
-        });
+      // Permanently disable auto loop in database
+      await FirebaseFirestore.instance
+          .collection('user_auto_loop')
+          .doc(baNo)
+          .update({
+        'enabled': false,
+        'updated_at': FieldValue.serverTimestamp(),
+      });
 
-        setState(() {
-          _autoLoopEnabled = false;
-        });
+      setState(() {
+        _autoLoopEnabled = false;
+        _manualOverrideMode = false;
+      });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Auto Loop disabled successfully'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Auto Loop disabled permanently. You can re-enable it anytime.'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 3),
+        ),
+      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error toggling auto loop: $e'),
+          content: Text('Error disabling auto loop: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -244,8 +365,10 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
       return;
     }
 
-    // If auto loop is enabled, handle it differently
-    if (_autoLoopEnabled) {
+    // Check submission mode
+    if (_manualOverrideMode) {
+      await _submitManualOverride();
+    } else if (_autoLoopEnabled) {
       await _submitAutoLoop();
     } else {
       await _submitRegular();
@@ -253,14 +376,8 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
   }
 
   Future<void> _submitAutoLoop() async {
-    if (_selectedMeals.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content:
-                Text("Select at least one meal for your Auto Loop pattern.")),
-      );
-      return;
-    }
+    // Allow Auto Loop with no meals - user might want to auto-submit "no meals" daily
+    // No validation needed here - empty meals means "no meals" pattern
 
     if (_disposalYes &&
         (_fromDate == null ||
@@ -382,12 +499,8 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
   Future<void> _submitRegular() async {
     final user = FirebaseAuth.instance.currentUser!;
 
-    if (_selectedMeals.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Select at least one meal.")),
-      );
-      return;
-    }
+    // Allow submission with no meals - user might want to explicitly submit "no meals"
+    // This is useful for users who want to record that they're not taking any meals
 
     if (_disposalYes &&
         (_fromDate == null ||
@@ -507,6 +620,136 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to submit: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() {
+        _isSubmitting = false;
+      });
+    }
+  }
+
+  Future<void> _submitManualOverride() async {
+    final user = FirebaseAuth.instance.currentUser!;
+
+    if (_disposalYes &&
+        (_fromDate == null ||
+            _toDate == null ||
+            _toDate!.isBefore(_fromDate!))) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text("Please select valid From/To dates for disposal.")));
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      // Get user profile data for BA number, name, and rank
+      final userDoc = await FirebaseFirestore.instance
+          .collection('user_requests')
+          .doc(user.uid)
+          .get();
+
+      if (!userDoc.exists) {
+        throw 'User profile not found';
+      }
+
+      final userData = userDoc.data() as Map<String, dynamic>;
+      final baNo = userData['ba_no'] as String? ?? '';
+      final userName = userData['name'] as String? ?? '';
+      final userRank = userData['rank'] as String? ?? '';
+
+      // Check if data already exists for this date
+      final existingDoc = await FirebaseFirestore.instance
+          .collection('user_meal_state')
+          .doc(_mealDate)
+          .get();
+
+      bool dataExists = false;
+      if (existingDoc.exists) {
+        final data = existingDoc.data() as Map<String, dynamic>;
+        dataExists = data.containsKey(baNo);
+      }
+
+      if (dataExists) {
+        final shouldUpdate = await _showUpdateConfirmationDialog();
+        if (!shouldUpdate) {
+          setState(() {
+            _isSubmitting = false;
+          });
+          return;
+        }
+      }
+
+      // Prepare meal selection data
+      final mealSelections = <String, bool>{
+        'breakfast': _selectedMeals.contains('breakfast'),
+        'lunch': _selectedMeals.contains('lunch'),
+        'dinner': _selectedMeals.contains('dinner'),
+      };
+
+      // Prepare user data with manual override flag
+      final userData_toSave = {
+        'name': userName,
+        'rank': userRank,
+        'breakfast': mealSelections['breakfast'] ?? false,
+        'lunch': mealSelections['lunch'] ?? false,
+        'dinner': mealSelections['dinner'] ?? false,
+        'remarks': _remarksController.text.trim(),
+        'disposal': _disposalYes,
+        'disposal_type': _disposalYes ? _disposalType : '',
+        'disposal_from': _disposalYes ? _formatDate(_fromDate!) : '',
+        'disposal_to': _disposalYes ? _formatDate(_toDate!) : '',
+        'timestamp': FieldValue.serverTimestamp(),
+        'admin_generated': false, // User submitted
+        'manual_override': true, // Mark as manual override
+      };
+
+      // Save to user_meal_state collection
+      await FirebaseFirestore.instance
+          .collection('user_meal_state')
+          .doc(_mealDate)
+          .set({
+        baNo: userData_toSave,
+      }, SetOptions(merge: true));
+
+      // Calculate total cost for feedback
+      double totalCost = 0.0;
+      for (String mealType in _selectedMeals) {
+        final meal = _availableMeals.firstWhere(
+          (m) => m['type'] == mealType,
+          orElse: () => {'price': 0.0},
+        );
+        totalCost += meal['price'] as double;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              '✅ Manual Override Submitted! Your Auto Loop continues tomorrow.\n'
+              'Today\'s meals updated (Estimated: ৳${totalCost.toStringAsFixed(0)})'),
+          backgroundColor: Colors.blue,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+
+      // Reset to auto loop mode for next time
+      setState(() {
+        _manualOverrideMode = false;
+        _autoLoopEnabled = true; // Restore the visual state
+        _selectedMeals.clear();
+        _remarksController.clear();
+        _disposalYes = false;
+        _fromDate = null;
+        _toDate = null;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to submit manual override: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -661,6 +904,7 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
                                       "🔄 AUTO LOOP MODE:\n"
                                       "• Enable Auto Loop to automatically repeat your meal pattern daily at 21:00\n"
                                       "• Select your preferred meals (breakfast, lunch, dinner) and enable Auto Loop\n"
+                                      "• You can also enable Auto Loop with NO MEALS selected to automatically submit 'no meals' daily\n"
                                       "• Your meal pattern will be automatically applied every day\n"
                                       "• Disposal and remarks apply only to the current submission date\n"
                                       "• To change your pattern: Enable Auto Loop again with new meal selections\n"
@@ -668,6 +912,7 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
                                       "• Disable Auto Loop anytime to stop automatic meal enrollment\n\n"
                                       "📖 EXAMPLES:\n"
                                       "• Auto Loop ON with Breakfast + Lunch: Every day you'll get breakfast and lunch automatically\n"
+                                      "• Auto Loop ON with NO MEALS selected: You'll automatically be marked as 'no meals' every day\n"
                                       "• Need dinner one day? Submit manually with dinner included, Auto Loop continues next day\n"
                                       "• Want to change to all meals? Enable Auto Loop again with all meals selected\n"
                                       "• Going on leave? Submit with disposal info, Auto Loop continues after leave",
@@ -788,18 +1033,50 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            _autoLoopEnabled
-                                ? '✅ Auto Loop is ON - Your selected meals will be automatically repeated daily at 21:00'
-                                : 'Enable Auto Loop to automatically repeat your meal pattern daily',
+                            _manualOverrideMode
+                                ? '🔄 Manual Override Mode - Submit different meals for today only, Auto Loop continues tomorrow'
+                                : _autoLoopEnabled
+                                    ? '✅ Auto Loop is ON - Your selected meal pattern will be automatically repeated daily at 21:00'
+                                    : 'Enable Auto Loop to automatically repeat your meal pattern daily (can include no meals)',
                             style: TextStyle(
                               fontSize: 13,
-                              color: _autoLoopEnabled
-                                  ? Colors.green.shade700
-                                  : Colors.grey.shade600,
+                              color: _manualOverrideMode
+                                  ? Colors.blue.shade700
+                                  : _autoLoopEnabled
+                                      ? Colors.green.shade700
+                                      : Colors.grey.shade600,
                               fontStyle: FontStyle.italic,
+                              fontWeight: _manualOverrideMode
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
                             ),
                           ),
-                          if (_autoLoopEnabled) ...[
+                          if (_manualOverrideMode) ...[
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.shade50,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.blue.shade200),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.edit_outlined,
+                                      color: Colors.blue.shade700, size: 16),
+                                  const SizedBox(width: 8),
+                                  const Expanded(
+                                    child: Text(
+                                      'Manual Override: Your Auto Loop will continue automatically tomorrow with the original pattern.',
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ] else if (_autoLoopEnabled) ...[
                             const SizedBox(height: 8),
                             Container(
                               padding: const EdgeInsets.all(8),
@@ -822,6 +1099,35 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
                                 ],
                               ),
                             ),
+                            // Show special message when no meals are selected but Auto Loop is enabled
+                            if (_selectedMeals.isEmpty) ...[
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange.shade50,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border:
+                                      Border.all(color: Colors.orange.shade200),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.warning_amber,
+                                        color: Colors.orange.shade700,
+                                        size: 16),
+                                    const SizedBox(width: 8),
+                                    const Expanded(
+                                      child: Text(
+                                        'Auto Loop with NO MEALS: You will automatically be marked as "no meals" every day at 21:00',
+                                        style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ],
                         ],
                       ),
@@ -1049,10 +1355,14 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
                                 strokeWidth: 2,
                               ),
                             )
-                          : const Text(
-                              "Submit Meal Selection",
-                              style:
-                                  TextStyle(fontSize: 16, color: Colors.white),
+                          : Text(
+                              _manualOverrideMode
+                                  ? "Submit Manual Override"
+                                  : _autoLoopEnabled
+                                      ? "Submit Auto Loop"
+                                      : "Submit Meal Selection",
+                              style: const TextStyle(
+                                  fontSize: 16, color: Colors.white),
                             ),
                     ),
                   ),
