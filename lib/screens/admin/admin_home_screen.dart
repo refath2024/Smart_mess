@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 import 'admin_login_screen.dart';
 import 'admin_users_screen.dart';
 import 'admin_pending_ids_screen.dart';
@@ -34,6 +36,13 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   String _currentUserName = "Admin User";
   Map<String, dynamic>? _currentUserData;
 
+  // Data variables
+  int _totalDiningMembers = 0;
+  int _pendingRequests = 0;
+  int _paymentRequests = 0;
+  Map<String, String> _todaysMenu = {};
+  Map<String, String> _tomorrowsMenu = {};
+
   @override
   void initState() {
     super.initState();
@@ -64,6 +73,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           _isAuthenticated = true;
           _isLoading = false;
         });
+
+        // Load dashboard data
+        await _loadDashboardData();
       } else {
         // User data not found, redirect to login
         if (mounted) {
@@ -83,6 +95,134 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           (route) => false,
         );
       }
+    }
+  }
+
+  Future<void> _loadDashboardData() async {
+    await Future.wait([
+      _loadDiningMembersCount(),
+      _loadPendingRequestsCount(),
+      _loadPaymentRequestsCount(),
+      _loadMenuData(),
+    ]);
+  }
+
+  Future<void> _loadDiningMembersCount() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('user_requests')
+          .where('approved', isEqualTo: true)
+          .get();
+
+      setState(() {
+        _totalDiningMembers = snapshot.docs.length;
+      });
+    } catch (e) {
+      print('Error loading dining members count: $e');
+    }
+  }
+
+  Future<void> _loadPendingRequestsCount() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('user_requests')
+          .where('approved', isEqualTo: false)
+          .where('rejected', isEqualTo: false)
+          .get();
+
+      setState(() {
+        _pendingRequests = snapshot.docs.length;
+      });
+    } catch (e) {
+      print('Error loading pending requests count: $e');
+    }
+  }
+
+  Future<void> _loadPaymentRequestsCount() async {
+    try {
+      final snapshot =
+          await FirebaseFirestore.instance.collection('payment_history').get();
+
+      int pendingCount = 0;
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        for (String key in data.keys) {
+          if (key.contains('_transaction_')) {
+            final transactionData = data[key] as Map<String, dynamic>;
+            if (transactionData['status'] == 'pending') {
+              pendingCount++;
+            }
+          }
+        }
+      }
+
+      setState(() {
+        _paymentRequests = pendingCount;
+      });
+    } catch (e) {
+      print('Error loading payment requests count: $e');
+    }
+  }
+
+  Future<void> _loadMenuData() async {
+    try {
+      final now = DateTime.now();
+      final tomorrow = now.add(const Duration(days: 1));
+
+      final todayStr = DateFormat('yyyy-MM-dd').format(now);
+      final tomorrowStr = DateFormat('yyyy-MM-dd').format(tomorrow);
+
+      // Load today's menu
+      final todayDoc = await FirebaseFirestore.instance
+          .collection('monthly_menu')
+          .doc(todayStr)
+          .get();
+
+      // Load tomorrow's menu
+      final tomorrowDoc = await FirebaseFirestore.instance
+          .collection('monthly_menu')
+          .doc(tomorrowStr)
+          .get();
+
+      Map<String, String> todaysMenu = {};
+      Map<String, String> tomorrowsMenu = {};
+
+      if (todayDoc.exists) {
+        final data = todayDoc.data()!;
+        todaysMenu = {
+          'breakfast': data['breakfast']?['item'] ?? 'Not Set',
+          'lunch': data['lunch']?['item'] ?? 'Not Set',
+          'dinner': data['dinner']?['item'] ?? 'Not Set',
+        };
+      } else {
+        todaysMenu = {
+          'breakfast': 'Not Set',
+          'lunch': 'Not Set',
+          'dinner': 'Not Set',
+        };
+      }
+
+      if (tomorrowDoc.exists) {
+        final data = tomorrowDoc.data()!;
+        tomorrowsMenu = {
+          'breakfast': data['breakfast']?['item'] ?? 'Not Set',
+          'lunch': data['lunch']?['item'] ?? 'Not Set',
+          'dinner': data['dinner']?['item'] ?? 'Not Set',
+        };
+      } else {
+        tomorrowsMenu = {
+          'breakfast': 'Not Set',
+          'lunch': 'Not Set',
+          'dinner': 'Not Set',
+        };
+      }
+
+      setState(() {
+        _todaysMenu = todaysMenu;
+        _tomorrowsMenu = tomorrowsMenu;
+      });
+    } catch (e) {
+      print('Error loading menu data: $e');
     }
   }
 
@@ -663,17 +803,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications, color: Colors.white),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const AdminNotificationScreen(),
-                ),
-              );
-            },
-          ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.language, color: Colors.white),
             onSelected: (String value) {
@@ -725,12 +854,14 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    _buildDemoBox(AppLocalizations.of(context)!.totalUsers,
-                        "120", const Color(0xFF1A4D8F)),
+                    _buildDemoBox(
+                        'Total Dining Members',
+                        _totalDiningMembers.toString(),
+                        const Color(0xFF1A4D8F)),
                     _buildDemoBox(AppLocalizations.of(context)!.pendingRequests,
-                        "8", const Color(0xFFE65100)),
-                    _buildDemoBox(AppLocalizations.of(context)!.activeMeals,
-                        "85", const Color(0xFF2E7D32)),
+                        _pendingRequests.toString(), const Color(0xFFE65100)),
+                    _buildDemoBox('Payment Requests',
+                        _paymentRequests.toString(), const Color(0xFF2E7D32)),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -751,22 +882,23 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
                 _buildMenuCard(
                   AppLocalizations.of(context)!.todaysMenu,
-                  {
-                    "breakfast":
-                        AppLocalizations.of(context)!.parathaVegetablesTea,
-                    "lunch": AppLocalizations.of(context)!.riceChickenCurryDal,
-                    "dinner": AppLocalizations.of(context)!
-                        .riceFishCurryMixedVegetables,
-                  },
+                  _todaysMenu.isNotEmpty
+                      ? _todaysMenu
+                      : {
+                          "breakfast": AppLocalizations.of(context)!.notSet,
+                          "lunch": AppLocalizations.of(context)!.notSet,
+                          "dinner": AppLocalizations.of(context)!.notSet,
+                        },
                 ),
                 _buildMenuCard(
                   AppLocalizations.of(context)!.tomorrowsMenu,
-                  {
-                    "breakfast": AppLocalizations.of(context)!.rutiEggCurryTea,
-                    "lunch": AppLocalizations.of(context)!.riceBeefCurryDal,
-                    "dinner":
-                        AppLocalizations.of(context)!.biriyaniChickenRoastSalad,
-                  },
+                  _tomorrowsMenu.isNotEmpty
+                      ? _tomorrowsMenu
+                      : {
+                          "breakfast": AppLocalizations.of(context)!.notSet,
+                          "lunch": AppLocalizations.of(context)!.notSet,
+                          "dinner": AppLocalizations.of(context)!.notSet,
+                        },
                 ),
               ],
             ),
