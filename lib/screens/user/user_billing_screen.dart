@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class BillingScreen extends StatefulWidget {
   const BillingScreen({super.key});
@@ -10,8 +12,101 @@ class BillingScreen extends StatefulWidget {
 class _BillingScreenState extends State<BillingScreen> {
   String? _selectedMonth;
   int? _selectedYear;
-  String? _selectedMethod;
   bool _paymentSuccess = false;
+  bool _isSubmitting = false;
+
+  // Controllers for payment forms
+  final Map<String, TextEditingController> _controllers = {
+    'phone': TextEditingController(),
+    'transactionId': TextEditingController(),
+    'amount': TextEditingController(),
+    'accountNo': TextEditingController(),
+    'bankName': TextEditingController(),
+    'cardNumber': TextEditingController(),
+    'expiryDate': TextEditingController(),
+    'cvv': TextEditingController(),
+  };
+
+  // User data
+  Map<String, dynamic>? _userData;
+  double _totalDue = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+    _loadCurrentBill();
+  }
+
+  @override
+  void dispose() {
+    _controllers.forEach((key, controller) => controller.dispose());
+    super.dispose();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('user_requests')
+            .doc(user.uid)
+            .get();
+
+        if (userDoc.exists) {
+          setState(() {
+            _userData = userDoc.data();
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading user data: $e');
+    }
+  }
+
+  Future<void> _loadCurrentBill() async {
+    try {
+      final now = DateTime.now();
+      final monthYear = "${_getMonthName(now.month)} ${now.year}";
+
+      final billDoc = await FirebaseFirestore.instance
+          .collection('Bills')
+          .doc(monthYear)
+          .get();
+
+      if (billDoc.exists && _userData != null) {
+        final billData = billDoc.data() as Map<String, dynamic>;
+        final userBill =
+            billData[_userData!['ba_no']?.toString()] as Map<String, dynamic>?;
+
+        if (userBill != null) {
+          setState(() {
+            _totalDue = userBill['total_due']?.toDouble() ?? 0.0;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading current bill: $e');
+    }
+  }
+
+  String _getMonthName(int month) {
+    const months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December'
+    ];
+    return months[month - 1];
+  }
 
   final List<String> _months = [
     'January',
@@ -31,7 +126,9 @@ class _BillingScreenState extends State<BillingScreen> {
   final int currentYear = DateTime.now().year;
 
   void _showPaymentModal(String method) {
-    setState(() => _selectedMethod = method);
+    // Clear controllers
+    _controllers.forEach((key, controller) => controller.clear());
+    _controllers['amount']!.text = _totalDue.toStringAsFixed(2);
 
     showDialog(
       context: context,
@@ -42,21 +139,28 @@ class _BillingScreenState extends State<BillingScreen> {
           child: Column(
             children: [
               if (method == 'bKash' || method == 'Tap') ...[
-                _buildInputField('Phone Number'),
-                _buildInputField('Transaction ID'),
+                _buildInputField('Phone Number',
+                    controller: _controllers['phone']!),
+                _buildInputField('Transaction ID',
+                    controller: _controllers['transactionId']!),
                 _buildInputField('Amount',
-                    isNumber: true, initialValue: '1000'),
+                    controller: _controllers['amount']!, isNumber: true),
               ] else if (method == 'Bank') ...[
-                _buildInputField('Bank Account No'),
-                _buildInputField('Bank Name'),
+                _buildInputField('Bank Account No',
+                    controller: _controllers['accountNo']!),
+                _buildInputField('Bank Name',
+                    controller: _controllers['bankName']!),
                 _buildInputField('Amount',
-                    isNumber: true, initialValue: '1000'),
+                    controller: _controllers['amount']!, isNumber: true),
               ] else if (method == 'Card') ...[
-                _buildInputField('Card Number'),
-                _buildInputField('Expiry Date'),
-                _buildInputField('CVV', isNumber: true),
+                _buildInputField('Card Number',
+                    controller: _controllers['cardNumber']!),
+                _buildInputField('Expiry Date',
+                    controller: _controllers['expiryDate']!),
+                _buildInputField('CVV',
+                    controller: _controllers['cvv']!, isNumber: true),
                 _buildInputField('Amount',
-                    isNumber: true, initialValue: '1000'),
+                    controller: _controllers['amount']!, isNumber: true),
               ],
             ],
           ),
@@ -67,39 +171,142 @@ class _BillingScreenState extends State<BillingScreen> {
             child: const Text('Cancel', style: TextStyle(color: Colors.red)),
           ),
           ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              setState(() => _paymentSuccess = true);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text("Payment successful!"),
-                  backgroundColor: Colors.green.shade700,
-                ),
-              );
-            },
+            onPressed:
+                _isSubmitting ? null : () => _submitPaymentRequest(method),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color.fromARGB(255, 7, 125, 21),
             ),
-            child: const Text('Submit', style: TextStyle(color: Colors.white)),
+            child: _isSubmitting
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        color: Colors.white, strokeWidth: 2))
+                : const Text('Submit', style: TextStyle(color: Colors.white)),
           )
         ],
       ),
     );
   }
 
+  Future<void> _submitPaymentRequest(String method) async {
+    if (_userData == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('User data not found'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    // Validate form
+    final amount = double.tryParse(_controllers['amount']!.text);
+    if (amount == null || amount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Please enter a valid amount'),
+            backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      final baNo = _userData!['ba_no']?.toString();
+      final timestamp = DateTime.now();
+
+      // Create payment request data
+      Map<String, dynamic> paymentData = {
+        'amount': amount,
+        'payment_method': method,
+        'ba_no': baNo,
+        'rank': _userData!['rank'],
+        'name': _userData!['name'],
+        'status': 'pending',
+        'request_time': timestamp,
+      };
+
+      // Add method-specific details
+      if (method == 'bKash' || method == 'Tap') {
+        paymentData['phone_number'] = _controllers['phone']!.text;
+        paymentData['transaction_id'] = _controllers['transactionId']!.text;
+      } else if (method == 'Bank') {
+        paymentData['account_no'] = _controllers['accountNo']!.text;
+        paymentData['bank_name'] = _controllers['bankName']!.text;
+      } else if (method == 'Card') {
+        paymentData['card_number'] = _controllers['cardNumber']!.text;
+        paymentData['expiry_date'] = _controllers['expiryDate']!.text;
+        paymentData['cvv'] = _controllers['cvv']!.text;
+      }
+
+      // Get existing payment history
+      final paymentHistoryRef =
+          FirebaseFirestore.instance.collection('payment_history').doc(baNo);
+
+      final paymentDoc = await paymentHistoryRef.get();
+
+      // Create transaction entry with auto-incrementing number
+      String dateKey =
+          "${timestamp.year}-${timestamp.month.toString().padLeft(2, '0')}-${timestamp.day.toString().padLeft(2, '0')}";
+
+      Map<String, dynamic> existingData = {};
+      if (paymentDoc.exists) {
+        existingData = paymentDoc.data() as Map<String, dynamic>;
+      }
+
+      // Find next transaction number for this date
+      int transactionNumber = 1;
+      while (existingData
+          .containsKey('${dateKey}_transaction_$transactionNumber')) {
+        transactionNumber++;
+      }
+
+      String transactionKey = '${dateKey}_transaction_$transactionNumber';
+
+      // Save payment request
+      await paymentHistoryRef.set({
+        transactionKey: paymentData,
+      }, SetOptions(merge: true));
+
+      Navigator.pop(context);
+      setState(() {
+        _paymentSuccess = true;
+        _isSubmitting = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              "Payment request submitted! Amount: ৳${amount.toStringAsFixed(2)}"),
+          backgroundColor: Colors.green.shade700,
+        ),
+      );
+    } catch (e) {
+      setState(() => _isSubmitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text('Error submitting payment: $e'),
+            backgroundColor: Colors.red),
+      );
+    }
+  }
+
   Widget _buildInputField(String label,
-      {bool isNumber = false, String? initialValue}) {
+      {bool isNumber = false,
+      String? initialValue,
+      TextEditingController? controller}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: TextField(
+        controller: controller ??
+            (initialValue != null
+                ? TextEditingController(text: initialValue)
+                : null),
         keyboardType: isNumber ? TextInputType.number : TextInputType.text,
         decoration: InputDecoration(
           labelText: label,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
         ),
-        controller: initialValue != null
-            ? TextEditingController(text: initialValue)
-            : null,
       ),
     );
   }
@@ -126,10 +333,11 @@ class _BillingScreenState extends State<BillingScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text("Payment Successful!",
+                              Text("Payment Request Submitted!",
                                   style:
                                       TextStyle(fontWeight: FontWeight.bold)),
-                              Text("Your payment of ৳1000 has been processed."),
+                              Text(
+                                  "Your payment request has been sent to admin for approval."),
                             ],
                           ),
                         ),
@@ -142,25 +350,25 @@ class _BillingScreenState extends State<BillingScreen> {
                 elevation: 2,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
-                child: const Padding(
+                child: Padding(
                   padding:
-                      EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                      const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
                   child: Row(
                     children: [
-                      Icon(Icons.receipt, color: Colors.red, size: 32),
-                      SizedBox(width: 16),
+                      const Icon(Icons.receipt, color: Colors.red, size: 32),
+                      const SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("Total Due",
+                            const Text("Total Due",
                                 style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.red)),
-                            SizedBox(height: 4),
-                            Text("৳ 1000",
-                                style: TextStyle(
+                            const SizedBox(height: 4),
+                            Text("৳ ${_totalDue.toStringAsFixed(2)}",
+                                style: const TextStyle(
                                     fontSize: 16, color: Colors.black87)),
                           ],
                         ),

@@ -51,6 +51,7 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
   List<Map<String, dynamic>> bills = [];
   List<Map<String, dynamic>> filteredBills = [];
   String searchTerm = "";
+  int _pendingPaymentRequests = 0;
 
   @override
   void initState() {
@@ -88,6 +89,7 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
 
         // Load existing bills for current month/year
         await _loadBills();
+        await _loadPendingPaymentRequests();
       } else {
         // User data not found, redirect to login
         if (mounted) {
@@ -157,6 +159,7 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
             'current_bill': billData['current_bill']?.toDouble() ?? 0.0,
             'arrears': billData['arrears']?.toDouble() ?? 0.0,
             'total_due': billData['total_due']?.toDouble() ?? 0.0,
+            'paid_amount': billData['paid_amount']?.toDouble() ?? 0.0,
             'bill_status': billData['bill_status'] ?? 'Unpaid',
           });
         }
@@ -202,6 +205,17 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
 
       Map<String, Map<String, dynamic>> newBills = {};
 
+      // Check if bills already exist for this month to preserve paid amounts
+      DocumentSnapshot existingBillDoc = await FirebaseFirestore.instance
+          .collection('Bills')
+          .doc(monthYear)
+          .get();
+
+      Map<String, dynamic> existingBills = {};
+      if (existingBillDoc.exists) {
+        existingBills = existingBillDoc.data() as Map<String, dynamic>;
+      }
+
       // Get last month's data for arrears calculation
       DateTime currentDate =
           DateTime(_selectedYear, _months.indexOf(_selectedMonth) + 1);
@@ -220,9 +234,16 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
             lastMonthDoc.data() as Map<String, dynamic>;
         for (String baNo in lastMonthData.keys) {
           final lastBillData = lastMonthData[baNo] as Map<String, dynamic>;
-          if (lastBillData['bill_status'] == 'Unpaid') {
-            lastMonthArrears[baNo] =
-                lastBillData['total_due']?.toDouble() ?? 0.0;
+          // Calculate remaining unpaid amount from last month
+          final lastCurrentBill =
+              lastBillData['current_bill']?.toDouble() ?? 0.0;
+          final lastArrears = lastBillData['arrears']?.toDouble() ?? 0.0;
+          final lastPaidAmount = lastBillData['paid_amount']?.toDouble() ?? 0.0;
+          final remainingFromLastMonth =
+              lastCurrentBill + lastArrears - lastPaidAmount;
+
+          if (remainingFromLastMonth > 0) {
+            lastMonthArrears[baNo] = remainingFromLastMonth;
           }
         }
       }
@@ -238,13 +259,27 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
         // Calculate total payable using the same logic as user_messing_screen.dart
         double totalPayable = await _calculateUserTotalPayable(userId);
         double arrears = lastMonthArrears[baNo] ?? 0.0;
-        double totalDue = totalPayable + arrears;
+
+        // Check if this user already has a bill entry with paid amount
+        double existingPaidAmount = 0.0;
+        if (existingBills.containsKey(baNo)) {
+          final existingBill = existingBills[baNo] as Map<String, dynamic>;
+          existingPaidAmount = existingBill['paid_amount']?.toDouble() ?? 0.0;
+        }
+
+        // Calculate total due based on current bill + arrears - paid amount
+        double initialTotalDue = totalPayable + arrears;
+        double actualTotalDue = initialTotalDue - existingPaidAmount;
+
+        // Determine status based on calculated total due
+        String billStatus = actualTotalDue <= 0 ? 'Paid' : 'Unpaid';
 
         newBills[baNo] = {
           'current_bill': totalPayable,
           'arrears': arrears,
-          'total_due': totalDue,
-          'bill_status': 'Unpaid',
+          'total_due': actualTotalDue,
+          'paid_amount': existingPaidAmount,
+          'bill_status': billStatus,
           'generated_at': FieldValue.serverTimestamp(),
         };
       }
@@ -281,6 +316,36 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
       setState(() {
         _isGenerating = false;
       });
+    }
+  }
+
+  // Load pending payment requests count
+  Future<void> _loadPendingPaymentRequests() async {
+    try {
+      final paymentHistorySnapshot =
+          await FirebaseFirestore.instance.collection('payment_history').get();
+
+      int pendingCount = 0;
+
+      for (var doc in paymentHistorySnapshot.docs) {
+        final data = doc.data();
+
+        // Check each transaction in the document
+        for (String key in data.keys) {
+          if (key.contains('_transaction_')) {
+            final transactionData = data[key] as Map<String, dynamic>;
+            if (transactionData['status'] == 'pending') {
+              pendingCount++;
+            }
+          }
+        }
+      }
+
+      setState(() {
+        _pendingPaymentRequests = pendingCount;
+      });
+    } catch (e) {
+      print('Error loading pending payment requests: $e');
     }
   }
 
@@ -536,6 +601,61 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
     );
   }
 
+  // Recalculate all bills using the new automatic calculation logic
+  // This is useful for migrating existing data to the new system
+  Future<void> _recalculateAllBills() async {
+    try {
+      String monthYear = '$_selectedMonth $_selectedYear';
+      final billRef =
+          FirebaseFirestore.instance.collection('Bills').doc(monthYear);
+
+      final billDoc = await billRef.get();
+      if (billDoc.exists) {
+        final billData = billDoc.data() as Map<String, dynamic>;
+        Map<String, dynamic> updates = {};
+
+        for (String baNo in billData.keys) {
+          final userBill = billData[baNo] as Map<String, dynamic>;
+          final currentBill = userBill['current_bill']?.toDouble() ?? 0.0;
+          final arrears = userBill['arrears']?.toDouble() ?? 0.0;
+          final paidAmount = userBill['paid_amount']?.toDouble() ?? 0.0;
+
+          // Calculate new total due automatically: current_bill + arrears - paid_amount
+          final newTotalDue = currentBill + arrears - paidAmount;
+
+          // Determine status automatically based on total due
+          String newStatus = newTotalDue <= 0 ? 'Paid' : 'Unpaid';
+
+          updates['$baNo.total_due'] = newTotalDue;
+          updates['$baNo.bill_status'] = newStatus;
+        }
+
+        if (updates.isNotEmpty) {
+          await billRef.update(updates);
+          await _loadBills();
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('All bills recalculated successfully'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error recalculating bills: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   // Helper method to build flag toggle
   Widget _buildFlagToggle(BuildContext context) {
     return Consumer<LanguageProvider>(
@@ -569,40 +689,6 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
         return combined.contains(query.toLowerCase());
       }).toList();
     });
-  }
-
-  // Update bill status (Paid/Unpaid)
-  Future<void> _updateBillStatus(String baNo, String newStatus) async {
-    try {
-      String monthYear = '$_selectedMonth $_selectedYear';
-
-      await FirebaseFirestore.instance
-          .collection('Bills')
-          .doc(monthYear)
-          .update({
-        '$baNo.bill_status': newStatus,
-      });
-
-      await _loadBills();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Bill status updated to $newStatus'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error updating bill status: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
   }
 
   // Generate PDF for individual user bill
@@ -940,6 +1026,46 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
               ),
             ),
             actions: [
+              // Notification Icon for Payment Requests
+              Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications, color: Colors.white),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const PaymentsDashboard(),
+                        ),
+                      );
+                    },
+                  ),
+                  if (_pendingPaymentRequests > 0)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          '$_pendingPaymentRequests',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
               _buildFlagToggle(context),
             ],
           ),
@@ -1002,6 +1128,20 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                                   fontWeight: FontWeight.w600),
                             ),
                     ),
+                    const SizedBox(width: 12),
+                    ElevatedButton(
+                      onPressed: _recalculateAllBills,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF4CAF50),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 14, horizontal: 20),
+                      ),
+                      child: const Text(
+                        'Recalculate',
+                        style: TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.w600),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -1051,7 +1191,8 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: SizedBox(
-                        width: 1010, // Total width of all columns
+                        width:
+                            1130, // Updated total width to include paid amount column (120px)
                         child: Column(
                           children: [
                             // Fixed Table Header
@@ -1136,6 +1277,19 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                                     child: Center(
                                       child: Text(
                                         'Current Bill',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width: 120,
+                                    child: Center(
+                                      child: Text(
+                                        'Paid Amount',
                                         style: TextStyle(
                                           color: Colors.white,
                                           fontWeight: FontWeight.bold,
@@ -1269,38 +1423,61 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                                                 SizedBox(
                                                   width: 120,
                                                   child: Center(
-                                                    child:
-                                                        DropdownButton<String>(
-                                                      value:
-                                                          bill['bill_status'],
-                                                      items: const [
-                                                        DropdownMenuItem(
-                                                            value: 'Paid',
-                                                            child:
-                                                                Text('Paid')),
-                                                        DropdownMenuItem(
-                                                            value: 'Unpaid',
-                                                            child:
-                                                                Text('Unpaid')),
-                                                      ],
-                                                      onChanged: (newStatus) {
-                                                        if (newStatus != null) {
-                                                          _updateBillStatus(
-                                                              bill['ba_no'],
-                                                              newStatus);
-                                                        }
-                                                      },
-                                                      underline: Container(),
+                                                    child: Text(
+                                                      () {
+                                                        // Calculate total due automatically
+                                                        final currentBill =
+                                                            bill['current_bill']
+                                                                    ?.toDouble() ??
+                                                                0.0;
+                                                        final arrears = bill[
+                                                                    'arrears']
+                                                                ?.toDouble() ??
+                                                            0.0;
+                                                        final paidAmount = bill[
+                                                                    'paid_amount']
+                                                                ?.toDouble() ??
+                                                            0.0;
+                                                        final calculatedTotalDue =
+                                                            currentBill +
+                                                                arrears -
+                                                                paidAmount;
+
+                                                        return calculatedTotalDue <=
+                                                                0
+                                                            ? 'Paid'
+                                                            : 'Unpaid';
+                                                      }(),
                                                       style: TextStyle(
-                                                        color:
-                                                            bill['bill_status'] ==
-                                                                    'Paid'
-                                                                ? Colors.green
-                                                                : Colors.red,
+                                                        color: () {
+                                                          final currentBill =
+                                                              bill['current_bill']
+                                                                      ?.toDouble() ??
+                                                                  0.0;
+                                                          final arrears = bill[
+                                                                      'arrears']
+                                                                  ?.toDouble() ??
+                                                              0.0;
+                                                          final paidAmount =
+                                                              bill['paid_amount']
+                                                                      ?.toDouble() ??
+                                                                  0.0;
+                                                          final calculatedTotalDue =
+                                                              currentBill +
+                                                                  arrears -
+                                                                  paidAmount;
+
+                                                          return calculatedTotalDue <=
+                                                                  0
+                                                              ? Colors.green
+                                                              : Colors.red;
+                                                        }(),
                                                         fontSize: 14,
                                                         fontWeight:
                                                             FontWeight.w500,
                                                       ),
+                                                      textAlign:
+                                                          TextAlign.center,
                                                     ),
                                                   ),
                                                 ),
@@ -1332,11 +1509,70 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                                                   width: 120,
                                                   child: Center(
                                                     child: Text(
-                                                      '৳${bill['total_due'].toStringAsFixed(2)}',
+                                                      '৳${bill['paid_amount'].toStringAsFixed(2)}',
                                                       style: const TextStyle(
                                                         fontSize: 14,
                                                         fontWeight:
                                                             FontWeight.w600,
+                                                        color: Colors.green,
+                                                      ),
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                    ),
+                                                  ),
+                                                ),
+                                                SizedBox(
+                                                  width: 120,
+                                                  child: Center(
+                                                    child: Text(
+                                                      () {
+                                                        // Calculate total due automatically
+                                                        final currentBill =
+                                                            bill['current_bill']
+                                                                    ?.toDouble() ??
+                                                                0.0;
+                                                        final arrears = bill[
+                                                                    'arrears']
+                                                                ?.toDouble() ??
+                                                            0.0;
+                                                        final paidAmount = bill[
+                                                                    'paid_amount']
+                                                                ?.toDouble() ??
+                                                            0.0;
+                                                        final calculatedTotalDue =
+                                                            currentBill +
+                                                                arrears -
+                                                                paidAmount;
+
+                                                        return '৳${calculatedTotalDue.toStringAsFixed(2)}';
+                                                      }(),
+                                                      style: TextStyle(
+                                                        fontSize: 14,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: () {
+                                                          final currentBill =
+                                                              bill['current_bill']
+                                                                      ?.toDouble() ??
+                                                                  0.0;
+                                                          final arrears = bill[
+                                                                      'arrears']
+                                                                  ?.toDouble() ??
+                                                              0.0;
+                                                          final paidAmount =
+                                                              bill['paid_amount']
+                                                                      ?.toDouble() ??
+                                                                  0.0;
+                                                          final calculatedTotalDue =
+                                                              currentBill +
+                                                                  arrears -
+                                                                  paidAmount;
+
+                                                          return calculatedTotalDue <=
+                                                                  0
+                                                              ? Colors.green
+                                                              : Colors.black;
+                                                        }(),
                                                       ),
                                                       textAlign:
                                                           TextAlign.center,

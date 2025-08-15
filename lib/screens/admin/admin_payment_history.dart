@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../providers/language_provider.dart';
 import '../../l10n/app_localizations.dart';
 import 'package:smart_mess/services/admin_auth_service.dart';
@@ -17,7 +18,6 @@ import 'admin_bill_screen.dart';
 import 'admin_monthly_menu_screen.dart';
 import 'admin_menu_vote_screen.dart';
 import 'admin_meal_state_screen.dart';
-import 'transaction.dart';
 import 'admin_login_screen.dart';
 
 class PaymentsDashboard extends StatefulWidget {
@@ -33,13 +33,11 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
   String _currentUserName = "Loading...";
   Map<String, dynamic>? _currentUserData;
 
-  int? editingIndex;
-  List<TextEditingController> controllers = [];
-
   @override
   void initState() {
     super.initState();
     _checkAuthentication();
+    _loadPaymentRequests();
   }
 
   Future<void> _checkAuthentication() async {
@@ -73,131 +71,200 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
     }
   }
 
-  final List<PaymentData> transactions = [
-    PaymentData(
-      amount: 3500.00,
-      paymentTime: DateTime.now().subtract(const Duration(hours: 2)),
-      paymentMethod: 'Bkash',
-      baNo: 'BA-1234',
-      rank: 'Major',
-      name: 'John Smith',
-    ),
-    PaymentData(
-      amount: 2950.00,
-      paymentTime: DateTime.now().subtract(const Duration(hours: 5)),
-      paymentMethod: 'Bank',
-      baNo: 'BA-5678',
-      rank: 'Captain',
-      name: 'Sarah Johnson',
-    ),
-    PaymentData(
-      amount: 4200.00,
-      paymentTime: DateTime.now().subtract(const Duration(days: 1)),
-      paymentMethod: 'Card',
-      baNo: 'BA-9012',
-      rank: 'Lieutenant',
-      name: 'David Wilson',
-    ),
-    PaymentData(
-      amount: 3100.00,
-      paymentTime: DateTime.now().subtract(const Duration(days: 2)),
-      paymentMethod: 'Cash',
-      baNo: 'BA-3456',
-      rank: 'Major',
-      name: 'Michael Brown',
-    ),
-    PaymentData(
-      amount: 2800.00,
-      paymentTime: DateTime.now().subtract(const Duration(days: 2)),
-      paymentMethod: 'Tap',
-      baNo: 'BA-7890',
-      rank: 'Captain',
-      name: 'Emma Davis',
-    ),
-  ];
-
+  List<Map<String, dynamic>> paymentRequests = [];
   String searchQuery = '';
-  void _editTransaction(int index) {
-    setState(() {
-      editingIndex = index;
-      final txn = transactions[index];
-      controllers = [
-        TextEditingController(text: txn.amount.toString()),
-        TextEditingController(text: txn.paymentTime.toString()),
-        TextEditingController(text: txn.paymentMethod),
-        TextEditingController(text: txn.baNo),
-        TextEditingController(text: txn.rank),
-        TextEditingController(text: txn.name),
-      ];
-    });
+
+  Future<void> _loadPaymentRequests() async {
+    try {
+      final snapshot =
+          await FirebaseFirestore.instance.collection('payment_history').get();
+
+      List<Map<String, dynamic>> requests = [];
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+
+        // Process each transaction in the document
+        for (String key in data.keys) {
+          if (key.contains('_transaction_')) {
+            final transactionData = data[key] as Map<String, dynamic>;
+            requests.add({
+              'id': '${doc.id}_$key',
+              'ba_no': transactionData['ba_no'],
+              'amount': transactionData['amount'],
+              'payment_method': transactionData['payment_method'],
+              'rank': transactionData['rank'],
+              'name': transactionData['name'],
+              'status': transactionData['status'],
+              'request_time': transactionData['request_time'],
+              'phone_number': transactionData['phone_number'] ?? '',
+              'transaction_id': transactionData['transaction_id'] ?? '',
+              'account_no': transactionData['account_no'] ?? '',
+              'bank_name': transactionData['bank_name'] ?? '',
+              'card_number': transactionData['card_number'] ?? '',
+              'expiry_date': transactionData['expiry_date'] ?? '',
+              'cvv': transactionData['cvv'] ?? '',
+            });
+          }
+        }
+      }
+
+      setState(() {
+        paymentRequests = requests;
+      });
+    } catch (e) {
+      print('Error loading payment requests: $e');
+    }
   }
 
-  void _saveTransaction(int index) {
-    if (controllers.any((controller) => controller.text.trim().isEmpty)) {
+  Future<void> _approvePayment(Map<String, dynamic> request) async {
+    try {
+      final parts = request['id'].split('_');
+      final baNo = parts[0];
+      final transactionKey = '${parts[1]}_${parts[2]}_${parts[3]}';
+
+      // Update payment request status
+      await FirebaseFirestore.instance
+          .collection('payment_history')
+          .doc(baNo)
+          .update({
+        '$transactionKey.status': 'approved',
+        '$transactionKey.approved_at': FieldValue.serverTimestamp(),
+      });
+
+      // Update bill with paid amount and recalculate total due
+      final now = DateTime.now();
+      final monthYear = "${_getMonthName(now.month)} ${now.year}";
+
+      final billRef =
+          FirebaseFirestore.instance.collection('Bills').doc(monthYear);
+
+      final billDoc = await billRef.get();
+      if (billDoc.exists) {
+        final billData = billDoc.data() as Map<String, dynamic>;
+        final userBill = billData[baNo] as Map<String, dynamic>?;
+
+        if (userBill != null) {
+          final currentPaidAmount = userBill['paid_amount']?.toDouble() ?? 0.0;
+          final newPaidAmount = currentPaidAmount + request['amount'];
+
+          // Get current bill and arrears for calculation
+          final currentBill = userBill['current_bill']?.toDouble() ?? 0.0;
+          final arrears = userBill['arrears']?.toDouble() ?? 0.0;
+
+          // Calculate new total due: current_bill + arrears - paid_amount
+          final newTotalDue = currentBill + arrears - newPaidAmount;
+
+          // Determine status automatically based on total due
+          String newStatus = newTotalDue <= 0 ? 'Paid' : 'Unpaid';
+
+          await billRef.update({
+            '$baNo.paid_amount': newPaidAmount,
+            '$baNo.total_due': newTotalDue,
+            '$baNo.bill_status': newStatus,
+          });
+        }
+      }
+
+      _loadPaymentRequests(); // Reload requests
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('All fields are required'),
+          content: Text('Payment approved successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error approving payment: $e'),
           backgroundColor: Colors.red,
         ),
       );
-      return;
     }
+  }
 
-    final amount = double.tryParse(controllers[0].text);
-    if (amount == null || amount <= 0) {
+  Future<void> _rejectPayment(Map<String, dynamic> request) async {
+    try {
+      final parts = request['id'].split('_');
+      final baNo = parts[0];
+      final transactionKey = '${parts[1]}_${parts[2]}_${parts[3]}';
+
+      await FirebaseFirestore.instance
+          .collection('payment_history')
+          .doc(baNo)
+          .update({
+        '$transactionKey.status': 'rejected',
+        '$transactionKey.rejected_at': FieldValue.serverTimestamp(),
+      });
+
+      _loadPaymentRequests(); // Reload requests
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please enter a valid payment amount'),
+          content: Text('Payment rejected'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error rejecting payment: $e'),
           backgroundColor: Colors.red,
         ),
       );
-      return;
     }
-
-    setState(() {
-      final DateTime paymentTime = DateTime.tryParse(controllers[1].text) ??
-          transactions[index].paymentTime;
-      transactions[index] = PaymentData(
-        amount: amount,
-        paymentTime: paymentTime,
-        paymentMethod: controllers[2].text,
-        baNo: controllers[3].text,
-        rank: controllers[4].text,
-        name: controllers[5].text,
-      );
-      editingIndex = null;
-      controllers.clear();
-    });
   }
 
-  void _cancelEdit() {
-    setState(() {
-      editingIndex = null;
-      controllers.clear();
-    });
+  String _getMonthName(int month) {
+    const months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December'
+    ];
+    return months[month - 1];
   }
 
-  void _deleteTransaction(int index) {
+  void _showPaymentDetails(Map<String, dynamic> request) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.confirmDelete),
-        content:
-            Text('${AppLocalizations.of(context)!.areYouSureYouWantToDelete} this transaction?'),
+        title: Text('Payment Details - ${request['ba_no']}'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Name: ${request['name']}'),
+              Text('Rank: ${request['rank']}'),
+              Text('BA No: ${request['ba_no']}'),
+              Text('Amount: ৳${request['amount'].toStringAsFixed(2)}'),
+              Text('Method: ${request['payment_method']}'),
+              Text('Status: ${request['status']}'),
+              if (request['phone_number']?.isNotEmpty == true)
+                Text('Phone: ${request['phone_number']}'),
+              if (request['transaction_id']?.isNotEmpty == true)
+                Text('Transaction ID: ${request['transaction_id']}'),
+              if (request['account_no']?.isNotEmpty == true)
+                Text('Account No: ${request['account_no']}'),
+              if (request['bank_name']?.isNotEmpty == true)
+                Text('Bank: ${request['bank_name']}'),
+              if (request['card_number']?.isNotEmpty == true)
+                Text('Card: ${request['card_number']}'),
+            ],
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(AppLocalizations.of(context)!.cancel),
-          ),
-          TextButton(
-            onPressed: () {
-              setState(() {
-                transactions.removeAt(index);
-              });
-              Navigator.pop(context);
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: Text(AppLocalizations.of(context)!.delete),
+            child: const Text('Close'),
           ),
         ],
       ),
@@ -259,10 +326,9 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
         return GestureDetector(
           onTap: () {
             languageProvider.changeLanguage(
-              languageProvider.currentLocale.languageCode == 'en' 
-                ? const Locale('bn') 
-                : const Locale('en')
-            );
+                languageProvider.currentLocale.languageCode == 'en'
+                    ? const Locale('bn')
+                    : const Locale('en'));
           },
           child: Container(
             padding: const EdgeInsets.all(8),
@@ -290,381 +356,356 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
           );
         }
 
-    final filtered = transactions.where((txn) {
-      final searchLower = searchQuery.toLowerCase();
-      return txn.name.toLowerCase().contains(searchLower) ||
-          txn.baNo.toLowerCase().contains(searchLower) ||
-          txn.rank.toLowerCase().contains(searchLower) ||
-          txn.paymentMethod.toLowerCase().contains(searchLower);
-    }).toList();
+        final filtered = paymentRequests.where((request) {
+          final searchLower = searchQuery.toLowerCase();
+          return request['name'].toLowerCase().contains(searchLower) ||
+              request['ba_no'].toLowerCase().contains(searchLower) ||
+              request['rank'].toLowerCase().contains(searchLower) ||
+              request['payment_method'].toLowerCase().contains(searchLower);
+        }).toList();
 
-    return Scaffold(
-      drawer: Drawer(
-        child: Column(
-          children: [
-            DrawerHeader(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF002B5B), Color(0xFF1A4D8F)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: Row(
-                children: [
-                  const CircleAvatar(
-                    backgroundImage: AssetImage('assets/me.png'),
-                    radius: 30,
-                  ),
-                  const SizedBox(width: 10),
-                  Flexible(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          _currentUserName,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        if (_currentUserData != null) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            _currentUserData!['role'] ?? '',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
-                            ),
-                          ),
-                          Text(
-                            'BA: ${_currentUserData!['ba_no'] ?? ''}',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  _buildSidebarTile(
-                    icon: Icons.dashboard,
-                    title: AppLocalizations.of(context)!.home,
-                    onTap: () => _navigate(const AdminHomeScreen()),
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.people,
-                    title: AppLocalizations.of(context)!.users,
-                    onTap: () => _navigate(const AdminUsersScreen()),
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.pending,
-                    title: AppLocalizations.of(context)!.pendingIds,
-                    onTap: () => _navigate(const AdminPendingIdsScreen()),
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.history,
-                    title: AppLocalizations.of(context)!.shoppingHistory,
-                    onTap: () => _navigate(const AdminShoppingHistoryScreen()),
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.receipt,
-                    title: AppLocalizations.of(context)!.voucherList,
-                    onTap: () => _navigate(const AdminVoucherScreen()),
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.storage,
-                    title: AppLocalizations.of(context)!.inventory,
-                    onTap: () => _navigate(const AdminInventoryScreen()),
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.food_bank,
-                    title: AppLocalizations.of(context)!.messing,
-                    onTap: () => _navigate(const AdminMessingScreen()),
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.menu_book,
-                    title: AppLocalizations.of(context)!.monthlyMenu,
-                    onTap: () => _navigate(const EditMenuScreen()),
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.analytics,
-                    title: AppLocalizations.of(context)!.mealState,
-                    onTap: () => _navigate(const AdminMealStateScreen()),
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.thumb_up,
-                    title: AppLocalizations.of(context)!.menuVote,
-                    onTap: () => _navigate(const MenuVoteScreen()),
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.receipt_long,
-                    title: AppLocalizations.of(context)!.bills,
-                    onTap: () => _navigate(const AdminBillScreen()),
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.payment,
-                    title: AppLocalizations.of(context)!.payments,
-                    selected: true,
-                    onTap: () => Navigator.pop(context),
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.people_alt,
-                    title: AppLocalizations.of(context)!.diningMemberState,
-                    onTap: () => _navigate(const DiningMemberStatePage()),
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.manage_accounts,
-                    title: AppLocalizations.of(context)!.staffState,
-                    onTap: () => _navigate(const AdminStaffStateScreen()),
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: Colors.grey.shade300),
-                ),
-              ),
-              child: Padding(
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.of(context).padding.bottom + 8,
-                  top: 8,
-                ),
-                child: _buildSidebarTile(
-                  icon: Icons.logout,
-                  title: AppLocalizations.of(context)!.logout,
-                  onTap: _logout,
-                  color: Colors.red,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF002B5B),
-        iconTheme: const IconThemeData(color: Colors.white),
-        centerTitle: true,
-        title: Text(
-          AppLocalizations.of(context)!.paymentsHistory,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
-          ),
-        ),
-        actions: [
-          _buildFlagToggle(context),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+        return Scaffold(
+          drawer: Drawer(
+            child: Column(
               children: [
-                Expanded(
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: AppLocalizations.of(context)!.search,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      prefixIcon: const Icon(Icons.search),
-                      fillColor: Colors.white,
-                      filled: true,
+                DrawerHeader(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF002B5B), Color(0xFF1A4D8F)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    onChanged: (val) => setState(() => searchQuery = val),
+                  ),
+                  child: Row(
+                    children: [
+                      const CircleAvatar(
+                        backgroundImage: AssetImage('assets/me.png'),
+                        radius: 30,
+                      ),
+                      const SizedBox(width: 10),
+                      Flexible(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              _currentUserName,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            if (_currentUserData != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                _currentUserData!['role'] ?? '',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              Text(
+                                'BA: ${_currentUserData!['ba_no'] ?? ''}',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 16),
-                ElevatedButton.icon(
-                  onPressed: () async {
-                    final newTransaction = await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const InsertTransactionScreen(),
+                Expanded(
+                  child: ListView(
+                    padding: EdgeInsets.zero,
+                    children: [
+                      _buildSidebarTile(
+                        icon: Icons.dashboard,
+                        title: AppLocalizations.of(context)!.home,
+                        onTap: () => _navigate(const AdminHomeScreen()),
                       ),
-                    );
-
-                    if (newTransaction != null &&
-                        newTransaction is PaymentData) {
-                      setState(() {
-                        transactions.add(newTransaction);
-                      });
-                    }
-                  },
-                  icon: const Icon(Icons.add),
-                  label: Text(AppLocalizations.of(context)!.insertTransaction),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
+                      _buildSidebarTile(
+                        icon: Icons.people,
+                        title: AppLocalizations.of(context)!.users,
+                        onTap: () => _navigate(const AdminUsersScreen()),
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.pending,
+                        title: AppLocalizations.of(context)!.pendingIds,
+                        onTap: () => _navigate(const AdminPendingIdsScreen()),
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.history,
+                        title: AppLocalizations.of(context)!.shoppingHistory,
+                        onTap: () =>
+                            _navigate(const AdminShoppingHistoryScreen()),
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.receipt,
+                        title: AppLocalizations.of(context)!.voucherList,
+                        onTap: () => _navigate(const AdminVoucherScreen()),
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.storage,
+                        title: AppLocalizations.of(context)!.inventory,
+                        onTap: () => _navigate(const AdminInventoryScreen()),
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.food_bank,
+                        title: AppLocalizations.of(context)!.messing,
+                        onTap: () => _navigate(const AdminMessingScreen()),
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.menu_book,
+                        title: AppLocalizations.of(context)!.monthlyMenu,
+                        onTap: () => _navigate(const EditMenuScreen()),
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.analytics,
+                        title: AppLocalizations.of(context)!.mealState,
+                        onTap: () => _navigate(const AdminMealStateScreen()),
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.thumb_up,
+                        title: AppLocalizations.of(context)!.menuVote,
+                        onTap: () => _navigate(const MenuVoteScreen()),
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.receipt_long,
+                        title: AppLocalizations.of(context)!.bills,
+                        onTap: () => _navigate(const AdminBillScreen()),
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.payment,
+                        title: AppLocalizations.of(context)!.payments,
+                        selected: true,
+                        onTap: () => Navigator.pop(context),
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.people_alt,
+                        title: AppLocalizations.of(context)!.diningMemberState,
+                        onTap: () => _navigate(const DiningMemberStatePage()),
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.manage_accounts,
+                        title: AppLocalizations.of(context)!.staffState,
+                        onTap: () => _navigate(const AdminStaffStateScreen()),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border(
+                      top: BorderSide(color: Colors.grey.shade300),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).padding.bottom + 8,
+                      top: 8,
+                    ),
+                    child: _buildSidebarTile(
+                      icon: Icons.logout,
+                      title: AppLocalizations.of(context)!.logout,
+                      onTap: _logout,
+                      color: Colors.red,
+                    ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
-                      spreadRadius: 1,
-                      blurRadius: 6,
-                      offset: const Offset(0, 3),
+          ),
+          appBar: AppBar(
+            backgroundColor: const Color(0xFF002B5B),
+            iconTheme: const IconThemeData(color: Colors.white),
+            centerTitle: true,
+            title: Text(
+              AppLocalizations.of(context)!.paymentsHistory,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
+              ),
+            ),
+            actions: [
+              _buildFlagToggle(context),
+            ],
+          ),
+          body: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: AppLocalizations.of(context)!.search,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          prefixIcon: const Icon(Icons.search),
+                          fillColor: Colors.white,
+                          filled: true,
+                        ),
+                        onChanged: (val) => setState(() => searchQuery = val),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    ElevatedButton.icon(
+                      onPressed: _loadPaymentRequests,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Refresh'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
+                      ),
                     ),
                   ],
                 ),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: DataTable(
-                    headingRowColor:
-                        WidgetStateProperty.all(const Color(0xFFF4F4F4)),
-                    columns: [
-                      DataColumn(
-                          label: Text(AppLocalizations.of(context)!.paymentAmountBdt,
-                              style: const TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(
-                          label: Text(AppLocalizations.of(context)!.paymentTime,
-                              style: const TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(
-                          label: Text(AppLocalizations.of(context)!.paymentMethod,
-                              style: const TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(
-                          label: Text(AppLocalizations.of(context)!.baNo,
-                              style: const TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(
-                          label: Text(AppLocalizations.of(context)!.rank,
-                              style: const TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(
-                          label: Text(AppLocalizations.of(context)!.name,
-                              style: const TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(
-                          label: Text(AppLocalizations.of(context)!.actions,
-                              style: const TextStyle(fontWeight: FontWeight.bold))),
-                    ],
-                    rows: List.generate(filtered.length, (index) {
-                      final txn = filtered[index];
-                      final isEditing = editingIndex == index;
+                const SizedBox(height: 24),
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.1),
+                          spreadRadius: 1,
+                          blurRadius: 6,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: DataTable(
+                        headingRowColor:
+                            WidgetStateProperty.all(const Color(0xFFF4F4F4)),
+                        columns: [
+                          DataColumn(
+                              label: Text(
+                                  AppLocalizations.of(context)!
+                                      .paymentAmountBdt,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold))),
+                          DataColumn(
+                              label: Text(
+                                  AppLocalizations.of(context)!.paymentTime,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold))),
+                          DataColumn(
+                              label: Text(
+                                  AppLocalizations.of(context)!.paymentMethod,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold))),
+                          DataColumn(
+                              label: Text(AppLocalizations.of(context)!.baNo,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold))),
+                          DataColumn(
+                              label: Text(AppLocalizations.of(context)!.rank,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold))),
+                          DataColumn(
+                              label: Text(AppLocalizations.of(context)!.name,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold))),
+                          DataColumn(
+                              label: Text('Status',
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold))),
+                          DataColumn(
+                              label: Text('Details',
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold))),
+                          DataColumn(
+                              label: Text(AppLocalizations.of(context)!.actions,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold))),
+                        ],
+                        rows: List.generate(filtered.length, (index) {
+                          final request = filtered[index];
 
-                      return DataRow(cells: [
-                        DataCell(
-                          isEditing
-                              ? TextField(
-                                  controller: controllers[0],
-                                  decoration:
-                                      const InputDecoration(isDense: true))
-                              : Text('${txn.amount} BDT'),
-                        ),
-                        DataCell(
-                          isEditing
-                              ? TextField(
-                                  controller: controllers[1],
-                                  decoration:
-                                      const InputDecoration(isDense: true))
-                              : Text(txn.paymentTime.toString()),
-                        ),
-                        DataCell(
-                          isEditing
-                              ? DropdownButtonFormField<String>(
-                                  value: controllers[2].text,
-                                  items:
-                                      ['Bank', 'Card', 'Bkash', 'Tap', 'Cash']
-                                          .map((method) => DropdownMenuItem(
-                                                value: method,
-                                                child: Text(method),
-                                              ))
-                                          .toList(),
-                                  onChanged: (val) {
-                                    if (val != null) {
-                                      setState(() {
-                                        controllers[2].text = val;
-                                      });
-                                    }
-                                  },
-                                  decoration:
-                                      const InputDecoration(isDense: true),
-                                )
-                              : Text(txn.paymentMethod),
-                        ),
-                        DataCell(
-                          isEditing
-                              ? TextField(
-                                  controller: controllers[3],
-                                  decoration:
-                                      const InputDecoration(isDense: true))
-                              : Text(txn.baNo),
-                        ),
-                        DataCell(
-                          isEditing
-                              ? TextField(
-                                  controller: controllers[4],
-                                  decoration:
-                                      const InputDecoration(isDense: true))
-                              : Text(txn.rank),
-                        ),
-                        DataCell(
-                          isEditing
-                              ? TextField(
-                                  controller: controllers[5],
-                                  decoration:
-                                      const InputDecoration(isDense: true))
-                              : Text(txn.name),
-                        ),
-                        DataCell(Row(
-                          children: isEditing
-                              ? [
-                                  IconButton(
-                                    icon: const Icon(Icons.save,
-                                        color: Colors.green),
-                                    onPressed: () => _saveTransaction(index),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.cancel,
-                                        color: Colors.grey),
-                                    onPressed: _cancelEdit,
-                                  ),
-                                ]
-                              : [
-                                  IconButton(
-                                    icon: const Icon(Icons.edit,
-                                        color: Colors.blue),
-                                    onPressed: () => _editTransaction(index),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete,
-                                        color: Colors.red),
-                                    onPressed: () => _deleteTransaction(index),
-                                  ),
-                                ],
-                        )),
-                      ]);
-                    }),
+                          return DataRow(cells: [
+                            DataCell(Text(
+                                '৳${request['amount'].toStringAsFixed(2)}')),
+                            DataCell(Text(
+                                request['request_time']?.toDate()?.toString() ??
+                                    'N/A')),
+                            DataCell(Text(request['payment_method'] ?? '')),
+                            DataCell(Text(request['ba_no'] ?? '')),
+                            DataCell(Text(request['rank'] ?? '')),
+                            DataCell(Text(request['name'] ?? '')),
+                            DataCell(
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: request['status'] == 'pending'
+                                      ? Colors.orange
+                                      : request['status'] == 'approved'
+                                          ? Colors.green
+                                          : Colors.red,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  request['status']?.toUpperCase() ?? 'UNKNOWN',
+                                  style: const TextStyle(
+                                      color: Colors.white, fontSize: 12),
+                                ),
+                              ),
+                            ),
+                            DataCell(
+                              IconButton(
+                                icon:
+                                    const Icon(Icons.info, color: Colors.blue),
+                                onPressed: () => _showPaymentDetails(request),
+                              ),
+                            ),
+                            DataCell(
+                              request['status'] == 'pending'
+                                  ? Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(Icons.check,
+                                              color: Colors.green),
+                                          onPressed: () =>
+                                              _approvePayment(request),
+                                          tooltip: 'Approve',
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.close,
+                                              color: Colors.red),
+                                          onPressed: () =>
+                                              _rejectPayment(request),
+                                          tooltip: 'Reject',
+                                        ),
+                                      ],
+                                    )
+                                  : Text(request['status'] == 'approved'
+                                      ? 'Approved'
+                                      : 'Rejected'),
+                            ),
+                          ]);
+                        }),
+                      ),
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
+          ),
+        );
       },
     );
   }
