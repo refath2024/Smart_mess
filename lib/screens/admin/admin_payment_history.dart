@@ -19,6 +19,7 @@ import 'admin_monthly_menu_screen.dart';
 import 'admin_menu_vote_screen.dart';
 import 'admin_meal_state_screen.dart';
 import 'admin_login_screen.dart';
+import 'transaction.dart';
 
 class PaymentsDashboard extends StatefulWidget {
   const PaymentsDashboard({super.key});
@@ -564,6 +565,29 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
                       label: const Text('Refresh'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const InsertTransactionScreen(),
+                          ),
+                        );
+                        if (result != null) {
+                          // Refresh payment requests after adding transaction
+                          _loadPaymentRequests();
+                        }
+                      },
+                      icon: const Icon(Icons.add),
+                      label: const Text('Add Transaction'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
                         padding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 12),
                       ),
