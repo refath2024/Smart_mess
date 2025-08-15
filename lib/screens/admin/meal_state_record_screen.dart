@@ -1667,12 +1667,26 @@ class _DetailedMealEntryScreenState extends State<DetailedMealEntryScreen> {
         'manual_override': true, // Mark as manual override
       };
 
+      print('DEBUG: Starting Firestore operation for Manual Override');
+      print('DEBUG: dateStr = ${widget.dateStr}');
+      print('DEBUG: baNo = $baNo');
+      print('DEBUG: mealStateData = $mealStateData');
+
       await FirebaseFirestore.instance
           .collection('user_meal_state')
           .doc(widget.dateStr)
           .set({
         baNo: mealStateData,
-      }, SetOptions(merge: true));
+      }, SetOptions(merge: true)).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw TimeoutException(
+              'Firestore operation timed out after 30 seconds');
+        },
+      );
+
+      print(
+          'DEBUG: Manual Override Firestore operation completed successfully');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1723,11 +1737,36 @@ class _DetailedMealEntryScreenState extends State<DetailedMealEntryScreen> {
     });
 
     try {
+      // Validate dateStr before proceeding
+      if (widget.dateStr.isEmpty) {
+        throw Exception('Date string is empty');
+      }
+
+      // Validate dateStr format (should be YYYY-MM-DD)
+      final dateRegex = RegExp(r'^\d{4}-\d{2}-\d{2}$');
+      if (!dateRegex.hasMatch(widget.dateStr)) {
+        throw Exception(
+            'Invalid date format: ${widget.dateStr}. Expected YYYY-MM-DD');
+      }
+
       final baNo = widget.selectedUser['ba_no'];
       final userName = widget.selectedUser['name'];
       final userRank = widget.selectedUser['rank'];
-      final userId =
-          widget.selectedUser['id']; // Get the actual Firebase Auth user ID
+      final userId = widget.selectedUser['id'];
+
+      // Validate required data
+      if (baNo == null || baNo.toString().isEmpty) {
+        throw Exception('BA number is missing or empty');
+      }
+      if (userName == null || userName.toString().isEmpty) {
+        throw Exception('User name is missing or empty');
+      }
+
+      print('DEBUG: Starting Auto Loop submission');
+      print('DEBUG: dateStr = ${widget.dateStr}');
+      print('DEBUG: baNo = $baNo');
+      print('DEBUG: userName = $userName');
+      print('DEBUG: userId = $userId');
 
       // Prepare meal pattern for auto loop
       final mealPattern = {
@@ -1736,21 +1775,32 @@ class _DetailedMealEntryScreenState extends State<DetailedMealEntryScreen> {
         'dinner': dinnerSelected,
       };
 
-      // Save auto loop settings
+      print('DEBUG: mealPattern = $mealPattern');
+
+      // First, save auto loop settings
+      print('DEBUG: Saving auto loop settings...');
       await FirebaseFirestore.instance
           .collection('user_auto_loop')
-          .doc(baNo)
+          .doc(baNo.toString())
           .set({
         'enabled': true,
-        'user_id': userId, // Use actual Firebase Auth user ID
+        'user_id': userId,
         'ba_no': baNo,
         'name': userName,
         'rank': userRank,
         'meal_pattern': mealPattern,
         'created_at': FieldValue.serverTimestamp(),
         'updated_at': FieldValue.serverTimestamp(),
-        'admin_created': true, // Mark as admin-created for tracking
-      });
+        'admin_created': true,
+      }).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException(
+              'Auto Loop settings save timed out after 15 seconds');
+        },
+      );
+
+      print('DEBUG: Auto loop settings saved successfully');
 
       // Submit for the selected date with disposal and remarks if provided
       final mealStateData = {
@@ -1770,15 +1820,28 @@ class _DetailedMealEntryScreenState extends State<DetailedMealEntryScreen> {
             : '',
         'timestamp': FieldValue.serverTimestamp(),
         'admin_generated': true,
-        'auto_loop_generated': false, // This submission is manual by admin
+        'auto_loop_generated': false,
       };
+
+      print('DEBUG: Starting Firestore operation for Auto Loop');
+      print('DEBUG: dateStr = ${widget.dateStr}');
+      print('DEBUG: baNo = $baNo');
+      print('DEBUG: mealStateData = $mealStateData');
 
       await FirebaseFirestore.instance
           .collection('user_meal_state')
           .doc(widget.dateStr)
           .set({
-        baNo: mealStateData,
-      }, SetOptions(merge: true));
+        baNo.toString(): mealStateData,
+      }, SetOptions(merge: true)).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw TimeoutException(
+              'Firestore operation timed out after 30 seconds');
+        },
+      );
+
+      print('DEBUG: Firestore operation completed successfully');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1871,10 +1934,23 @@ class _DetailedMealEntryScreenState extends State<DetailedMealEntryScreen> {
         }
       };
 
+      print('DEBUG: Starting Firestore operation for Regular Submit');
+      print('DEBUG: dateStr = ${widget.dateStr}');
+      print('DEBUG: mealStateData = $mealStateData');
+
       await FirebaseFirestore.instance
           .collection('user_meal_state')
           .doc(widget.dateStr)
-          .set(mealStateData, SetOptions(merge: true));
+          .set(mealStateData, SetOptions(merge: true))
+          .timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw TimeoutException(
+              'Firestore operation timed out after 30 seconds');
+        },
+      );
+
+      print('DEBUG: Regular Submit Firestore operation completed successfully');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
