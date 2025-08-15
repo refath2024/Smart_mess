@@ -29,6 +29,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
   String _userName = "";
   String _userEmail = "";
   bool _isLoadingUser = true;
+  int _unreadNotificationCount = 0;
 
   void _onItemTapped(int index) {
     setState(() {
@@ -58,6 +59,26 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
     ];
 
     _loadUserInfo();
+    _loadUnreadNotificationCount();
+  }
+
+  Future<void> _loadUnreadNotificationCount() async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return;
+
+      final unreadSnapshot = await FirebaseFirestore.instance
+          .collection('notifications')
+          .where('user_id', isEqualTo: currentUser.uid)
+          .where('is_read', isEqualTo: false)
+          .get();
+
+      setState(() {
+        _unreadNotificationCount = unreadSnapshot.docs.length;
+      });
+    } catch (e) {
+      debugPrint('Error loading unread notification count: $e');
+    }
   }
 
   Future<void> _loadUserInfo() async {
@@ -138,13 +159,46 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
         actions: _selectedIndex == 0
             ? [
                 IconButton(
-                  icon: const Icon(Icons.notifications, size: 32),
-                  onPressed: () {
-                    Navigator.push(
+                  icon: Stack(
+                    children: [
+                      const Icon(Icons.notifications, size: 32),
+                      if (_unreadNotificationCount > 0)
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 16,
+                              minHeight: 16,
+                            ),
+                            child: Text(
+                              _unreadNotificationCount > 99
+                                  ? '99+'
+                                  : '$_unreadNotificationCount',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  onPressed: () async {
+                    await Navigator.push(
                       context,
                       MaterialPageRoute(
                           builder: (_) => const NotificationPage()),
                     );
+                    // Refresh notification count after user views notifications
+                    _loadUnreadNotificationCount();
                   },
                 ),
               ]
@@ -301,11 +355,14 @@ class _HomeContentState extends State<HomeContent> {
   Map<String, dynamic>? todayMenu;
   Map<String, dynamic>? tomorrowMenu;
   bool isLoading = true;
+  double _totalDue = 0.0;
+  bool _isLoadingBill = true;
 
   @override
   void initState() {
     super.initState();
     _fetchMenuData();
+    _loadCurrentBill();
   }
 
   String _formatDateForFirestore(DateTime date) {
@@ -343,6 +400,105 @@ class _HomeContentState extends State<HomeContent> {
         isLoading = false;
       });
     }
+  }
+
+  Future<void> _loadCurrentBill() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        setState(() {
+          _totalDue = 0.0;
+          _isLoadingBill = false;
+        });
+        return;
+      }
+
+      // Get user data to find BA number
+      final userDoc = await FirebaseFirestore.instance
+          .collection('user_requests')
+          .doc(user.uid)
+          .get();
+
+      if (!userDoc.exists) {
+        setState(() {
+          _totalDue = 0.0;
+          _isLoadingBill = false;
+        });
+        return;
+      }
+
+      final userData = userDoc.data()!;
+      final baNo = userData['ba_no']?.toString();
+
+      if (baNo == null) {
+        setState(() {
+          _totalDue = 0.0;
+          _isLoadingBill = false;
+        });
+        return;
+      }
+
+      // Get current month's bill
+      final now = DateTime.now();
+      final monthYear = "${_getMonthName(now.month)} ${now.year}";
+
+      final billDoc = await FirebaseFirestore.instance
+          .collection('Bills')
+          .doc(monthYear)
+          .get();
+
+      if (billDoc.exists) {
+        final billData = billDoc.data() as Map<String, dynamic>;
+        final userBill = billData[baNo] as Map<String, dynamic>?;
+
+        if (userBill != null) {
+          // Calculate current total due using the same logic
+          final currentBill = userBill['current_bill']?.toDouble() ?? 0.0;
+          final arrears = userBill['arrears']?.toDouble() ?? 0.0;
+          final paidAmount = userBill['paid_amount']?.toDouble() ?? 0.0;
+          final calculatedTotalDue = currentBill + arrears - paidAmount;
+
+          setState(() {
+            _totalDue = calculatedTotalDue > 0 ? calculatedTotalDue : 0.0;
+            _isLoadingBill = false;
+          });
+        } else {
+          setState(() {
+            _totalDue = 0.0;
+            _isLoadingBill = false;
+          });
+        }
+      } else {
+        setState(() {
+          _totalDue = 0.0;
+          _isLoadingBill = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error loading bill data: $e");
+      setState(() {
+        _totalDue = 0.0;
+        _isLoadingBill = false;
+      });
+    }
+  }
+
+  String _getMonthName(int month) {
+    const months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December'
+    ];
+    return months[month - 1];
   }
 
   Widget _buildMenuCard(
@@ -602,7 +758,7 @@ class _HomeContentState extends State<HomeContent> {
                     const Icon(Icons.warning_amber_rounded,
                         color: Colors.red, size: 32),
                     const SizedBox(width: 16),
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -612,9 +768,16 @@ class _HomeContentState extends State<HomeContent> {
                                   fontWeight: FontWeight.bold,
                                   color: Colors.red)),
                           SizedBox(height: 4),
-                          Text("৳ 1000",
-                              style: TextStyle(
-                                  fontSize: 16, color: Colors.black87)),
+                          _isLoadingBill
+                              ? SizedBox(
+                                  height: 16,
+                                  width: 16,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : Text("৳ ${_totalDue.toStringAsFixed(0)}",
+                                  style: TextStyle(
+                                      fontSize: 16, color: Colors.black87)),
                         ],
                       ),
                     ),

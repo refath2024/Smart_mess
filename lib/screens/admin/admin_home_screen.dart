@@ -14,6 +14,7 @@ import 'admin_meal_state_screen.dart';
 import 'admin_bill_screen.dart';
 import 'admin_monthly_menu_screen.dart';
 import 'admin_menu_vote_screen.dart';
+import 'admin_notification_screen.dart';
 import '../../services/admin_auth_service.dart';
 import '../../providers/language_provider.dart';
 import '../../l10n/app_localizations.dart';
@@ -98,7 +99,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${AppLocalizations.of(context)!.logoutFailed}: $e')),
+          SnackBar(
+              content:
+                  Text('${AppLocalizations.of(context)!.logoutFailed}: $e')),
         );
       }
     }
@@ -205,11 +208,17 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildMealItem(
-                        AppLocalizations.of(context)!.breakfast, meals["breakfast"] ?? AppLocalizations.of(context)!.notSet),
+                        AppLocalizations.of(context)!.breakfast,
+                        meals["breakfast"] ??
+                            AppLocalizations.of(context)!.notSet),
                     const SizedBox(height: 8),
-                    _buildMealItem(AppLocalizations.of(context)!.lunch, meals["lunch"] ?? AppLocalizations.of(context)!.notSet),
+                    _buildMealItem(AppLocalizations.of(context)!.lunch,
+                        meals["lunch"] ?? AppLocalizations.of(context)!.notSet),
                     const SizedBox(height: 8),
-                    _buildMealItem(AppLocalizations.of(context)!.dinner, meals["dinner"] ?? AppLocalizations.of(context)!.notSet),
+                    _buildMealItem(
+                        AppLocalizations.of(context)!.dinner,
+                        meals["dinner"] ??
+                            AppLocalizations.of(context)!.notSet),
                   ],
                 ),
               ),
@@ -243,6 +252,136 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildNotificationSection() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF002B5B), Color(0xFF1A4D8F)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.3),
+            spreadRadius: 2,
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.notifications_active,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Send Notifications',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Send announcements, reminders, and updates to users',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AdminNotificationScreen(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.send, color: Color(0xFF002B5B)),
+                  label: const Text(
+                    'Send to All Users',
+                    style: TextStyle(
+                      color: Color(0xFF002B5B),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFF002B5B),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AdminNotificationScreen(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.person, color: Colors.white),
+                  label: const Text(
+                    'Send to Specific User',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Colors.white, width: 2),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -518,43 +657,56 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         title: Text(
           AppLocalizations.of(context)!.adminDashboard,
           style: TextStyle(
-        color: Colors.white,
-        fontWeight: FontWeight.w600,
-        fontSize: 18,
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
           ),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AdminNotificationScreen(),
+                ),
+              );
+            },
+          ),
           PopupMenuButton<String>(
-        icon: const Icon(Icons.language, color: Colors.white),
-        onSelected: (String value) {
-          if (value == 'bn') {
-            Provider.of<LanguageProvider>(context, listen: false).changeLanguage(const Locale('bn'));
-          } else {
-            Provider.of<LanguageProvider>(context, listen: false).changeLanguage(const Locale('en'));
-          }
-        },
-        itemBuilder: (BuildContext context) => [
-          PopupMenuItem<String>(
-            value: 'en',
-            child: Row(
-          children: [
-            Text('🇺🇸'),
-            const SizedBox(width: 8),
-            Text('English'),
-          ],
-            ),
-          ),
-          PopupMenuItem<String>(
-            value: 'bn',
-            child: Row(
-          children: [
-            Text('🇧🇩'),
-            const SizedBox(width: 8),
-            Text('বাংলা'),
-          ],
-            ),
-          ),
-        ],
+            icon: const Icon(Icons.language, color: Colors.white),
+            onSelected: (String value) {
+              if (value == 'bn') {
+                Provider.of<LanguageProvider>(context, listen: false)
+                    .changeLanguage(const Locale('bn'));
+              } else {
+                Provider.of<LanguageProvider>(context, listen: false)
+                    .changeLanguage(const Locale('en'));
+              }
+            },
+            itemBuilder: (BuildContext context) => [
+              PopupMenuItem<String>(
+                value: 'en',
+                child: Row(
+                  children: [
+                    Text('🇺🇸'),
+                    const SizedBox(width: 8),
+                    Text('English'),
+                  ],
+                ),
+              ),
+              PopupMenuItem<String>(
+                value: 'bn',
+                child: Row(
+                  children: [
+                    Text('🇧🇩'),
+                    const SizedBox(width: 8),
+                    Text('বাংলা'),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -567,17 +719,18 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               children: [
                 Text(
                   AppLocalizations.of(context)!.overview,
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    _buildDemoBox(
-                        AppLocalizations.of(context)!.totalUsers, "120", const Color(0xFF1A4D8F)),
-                    _buildDemoBox(
-                        AppLocalizations.of(context)!.pendingRequests, "8", const Color(0xFFE65100)),
-                    _buildDemoBox(
-                        AppLocalizations.of(context)!.activeMeals, "85", const Color(0xFF2E7D32)),
+                    _buildDemoBox(AppLocalizations.of(context)!.totalUsers,
+                        "120", const Color(0xFF1A4D8F)),
+                    _buildDemoBox(AppLocalizations.of(context)!.pendingRequests,
+                        "8", const Color(0xFFE65100)),
+                    _buildDemoBox(AppLocalizations.of(context)!.activeMeals,
+                        "85", const Color(0xFF2E7D32)),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -591,12 +744,19 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   style: const TextStyle(color: Colors.grey),
                 ),
                 const SizedBox(height: 24),
+
+                // Notification Section
+                _buildNotificationSection(),
+                const SizedBox(height: 24),
+
                 _buildMenuCard(
                   AppLocalizations.of(context)!.todaysMenu,
                   {
-                    "breakfast": AppLocalizations.of(context)!.parathaVegetablesTea,
+                    "breakfast":
+                        AppLocalizations.of(context)!.parathaVegetablesTea,
                     "lunch": AppLocalizations.of(context)!.riceChickenCurryDal,
-                    "dinner": AppLocalizations.of(context)!.riceFishCurryMixedVegetables,
+                    "dinner": AppLocalizations.of(context)!
+                        .riceFishCurryMixedVegetables,
                   },
                 ),
                 _buildMenuCard(
@@ -604,7 +764,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   {
                     "breakfast": AppLocalizations.of(context)!.rutiEggCurryTea,
                     "lunch": AppLocalizations.of(context)!.riceBeefCurryDal,
-                    "dinner": AppLocalizations.of(context)!.biriyaniChickenRoastSalad,
+                    "dinner":
+                        AppLocalizations.of(context)!.biriyaniChickenRoastSalad,
                   },
                 ),
               ],
