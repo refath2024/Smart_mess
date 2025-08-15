@@ -36,6 +36,15 @@ class _MessingScreenState extends State<MessingScreen> {
   List<Map<String, dynamic>> dailyMessingData = [];
   String? userBaNumber;
 
+  // Variables for miscellaneous charges
+  Map<String, double> subscriptionsData = {};
+  Map<String, double> regimentalCuttingsData = {};
+  Map<String, double> miscellaneousData = {};
+  double totalSubscriptions = 0.0;
+  double totalCuttings = 0.0;
+  double totalMisc = 0.0;
+  double arrears = 0.0; // Will be set later
+
   @override
   void initState() {
     super.initState();
@@ -70,11 +79,17 @@ class _MessingScreenState extends State<MessingScreen> {
       // First get user's BA number
       await _fetchUserBaNumber(user.uid);
 
+      // For overview - fetch miscellaneous charges
+      await _fetchMiscellaneousCharges();
+
       // For overview - fetch from old messing_data collection
       await _fetchOverviewData(user);
 
       // For detail breakdown - fetch from daily_messing collection
       await _fetchDailyMessingData();
+
+      // Fetch miscellaneous charges for overview
+      await _fetchMiscellaneousCharges();
     } catch (e) {
       print('Error fetching messing data: $e');
       if (mounted) {
@@ -329,6 +344,109 @@ class _MessingScreenState extends State<MessingScreen> {
     }
   }
 
+  Future<void> _fetchMiscellaneousCharges() async {
+    try {
+      print('Fetching miscellaneous charges from misc_entry collection');
+
+      // Fetch Subscriptions data
+      final subscriptionsDoc = await FirebaseFirestore.instance
+          .collection('misc_entry')
+          .doc('Subscriptions')
+          .get();
+
+      if (subscriptionsDoc.exists) {
+        final data = subscriptionsDoc.data()!;
+        subscriptionsData = {
+          'Orderly Pay': (data['orderly_pay'] as num?)?.toDouble() ?? 0.0,
+          'Mess Maintenance':
+              (data['mess_maintenance'] as num?)?.toDouble() ?? 0.0,
+          'Garden': (data['garden'] as num?)?.toDouble() ?? 0.0,
+          'Newspaper': (data['newspaper'] as num?)?.toDouble() ?? 0.0,
+          'Silver': (data['silver'] as num?)?.toDouble() ?? 0.0,
+          'Dish Antenna': (data['dish_antenna'] as num?)?.toDouble() ?? 0.0,
+          'Sports': (data['sports'] as num?)?.toDouble() ?? 0.0,
+          'Breakage Charge':
+              (data['breakage_charge'] as num?)?.toDouble() ?? 0.0,
+          'Internet Bill': (data['internet_bill'] as num?)?.toDouble() ?? 0.0,
+          'Washerman Bill': (data['washerman_bill'] as num?)?.toDouble() ?? 0.0,
+        };
+        totalSubscriptions = subscriptionsData.values.reduce((a, b) => a + b);
+        print(
+            'Loaded subscriptions data: $subscriptionsData, total: $totalSubscriptions');
+      }
+
+      // Fetch Regimental Cuttings data
+      final regimentalDoc = await FirebaseFirestore.instance
+          .collection('misc_entry')
+          .doc('Regimental Cuttings')
+          .get();
+
+      if (regimentalDoc.exists) {
+        final data = regimentalDoc.data()!;
+        regimentalCuttingsData = {
+          'Regimental Cuttings':
+              (data['regimental_cuttings'] as num?)?.toDouble() ?? 0.0,
+          'Cantt Sta Sports':
+              (data['cantt_sta_sports'] as num?)?.toDouble() ?? 0.0,
+          'Mosque': (data['mosque'] as num?)?.toDouble() ?? 0.0,
+          'Reunion': (data['reunion'] as num?)?.toDouble() ?? 0.0,
+          'Band': (data['band'] as num?)?.toDouble() ?? 0.0,
+        };
+        totalCuttings = regimentalCuttingsData.values.reduce((a, b) => a + b);
+        print(
+            'Loaded regimental cuttings data: $regimentalCuttingsData, total: $totalCuttings');
+      }
+
+      // Fetch Miscellaneous data
+      final miscDoc = await FirebaseFirestore.instance
+          .collection('misc_entry')
+          .doc('Miscellaneous')
+          .get();
+
+      if (miscDoc.exists) {
+        final data = miscDoc.data()!;
+        miscellaneousData = {
+          'Misc Bills': (data['miscellaneous'] as num?)?.toDouble() ?? 0.0,
+          'Crest': (data['crest'] as num?)?.toDouble() ?? 0.0,
+          'Cleaners Bill': (data['cleaners_bill'] as num?)?.toDouble() ?? 0.0,
+        };
+        totalMisc = miscellaneousData.values.reduce((a, b) => a + b);
+        print(
+            'Loaded miscellaneous data: $miscellaneousData, total: $totalMisc');
+      }
+    } catch (e) {
+      print('Error fetching miscellaneous charges: $e');
+      // Set default values if fetch fails
+      subscriptionsData = {
+        'Orderly Pay': 0.0,
+        'Mess Maintenance': 0.0,
+        'Garden': 0.0,
+        'Newspaper': 0.0,
+        'Silver': 0.0,
+        'Dish Antenna': 0.0,
+        'Sports': 0.0,
+        'Breakage Charge': 0.0,
+        'Internet Bill': 0.0,
+        'Washerman Bill': 0.0,
+      };
+      regimentalCuttingsData = {
+        'Regimental Cuttings': 0.0,
+        'Cantt Sta Sports': 0.0,
+        'Mosque': 0.0,
+        'Reunion': 0.0,
+        'Band': 0.0,
+      };
+      miscellaneousData = {
+        'Misc Bills': 0.0,
+        'Crest': 0.0,
+        'Cleaners Bill': 0.0,
+      };
+      totalSubscriptions = 0.0;
+      totalCuttings = 0.0;
+      totalMisc = 0.0;
+    }
+  }
+
   Future<void> _fetchOverviewData(User user) async {
     // Keep the old logic for overview data fetching
     print(
@@ -480,6 +598,8 @@ class _MessingScreenState extends State<MessingScreen> {
   }
 
   Widget _buildSimpleTable(String title, Map<String, String> data) {
+    bool isBillPayableTable = title == 'Bill Payable';
+
     return Card(
       elevation: 2,
       margin: EdgeInsets.zero,
@@ -503,24 +623,53 @@ class _MessingScreenState extends State<MessingScreen> {
               ],
             ),
             ...data.entries.map(
-              (e) => TableRow(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 6,
+              (e) {
+                bool isTotalBillRow = e.key == 'Total Bill';
+                bool isHighlightedRow = isBillPayableTable || isTotalBillRow;
+
+                return TableRow(
+                  decoration: isHighlightedRow
+                      ? BoxDecoration(
+                          color: isBillPayableTable
+                              ? Colors.green
+                                  .shade50 // Light green for Bill Payable table
+                              : Colors.amber
+                                  .shade50, // Light amber for Total Bill rows
+                        )
+                      : null,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 6,
+                      ),
+                      child: Text(
+                        e.key,
+                        style: TextStyle(
+                          fontWeight: isHighlightedRow
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                        ),
+                      ),
                     ),
-                    child: Text(e.key),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 6,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 6,
+                      ),
+                      child: Text(
+                        e.value,
+                        textAlign: TextAlign.right,
+                        style: TextStyle(
+                          fontWeight: isHighlightedRow
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                        ),
+                      ),
                     ),
-                    child: Text(e.value, textAlign: TextAlign.right),
-                  ),
-                ],
-              ),
+                  ],
+                );
+              },
             ),
           ],
         ),
@@ -547,7 +696,7 @@ class _MessingScreenState extends State<MessingScreen> {
       );
     }
 
-    if (messingData.isEmpty) {
+    if (dailyMessingData.isEmpty && userBaNumber == null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -583,20 +732,15 @@ class _MessingScreenState extends State<MessingScreen> {
     }
 
     // Calculate messing totals from Firebase data
-    double currentMessBill =
+    double messingBill =
         totalMonthlyMessing + totalExtraChitMessing + totalExtraChitBar;
 
-    // Fixed amounts (as per requirement)
-    double totalSubscriptions = 300.00;
-    double totalCuttings = 100.00;
-    double totalMisc = 120.00;
-    double arrears = 150.00;
+    // Current mess bill is the sum of all category totals
+    double currentMessBill =
+        messingBill + totalSubscriptions + totalCuttings + totalMisc;
 
-    double totalPayable = currentMessBill +
-        totalSubscriptions +
-        totalCuttings +
-        totalMisc +
-        arrears;
+    // Total payable is current mess bill plus arrears
+    double totalPayable = currentMessBill + arrears;
 
     return SingleChildScrollView(
       child: Column(
@@ -606,36 +750,45 @@ class _MessingScreenState extends State<MessingScreen> {
             'Monthly Messing Total': totalMonthlyMessing.toStringAsFixed(2),
             'Extra Chit (Messing)': totalExtraChitMessing.toStringAsFixed(2),
             'Extra Chit (Bar)': totalExtraChitBar.toStringAsFixed(2),
-            'Total Bill': currentMessBill.toStringAsFixed(2),
+            'Total Bill': messingBill.toStringAsFixed(2),
           }),
           const SizedBox(height: 12),
           _buildSimpleTable('Subscriptions', {
-            'Orderly Pay': '50.00',
-            'Mess Maintenance': '60.00',
-            'Garden': '30.00',
-            'Newspaper': '20.00',
-            'Silver': '20.00',
-            'Dish Antenna': '30.00',
-            'Sports': '20.00',
-            'Breakage Charge': '20.00',
-            'Internet Bill': '30.00',
-            'Washerman Bill': '20.00',
+            'Orderly Pay': subscriptionsData['Orderly Pay']!.toStringAsFixed(2),
+            'Mess Maintenance':
+                subscriptionsData['Mess Maintenance']!.toStringAsFixed(2),
+            'Garden': subscriptionsData['Garden']!.toStringAsFixed(2),
+            'Newspaper': subscriptionsData['Newspaper']!.toStringAsFixed(2),
+            'Silver': subscriptionsData['Silver']!.toStringAsFixed(2),
+            'Dish Antenna':
+                subscriptionsData['Dish Antenna']!.toStringAsFixed(2),
+            'Sports': subscriptionsData['Sports']!.toStringAsFixed(2),
+            'Breakage Charge':
+                subscriptionsData['Breakage Charge']!.toStringAsFixed(2),
+            'Internet Bill':
+                subscriptionsData['Internet Bill']!.toStringAsFixed(2),
+            'Washerman Bill':
+                subscriptionsData['Washerman Bill']!.toStringAsFixed(2),
             'Total Bill': totalSubscriptions.toStringAsFixed(2),
           }),
           const SizedBox(height: 12),
           _buildSimpleTable('Regimental Cuttings', {
-            'Regimental Cuttings': '40.00',
-            'Cantt Sta Sports': '20.00',
-            'Mosque': '10.00',
-            'Reunion': '20.00',
-            'Band': '10.00',
+            'Regimental Cuttings':
+                regimentalCuttingsData['Regimental Cuttings']!
+                    .toStringAsFixed(2),
+            'Cantt Sta Sports':
+                regimentalCuttingsData['Cantt Sta Sports']!.toStringAsFixed(2),
+            'Mosque': regimentalCuttingsData['Mosque']!.toStringAsFixed(2),
+            'Reunion': regimentalCuttingsData['Reunion']!.toStringAsFixed(2),
+            'Band': regimentalCuttingsData['Band']!.toStringAsFixed(2),
             'Total Bill': totalCuttings.toStringAsFixed(2),
           }),
           const SizedBox(height: 12),
           _buildSimpleTable('Miscellaneous', {
-            'Misc Bills': '40.00',
-            'Crest': '30.00',
-            'Cleaners Bill': '50.00',
+            'Misc Bills': miscellaneousData['Misc Bills']!.toStringAsFixed(2),
+            'Crest': miscellaneousData['Crest']!.toStringAsFixed(2),
+            'Cleaners Bill':
+                miscellaneousData['Cleaners Bill']!.toStringAsFixed(2),
             'Total Bill': totalMisc.toStringAsFixed(2),
           }),
           const SizedBox(height: 12),
