@@ -90,6 +90,9 @@ class _MessingScreenState extends State<MessingScreen> {
 
       // Fetch miscellaneous charges for overview
       await _fetchMiscellaneousCharges();
+
+      // Sync bill data with Firebase Bills collection
+      await _syncBillWithFirebase();
     } catch (e) {
       print('Error fetching messing data: $e');
       if (mounted) {
@@ -444,6 +447,77 @@ class _MessingScreenState extends State<MessingScreen> {
       totalSubscriptions = 0.0;
       totalCuttings = 0.0;
       totalMisc = 0.0;
+    }
+  }
+
+  // Sync bill data with Firebase Bills collection
+  Future<void> _syncBillWithFirebase() async {
+    try {
+      if (userBaNumber == null) {
+        print('Cannot sync bill: User BA number not found');
+        return;
+      }
+
+      // Calculate current bill (same logic as overview)
+      double messingBill =
+          totalMonthlyMessing + totalExtraChitMessing + totalExtraChitBar;
+      double currentMessBill =
+          messingBill + totalSubscriptions + totalCuttings + totalMisc;
+
+      String monthYear = '$_selectedMonth $_selectedYear';
+
+      // Get last month's data for arrears calculation
+      DateTime currentDate =
+          DateTime(_selectedYear, _months.indexOf(_selectedMonth) + 1);
+      DateTime lastMonth = DateTime(currentDate.year, currentDate.month - 1);
+      String lastMonthYear =
+          '${DateFormat('MMMM').format(lastMonth)} ${lastMonth.year}';
+
+      double arrears = 0.0;
+
+      try {
+        DocumentSnapshot lastMonthDoc = await FirebaseFirestore.instance
+            .collection('Bills')
+            .doc(lastMonthYear)
+            .get();
+
+        if (lastMonthDoc.exists) {
+          Map<String, dynamic> lastMonthData =
+              lastMonthDoc.data() as Map<String, dynamic>;
+          if (lastMonthData.containsKey(userBaNumber)) {
+            final lastBillData =
+                lastMonthData[userBaNumber] as Map<String, dynamic>;
+            if (lastBillData['bill_status'] == 'Unpaid') {
+              arrears = lastBillData['total_due']?.toDouble() ?? 0.0;
+            }
+          }
+        }
+      } catch (e) {
+        print('Error fetching last month arrears: $e');
+      }
+
+      double totalDue = currentMessBill + arrears;
+
+      // Update or create bill document
+      await FirebaseFirestore.instance.collection('Bills').doc(monthYear).set({
+        userBaNumber!: {
+          'current_bill': currentMessBill,
+          'arrears': arrears,
+          'total_due': totalDue,
+          'bill_status': 'Unpaid', // Keep existing status if already exists
+          'updated_at': FieldValue.serverTimestamp(),
+        }
+      }, SetOptions(merge: true));
+
+      // Update global arrears variable for UI
+      setState(() {
+        this.arrears = arrears;
+      });
+
+      print(
+          'Bill synced to Firebase: Current=$currentMessBill, Arrears=$arrears, Total=$totalDue');
+    } catch (e) {
+      print('Error syncing bill with Firebase: $e');
     }
   }
 
