@@ -22,6 +22,12 @@ class _AddMessingScreenState extends State<AddMessingScreen> {
   final TextEditingController _diningMembersController =
       TextEditingController();
 
+  // Inventory integration
+  List<Map<String, dynamic>> _inventoryItems = [];
+  Map<String, dynamic>? _selectedInventoryItem;
+  bool _isLoadingInventory = false;
+  double _availableQuantity = 0.0;
+
   // Calculated fields
   double _priceExpended = 0.0;
   double _pricePerMember = 0.0;
@@ -30,12 +36,143 @@ class _AddMessingScreenState extends State<AddMessingScreen> {
   void initState() {
     super.initState();
     _setupCalculationListeners();
+    _loadInventoryItems();
   }
 
   void _setupCalculationListeners() {
     _unitPriceController.addListener(_calculatePriceExpended);
     _amountUsedController.addListener(_calculatePriceExpended);
     _diningMembersController.addListener(_calculatePricePerMember);
+  }
+
+  Future<void> _loadInventoryItems() async {
+    setState(() {
+      _isLoadingInventory = true;
+    });
+
+    try {
+      print('🔄 Loading inventory items...');
+      final snapshot =
+          await FirebaseFirestore.instance.collection('inventory').get();
+
+      print('📦 Found ${snapshot.docs.length} inventory documents');
+
+      List<Map<String, dynamic>> items = [];
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        final type = data['type'] as String?;
+        final productName = data['productName'] as String?;
+        final quantityHeld = data['quantityHeld'];
+
+        print(
+            '🏷️ Processing item: $productName, type: $type, quantity: $quantityHeld');
+
+        // Only include 'fresh' and 'ration' type items
+        if (type == 'fresh' || type == 'ration') {
+          items.add({
+            'id': doc.id,
+            'productName': productName ?? 'Unknown',
+            'quantityHeld': (quantityHeld ?? 0).toDouble(),
+            'type': type,
+          });
+          print('✅ Added item: $productName (${type})');
+        } else {
+          print('❌ Skipped item: $productName (type: $type)');
+        }
+      }
+
+      print('📋 Total filtered items: ${items.length}');
+
+      setState(() {
+        _inventoryItems = items;
+        _isLoadingInventory = false;
+      });
+
+      print('🎉 Inventory loading completed successfully');
+    } catch (e) {
+      print('❌ Error loading inventory: $e');
+      setState(() {
+        _isLoadingInventory = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading inventory: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    }
+  }
+
+  void _onProductSelected(Map<String, dynamic>? item) {
+    setState(() {
+      _selectedInventoryItem = item;
+      if (item != null) {
+        _productNameController.text = item['productName'];
+        _availableQuantity = item['quantityHeld'];
+        // Clear amount used when product changes
+        _amountUsedController.clear();
+      } else {
+        _productNameController.clear();
+        _availableQuantity = 0.0;
+        _amountUsedController.clear();
+      }
+    });
+  }
+
+  String? _validateAmountUsed(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Amount is required';
+    }
+
+    final amount = double.tryParse(value);
+    if (amount == null) {
+      return 'Please enter a valid number';
+    }
+
+    if (amount <= 0) {
+      return 'Amount must be greater than 0';
+    }
+
+    if (amount > _availableQuantity) {
+      return 'Amount exceeds available quantity (${_availableQuantity.toStringAsFixed(2)})';
+    }
+
+    return null;
+  }
+
+  Future<void> _updateInventoryQuantity(
+      String inventoryId, double amountUsed) async {
+    try {
+      final inventoryDoc = await FirebaseFirestore.instance
+          .collection('inventory')
+          .doc(inventoryId)
+          .get();
+
+      if (inventoryDoc.exists) {
+        final currentQuantity =
+            (inventoryDoc.data()!['quantityHeld'] ?? 0).toDouble();
+        final newQuantity = currentQuantity - amountUsed;
+
+        await FirebaseFirestore.instance
+            .collection('inventory')
+            .doc(inventoryId)
+            .update({
+          'quantityHeld': newQuantity >= 0 ? newQuantity : 0,
+          'lastUpdated': FieldValue.serverTimestamp(),
+        });
+
+        print(
+            '✅ Updated inventory: ${inventoryDoc.data()!['productName']} - Used: $amountUsed, Remaining: $newQuantity');
+      }
+    } catch (e) {
+      print('Error updating inventory quantity: $e');
+      throw e; // Re-throw to handle in calling function
+    }
   }
 
   void _calculatePriceExpended() {
@@ -130,6 +267,23 @@ class _AddMessingScreenState extends State<AddMessingScreen> {
       return;
     }
 
+    // Validate inventory selection and amount
+    if (_selectedInventoryItem == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a product from inventory')),
+      );
+      return;
+    }
+
+    final amountUsed = double.tryParse(_amountUsedController.text) ?? 0.0;
+    final validationError = _validateAmountUsed(_amountUsedController.text);
+    if (validationError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(validationError)),
+      );
+      return;
+    }
+
     setState(() {
       _isSubmitting = true;
     });
@@ -149,13 +303,13 @@ class _AddMessingScreenState extends State<AddMessingScreen> {
         '$prefix${mealNumber}_product_name': _productNameController.text.trim(),
         '$prefix${mealNumber}_unit_price':
             double.parse(_unitPriceController.text),
-        '$prefix${mealNumber}_amount_used':
-            double.parse(_amountUsedController.text),
+        '$prefix${mealNumber}_amount_used': amountUsed,
         '$prefix${mealNumber}_dining_members':
             double.parse(_diningMembersController.text),
         '$prefix${mealNumber}_price_expended': _priceExpended,
         '$prefix${mealNumber}_price_per_member': _pricePerMember,
         '$prefix${mealNumber}_meal_type': _selectedMealType,
+        '$prefix${mealNumber}_inventory_item_id': _selectedInventoryItem!['id'],
         '$prefix${mealNumber}_timestamp': FieldValue.serverTimestamp(),
       };
 
@@ -165,18 +319,26 @@ class _AddMessingScreenState extends State<AddMessingScreen> {
           .doc(dateStr)
           .set(mealData, SetOptions(merge: true));
 
+      // Update inventory - deduct the amount used
+      await _updateInventoryQuantity(_selectedInventoryItem!['id'], amountUsed);
+
       // Calculate and update meal totals
       await _updateMealTotals(dateStr, prefix);
 
+      // Reload inventory to get updated quantities
+      await _loadInventoryItems();
+
       // Clear form for next entry
+      setState(() {
+        _selectedInventoryItem = null;
+        _availableQuantity = 0.0;
+        _priceExpended = 0.0;
+        _pricePerMember = 0.0;
+      });
       _productNameController.clear();
       _unitPriceController.clear();
       _amountUsedController.clear();
       _diningMembersController.clear();
-      setState(() {
-        _priceExpended = 0.0;
-        _pricePerMember = 0.0;
-      });
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -185,7 +347,8 @@ class _AddMessingScreenState extends State<AddMessingScreen> {
               const Icon(Icons.check_circle, color: Colors.white),
               const SizedBox(width: 8),
               Expanded(
-                child: Text('$_selectedMealType item saved successfully! ✓'),
+                child: Text(
+                    '$_selectedMealType item saved and inventory updated! ✓'),
               ),
             ],
           ),
@@ -536,22 +699,77 @@ class _AddMessingScreenState extends State<AddMessingScreen> {
         ),
         const SizedBox(height: 24),
 
-        // Form fields
-        _buildTextField(
-          label: 'Product Name *',
-          controller: _productNameController,
+        // Manual reload button for debugging
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _isLoadingInventory
+                    ? null
+                    : () {
+                        _loadInventoryItems();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('🔄 Manually reloading inventory...'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                icon: const Icon(Icons.refresh),
+                label: Text(
+                    _isLoadingInventory ? 'Loading...' : 'Reload Inventory'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+          ],
         ),
+        const SizedBox(height: 16),
+
+        // Form fields
+        _buildProductDropdown(),
+
+        // Debug info (can be removed in production)
+        if (_inventoryItems.isNotEmpty)
+          Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue.shade200),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '📦 Inventory Status: ${_inventoryItems.length} items loaded',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.blue.shade800,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Types: ${_inventoryItems.map((item) => item['type']).toSet().join(', ')}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.blue.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
         _buildTextField(
           label: 'Unit Price (Per Litre/Kg) *',
           controller: _unitPriceController,
           keyboardType: TextInputType.number,
           suffixText: 'BDT',
         ),
-        _buildTextField(
-          label: 'Amount Used (Litre/Kg) *',
-          controller: _amountUsedController,
-          keyboardType: TextInputType.number,
-        ),
+        _buildAmountUsedField(),
 
         // Calculated Price Expended (Read-only)
         _buildCalculatedField(
@@ -702,6 +920,205 @@ class _AddMessingScreenState extends State<AddMessingScreen> {
             vertical: 12,
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildProductDropdown() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text(
+                'Product Name *',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              if (_selectedInventoryItem != null) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _availableQuantity > 0
+                        ? Colors.green.shade100
+                        : Colors.red.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _availableQuantity > 0 ? Colors.green : Colors.red,
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    'Available: ${_availableQuantity.toStringAsFixed(2)} ${_selectedInventoryItem!['type']}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: _availableQuantity > 0
+                          ? Colors.green.shade800
+                          : Colors.red.shade800,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Loading indicator
+          if (_isLoadingInventory)
+            Container(
+              height: 60,
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Center(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    SizedBox(width: 12),
+                    Text('Loading inventory items...'),
+                  ],
+                ),
+              ),
+            )
+
+          // No items found
+          else if (_inventoryItems.isEmpty)
+            Container(
+              height: 60,
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.orange.shade300),
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.orange.shade50,
+              ),
+              child: const Center(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.warning, color: Colors.orange, size: 20),
+                    SizedBox(width: 8),
+                    Text(
+                      'No fresh/ration items found in inventory',
+                      style: TextStyle(color: Colors.orange),
+                    ),
+                  ],
+                ),
+              ),
+            )
+
+          // Dropdown with items
+          else
+            DropdownButtonFormField<Map<String, dynamic>>(
+              value: _selectedInventoryItem,
+              decoration: InputDecoration(
+                hintText: 'Select product from inventory',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+              ),
+              isExpanded: true,
+              items: _inventoryItems.map((item) {
+                return DropdownMenuItem<Map<String, dynamic>>(
+                  value: item,
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: item['type'] == 'fresh'
+                              ? Colors.green.shade100
+                              : Colors.orange.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          item['type'].toString().toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: item['type'] == 'fresh'
+                                ? Colors.green.shade800
+                                : Colors.orange.shade800,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '${item['productName']} (${item['quantityHeld'].toStringAsFixed(2)})',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+              onChanged: _onProductSelected,
+              validator: (value) {
+                if (value == null) {
+                  return 'Please select a product';
+                }
+                return null;
+              },
+            ),
+
+          // Add refresh button if loading failed
+          if (!_isLoadingInventory && _inventoryItems.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: TextButton.icon(
+                onPressed: _loadInventoryItems,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry Loading Inventory'),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.blue,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAmountUsedField() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: TextFormField(
+        controller: _amountUsedController,
+        keyboardType: TextInputType.number,
+        decoration: InputDecoration(
+          labelText: 'Amount Used (Litre/Kg) *',
+          hintText: _selectedInventoryItem != null
+              ? 'Max: ${_availableQuantity.toStringAsFixed(2)}'
+              : 'Select product first',
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
+          errorMaxLines: 2,
+        ),
+        enabled: _selectedInventoryItem != null,
+        validator: _validateAmountUsed,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
       ),
     );
   }

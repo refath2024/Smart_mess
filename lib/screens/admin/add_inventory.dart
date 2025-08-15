@@ -139,7 +139,7 @@ class _AddInventoryScreenState extends State<AddInventoryScreen> {
                   controller: _quantityHeldController,
                   keyboardType: TextInputType.number,
                   decoration: const InputDecoration(
-                    labelText: 'Quantity Held',
+                    labelText: 'Quantity Held(Kg/L)',
                     border: OutlineInputBorder(),
                   ),
                 ),
@@ -152,7 +152,8 @@ class _AddInventoryScreenState extends State<AddInventoryScreen> {
                   ),
                   items: const [
                     DropdownMenuItem(value: 'fresh', child: Text('Fresh')),
-                    DropdownMenuItem(value: 'utensils', child: Text('Utensils')),
+                    DropdownMenuItem(
+                        value: 'utensils', child: Text('Utensils')),
                     DropdownMenuItem(value: 'ration', child: Text('Ration')),
                   ],
                   onChanged: (value) {
@@ -190,7 +191,8 @@ class _AddInventoryScreenState extends State<AddInventoryScreen> {
                                 width: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
                                 ),
                               )
                             : const Text('Add Entry'),
