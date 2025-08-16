@@ -5,7 +5,6 @@
 
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {onDocumentDeleted} from "firebase-functions/v2/firestore";
-import {onSchedule} from "firebase-functions/v2/scheduler";
 import * as admin from "firebase-admin";
 
 // Initialize Firebase Admin SDK
@@ -142,95 +141,5 @@ export const onStaffDeleted = onDocumentDeleted('staff_state/{staffId}', async (
 
   } catch (error) {
     console.error("❌ Error in onStaffDeleted trigger:", error);
-  }
-});
-
-/**
- * Auto Loop Function - Runs daily at 21:00 (9:00 PM) Bangladesh Time
- * Automatically creates meal states for users with enabled auto loop
- */
-export const dailyAutoLoop = onSchedule({
-  schedule: "0 21 * * *", // Every day at 21:00 (9:00 PM)
-  timeZone: "Asia/Dhaka", // Bangladesh timezone
-}, async (event) => {
-  console.log("🔄 Starting daily auto loop process...");
-  
-  try {
-    // Get all users with enabled auto loop
-    const autoLoopSnapshot = await admin.firestore()
-      .collection('user_auto_loop')
-      .where('enabled', '==', true)
-      .get();
-
-    if (autoLoopSnapshot.empty) {
-      console.log("No users with auto loop enabled");
-      return;
-    }
-
-    // Calculate tomorrow's date
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
-
-    console.log(`📅 Processing auto loop for date: ${tomorrowStr}`);
-
-    const batch = admin.firestore().batch();
-    let processedCount = 0;
-
-    for (const doc of autoLoopSnapshot.docs) {
-      const loopData = doc.data();
-      const baNo = loopData.ba_no;
-      const mealPattern = loopData.meal_pattern;
-
-      // Check if meal state already exists for this user on this date
-      const existingMealStateRef = admin.firestore()
-        .collection('user_meal_state')
-        .doc(tomorrowStr);
-      
-      const existingDoc = await existingMealStateRef.get();
-      
-      // Skip if user already has meal state for tomorrow (manual submission takes priority)
-      if (existingDoc.exists && existingDoc.data()?.[baNo]) {
-        console.log(`⏭️ Skipping ${baNo} - manual submission already exists for ${tomorrowStr}`);
-        continue;
-      }
-
-      // Create meal state data
-      const mealStateData = {
-        name: loopData.name,
-        rank: loopData.rank,
-        breakfast: mealPattern.breakfast || false,
-        lunch: mealPattern.lunch || false,
-        dinner: mealPattern.dinner || false,
-        remarks: '',
-        disposal: false,
-        disposal_type: '',
-        disposal_from: '',
-        disposal_to: '',
-        timestamp: admin.firestore.FieldValue.serverTimestamp(),
-        admin_generated: loopData.admin_created || false, // Set based on who created the Auto Loop
-        auto_loop_generated: true, // Mark as auto loop generated
-      };
-
-      // Add to batch
-      batch.set(existingMealStateRef, {
-        [baNo]: mealStateData
-      }, { merge: true });
-
-      processedCount++;
-      console.log(`✅ Queued auto loop meal state for ${baNo} (${loopData.name})`);
-    }
-
-    // Commit batch
-    if (processedCount > 0) {
-      await batch.commit();
-      console.log(`🎉 Successfully processed ${processedCount} auto loop meal states for ${tomorrowStr}`);
-    } else {
-      console.log("No new auto loop meal states to process");
-    }
-
-  } catch (error) {
-    console.error("❌ Error in daily auto loop process:", error);
-    throw error;
   }
 });
