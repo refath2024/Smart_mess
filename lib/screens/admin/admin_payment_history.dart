@@ -19,7 +19,7 @@ import 'admin_monthly_menu_screen.dart';
 import 'admin_menu_vote_screen.dart';
 import 'admin_meal_state_screen.dart';
 import 'admin_login_screen.dart';
-import 'transaction.dart';
+import 'add_transaction.dart';
 
 class PaymentsDashboard extends StatefulWidget {
   const PaymentsDashboard({super.key});
