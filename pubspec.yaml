@@ -25,10 +25,10 @@ dependencies:
   url_launcher: ^6.2.5
   dropdown_button2: ^2.3.9
   permission_handler: ^11.3.0
-  firebase_core: ^3.0.0
-  firebase_auth: ^5.0.0     # For authentication
-  cloud_firestore: ^5.0.0   # For Firestore database
-  firebase_storage: ^12.4.10 # For file uploads (optional)
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.1     # For authentication
+  cloud_firestore: ^5.4.4   # For Firestore database
+  firebase_storage: ^12.3.2 # For file uploads (optional)
   firebase_data_connect: any  # For Firebase Data Connect
   
 dev_dependencies:
