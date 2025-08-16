@@ -30,12 +30,17 @@ class _BillingScreenState extends State<BillingScreen> {
   // User data
   Map<String, dynamic>? _userData;
   double _totalDue = 0.0;
+  bool _isLoadingBill = true;
 
   @override
   void initState() {
     super.initState();
-    _loadUserData();
-    _loadCurrentBill();
+    _initializeData();
+  }
+
+  Future<void> _initializeData() async {
+    await _loadUserData();
+    await _loadCurrentBill();
   }
 
   @override
@@ -60,12 +65,41 @@ class _BillingScreenState extends State<BillingScreen> {
         }
       }
     } catch (e) {
-      print('Error loading user data: $e');
+      debugPrint('Error loading user data: $e');
     }
   }
 
   Future<void> _loadCurrentBill() async {
     try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        setState(() {
+          _totalDue = 0.0;
+          _isLoadingBill = false;
+        });
+        return;
+      }
+
+      // Use the already loaded user data
+      if (_userData == null) {
+        setState(() {
+          _totalDue = 0.0;
+          _isLoadingBill = false;
+        });
+        return;
+      }
+
+      final baNo = _userData!['ba_no']?.toString();
+
+      if (baNo == null) {
+        setState(() {
+          _totalDue = 0.0;
+          _isLoadingBill = false;
+        });
+        return;
+      }
+
+      // Get current month's bill
       final now = DateTime.now();
       final monthYear = "${_getMonthName(now.month)} ${now.year}";
 
@@ -74,19 +108,39 @@ class _BillingScreenState extends State<BillingScreen> {
           .doc(monthYear)
           .get();
 
-      if (billDoc.exists && _userData != null) {
+      if (billDoc.exists) {
         final billData = billDoc.data() as Map<String, dynamic>;
-        final userBill =
-            billData[_userData!['ba_no']?.toString()] as Map<String, dynamic>?;
+        final userBill = billData[baNo] as Map<String, dynamic>?;
 
         if (userBill != null) {
+          // Calculate current total due using the same logic as home screen
+          final currentBill = userBill['current_bill']?.toDouble() ?? 0.0;
+          final arrears = userBill['arrears']?.toDouble() ?? 0.0;
+          final paidAmount = userBill['paid_amount']?.toDouble() ?? 0.0;
+          final calculatedTotalDue = currentBill + arrears - paidAmount;
+
           setState(() {
-            _totalDue = userBill['total_due']?.toDouble() ?? 0.0;
+            _totalDue = calculatedTotalDue > 0 ? calculatedTotalDue : 0.0;
+            _isLoadingBill = false;
+          });
+        } else {
+          setState(() {
+            _totalDue = 0.0;
+            _isLoadingBill = false;
           });
         }
+      } else {
+        setState(() {
+          _totalDue = 0.0;
+          _isLoadingBill = false;
+        });
       }
     } catch (e) {
-      print('Error loading current bill: $e');
+      debugPrint('Error loading current bill: $e');
+      setState(() {
+        _totalDue = 0.0;
+        _isLoadingBill = false;
+      });
     }
   }
 
@@ -367,9 +421,16 @@ class _BillingScreenState extends State<BillingScreen> {
                                     fontWeight: FontWeight.bold,
                                     color: Colors.red)),
                             const SizedBox(height: 4),
-                            Text("৳ ${_totalDue.toStringAsFixed(2)}",
-                                style: const TextStyle(
-                                    fontSize: 16, color: Colors.black87)),
+                            _isLoadingBill
+                                ? const SizedBox(
+                                    height: 16,
+                                    width: 16,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2),
+                                  )
+                                : Text("৳ ${_totalDue.toStringAsFixed(2)}",
+                                    style: const TextStyle(
+                                        fontSize: 16, color: Colors.black87)),
                           ],
                         ),
                       ),
