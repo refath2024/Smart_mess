@@ -266,7 +266,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                   ),
                   const Divider(),
                   ListTile(
-                    leading: const Icon(Icons.help),
+                    leading: const Icon(Icons.lock),
                     title: const Text('Change your password'),
                     onTap: () {
                       Navigator.pop(context);
