@@ -493,10 +493,13 @@ class _MealStateRecordScreenState extends State<MealStateRecordScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Top controls row
-            Row(
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                Expanded(
-                  flex: 2,
+                SizedBox(
+                  width: 260,
                   child: TextField(
                     controller: _searchController,
                     onChanged: _filterRecords,
@@ -513,8 +516,6 @@ class _MealStateRecordScreenState extends State<MealStateRecordScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
-                // Date selector
                 SizedBox(
                   width: 200,
                   child: Row(
@@ -570,8 +571,6 @@ class _MealStateRecordScreenState extends State<MealStateRecordScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(width: 12),
-                // Create Meal State button
                 ElevatedButton.icon(
                   onPressed: _isLoading ? null : _showCreateMealStateDialog,
                   icon: const Icon(Icons.add),
@@ -978,53 +977,57 @@ class _MealStateRecordScreenState extends State<MealStateRecordScreen> {
             const SizedBox(height: 16),
 
             // Summary section
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey[300]!),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Records Summary',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+            SafeArea(
+              top: false,
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey[300]!),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Records Summary',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Total Records: $totalRecords',
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          'Admin Generated: $adminGeneratedCount',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: Colors.blue,
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Total Records: $totalRecords',
+                            style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
                         ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          'User Submitted: $userSubmittedCount',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: Colors.green,
+                        Expanded(
+                          child: Text(
+                            'Admin Generated: $adminGeneratedCount',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.blue,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                        Expanded(
+                          child: Text(
+                            'User Submitted: $userSubmittedCount',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.green,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
