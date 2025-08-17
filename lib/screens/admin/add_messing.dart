@@ -108,22 +108,6 @@ class _AddMessingScreenState extends State<AddMessingScreen> {
     }
   }
 
-  void _onProductSelected(Map<String, dynamic>? item) {
-    setState(() {
-      _selectedInventoryItem = item;
-      if (item != null) {
-        _productNameController.text = item['productName'];
-        _availableQuantity = item['quantityHeld'];
-        // Clear amount used when product changes
-        _amountUsedController.clear();
-      } else {
-        _productNameController.clear();
-        _availableQuantity = 0.0;
-        _amountUsedController.clear();
-      }
-    });
-  }
-
   String? _validateAmountUsed(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'Amount is required';
@@ -1020,62 +1004,103 @@ class _AddMessingScreenState extends State<AddMessingScreen> {
 
           // Dropdown with items
           else
-            DropdownButtonFormField<Map<String, dynamic>>(
-              value: _selectedInventoryItem,
-              decoration: InputDecoration(
-                hintText: 'Select product from inventory',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+            GestureDetector(
+              onTap: () async {
+                final selected = await showDialog<Map<String, dynamic>>(
+                  context: context,
+                  builder: (context) {
+                    String search = '';
+                    List<Map<String, dynamic>> filtered = _inventoryItems;
+                    return StatefulBuilder(
+                      builder: (context, setState) {
+                        filtered = _inventoryItems.where((item) {
+                          final s = search.toLowerCase();
+                          return (item['productName'] != null &&
+                                  item['productName']
+                                      .toString()
+                                      .toLowerCase()
+                                      .contains(s)) ||
+                              (item['type'] != null &&
+                                  item['type']
+                                      .toString()
+                                      .toLowerCase()
+                                      .contains(s));
+                        }).toList();
+                        return AlertDialog(
+                          title: const Text('Search Inventory'),
+                          content: SingleChildScrollView(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                TextField(
+                                  decoration: const InputDecoration(
+                                      hintText: 'Type to search...'),
+                                  onChanged: (val) =>
+                                      setState(() => search = val),
+                                ),
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  width: double.maxFinite,
+                                  height: 300,
+                                  child: filtered.isEmpty
+                                      ? const Center(
+                                          child: Text('No items found'))
+                                      : ListView.builder(
+                                          itemCount: filtered.length,
+                                          itemBuilder: (context, idx) {
+                                            final item = filtered[idx];
+                                            return ListTile(
+                                              title: Text(
+                                                  '${item['productName']}'),
+                                              subtitle: Text(
+                                                  'Type: ${item['type']} | Qty: ${item['quantityHeld'].toStringAsFixed(2)}'),
+                                              onTap: () => Navigator.of(context)
+                                                  .pop(item),
+                                            );
+                                          },
+                                        ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: const Text('Cancel'),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
+                );
+                if (selected != null) {
+                  setState(() {
+                    _selectedInventoryItem = selected;
+                    _productNameController.text = selected['productName'];
+                    _availableQuantity =
+                        selected['quantityHeld']?.toDouble() ?? 0.0;
+                  });
+                }
+              },
+              child: InputDecorator(
+                decoration: InputDecoration(
+                  hintText: 'Select product from inventory',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                 ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+                child: Text(
+                  _selectedInventoryItem == null
+                      ? 'Choose a product'
+                      : '${_selectedInventoryItem!['productName']} (${_selectedInventoryItem!['type']}, ${_selectedInventoryItem!['quantityHeld'].toStringAsFixed(2)})',
+                  style: const TextStyle(fontSize: 16),
                 ),
               ),
-              isExpanded: true,
-              items: _inventoryItems.map((item) {
-                return DropdownMenuItem<Map<String, dynamic>>(
-                  value: item,
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: item['type'] == 'fresh'
-                              ? Colors.green.shade100
-                              : Colors.orange.shade100,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          item['type'].toString().toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: item['type'] == 'fresh'
-                                ? Colors.green.shade800
-                                : Colors.orange.shade800,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          '${item['productName']} (${item['quantityHeld'].toStringAsFixed(2)})',
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-              onChanged: _onProductSelected,
-              validator: (value) {
-                if (value == null) {
-                  return 'Please select a product';
-                }
-                return null;
-              },
             ),
 
           // Add refresh button if loading failed

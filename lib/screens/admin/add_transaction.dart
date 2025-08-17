@@ -397,31 +397,107 @@ class _InsertTransactionScreenState extends State<InsertTransactionScreen> {
                             style: TextStyle(
                                 fontSize: 16, fontWeight: FontWeight.w600)),
                         const SizedBox(height: 8),
-                        Flexible(
-                          child: DropdownButtonFormField<Map<String, dynamic>>(
-                            value: _selectedUser,
-                            hint: const Text('Choose a user'),
-                            isExpanded: true,
-                            items: _users.map((user) {
-                              return DropdownMenuItem(
-                                value: user,
-                                child: Text(
-                                    '${user['ba_no']} - ${user['rank']} ${user['name']}'),
-                              );
-                            }).toList(),
-                            onChanged: (user) {
+                        GestureDetector(
+                          onTap: () async {
+                            final selected =
+                                await showDialog<Map<String, dynamic>>(
+                              context: context,
+                              builder: (context) {
+                                String search = '';
+                                List<Map<String, dynamic>> filtered = _users;
+                                return StatefulBuilder(
+                                  builder: (context, setState) {
+                                    filtered = _users.where((user) {
+                                      final s = search.toLowerCase();
+                                      return (user['ba_no']
+                                                  ?.toString()
+                                                  .toLowerCase()
+                                                  .contains(s) ??
+                                              false) ||
+                                          (user['name']
+                                                  ?.toString()
+                                                  .toLowerCase()
+                                                  .contains(s) ??
+                                              false) ||
+                                          (user['rank']
+                                                  ?.toString()
+                                                  .toLowerCase()
+                                                  .contains(s) ??
+                                              false);
+                                    }).toList();
+                                    return AlertDialog(
+                                      title: const Text('Search User'),
+                                      content: SingleChildScrollView(
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            TextField(
+                                              decoration: const InputDecoration(
+                                                  hintText:
+                                                      'Type to search...'),
+                                              onChanged: (val) =>
+                                                  setState(() => search = val),
+                                            ),
+                                            const SizedBox(height: 12),
+                                            SizedBox(
+                                              width: double.maxFinite,
+                                              height: 300,
+                                              child: filtered.isEmpty
+                                                  ? const Center(
+                                                      child: Text(
+                                                          'No users found'))
+                                                  : ListView.builder(
+                                                      itemCount:
+                                                          filtered.length,
+                                                      itemBuilder:
+                                                          (context, idx) {
+                                                        final user =
+                                                            filtered[idx];
+                                                        return ListTile(
+                                                          title: Text(
+                                                              '${user['ba_no']} - ${user['rank']} ${user['name']}'),
+                                                          onTap: () =>
+                                                              Navigator.of(
+                                                                      context)
+                                                                  .pop(user),
+                                                        );
+                                                      },
+                                                    ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.of(context).pop(),
+                                          child: const Text('Cancel'),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                              },
+                            );
+                            if (selected != null) {
                               setState(() {
-                                _selectedUser = user;
-                                if (user != null) {
-                                  _loadUserBill(user['ba_no'].toString());
-                                }
+                                _selectedUser = selected;
+                                _loadUserBill(selected['ba_no'].toString());
                               });
-                            },
+                            }
+                          },
+                          child: InputDecorator(
                             decoration: InputDecoration(
                               border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8)),
                               contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 8),
+                            ),
+                            child: Text(
+                              _selectedUser == null
+                                  ? 'Choose a user'
+                                  : '${_selectedUser!['ba_no']} - ${_selectedUser!['rank']} ${_selectedUser!['name']}',
+                              style: const TextStyle(fontSize: 16),
                             ),
                           ),
                         ),
