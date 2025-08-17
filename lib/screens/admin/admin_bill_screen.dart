@@ -781,8 +781,8 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                                   fontSize: 12,
                                 ),
                               ),
-                            ],
-                          ],
+                            ], // closes if
+                          ], // closes children of Column
                         ),
                       ),
                     ],
@@ -1219,431 +1219,427 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
 
                 // Table
                 Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade300),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: SizedBox(
-                        width:
-                            1130, // Updated total width to include paid amount column (120px)
-                        child: Column(
-                          children: [
-                            // Fixed Table Header
-                            Container(
-                              height: 56,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF1A4D8F),
-                                borderRadius: BorderRadius.only(
-                                  topLeft: Radius.circular(8),
-                                  topRight: Radius.circular(8),
+                  child: SafeArea(
+                    top: false,
+                    minimum: const EdgeInsets.only(bottom: 12),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: SizedBox(
+                          width: 1130,
+                          child: Column(
+                            children: [
+                              // Fixed Table Header
+                              Container(
+                                height: 56,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF1A4D8F),
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: Radius.circular(8),
+                                    topRight: Radius.circular(8),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: const [
+                                    SizedBox(
+                                      width: 100,
+                                      child: Center(
+                                        child: Text(
+                                          'BA No',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      width: 120,
+                                      child: Center(
+                                        child: Text(
+                                          'Rank',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      width: 150,
+                                      child: Center(
+                                        child: Text(
+                                          'Name',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      width: 120,
+                                      child: Center(
+                                        child: Text(
+                                          'Status',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      width: 120,
+                                      child: Center(
+                                        child: Text(
+                                          'Arrears',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      width: 120,
+                                      child: Center(
+                                        child: Text(
+                                          'Current Bill',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      width: 120,
+                                      child: Center(
+                                        child: Text(
+                                          'Paid Amount',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      width: 120,
+                                      child: Center(
+                                        child: Text(
+                                          'Total Due',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      width: 100,
+                                      child: Center(
+                                        child: Text(
+                                          'Actions',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              child: Row(
-                                children: const [
-                                  SizedBox(
-                                    width: 100,
-                                    child: Center(
-                                      child: Text(
-                                        'BA No',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    width: 120,
-                                    child: Center(
-                                      child: Text(
-                                        'Rank',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    width: 150,
-                                    child: Center(
-                                      child: Text(
-                                        'Name',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    width: 120,
-                                    child: Center(
-                                      child: Text(
-                                        'Status',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    width: 120,
-                                    child: Center(
-                                      child: Text(
-                                        'Arrears',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    width: 120,
-                                    child: Center(
-                                      child: Text(
-                                        'Current Bill',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    width: 120,
-                                    child: Center(
-                                      child: Text(
-                                        'Paid Amount',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    width: 120,
-                                    child: Center(
-                                      child: Text(
-                                        'Total Due',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    width: 100,
-                                    child: Center(
-                                      child: Text(
-                                        'Actions',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            // Scrollable Table Body
-                            Expanded(
-                              child: filteredBills.isEmpty
-                                  ? Center(
-                                      child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Icon(
-                                            Icons.receipt_long,
-                                            size: 64,
-                                            color: Colors.grey[400],
-                                          ),
-                                          const SizedBox(height: 16),
-                                          Text(
-                                            'No bills found',
-                                            style: TextStyle(
-                                              fontSize: 18,
-                                              color: Colors.grey[600],
-                                              fontWeight: FontWeight.w500,
+                              // Scrollable Table Body
+                              Expanded(
+                                child: filteredBills.isEmpty
+                                    ? Center(
+                                        child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              Icons.receipt_long,
+                                              size: 64,
+                                              color: Colors.grey[400],
                                             ),
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Text(
-                                            'Click "Generate Bills" to create bills for all users',
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              color: Colors.grey[500],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    )
-                                  : SingleChildScrollView(
-                                      child: Column(
-                                        children: List.generate(
-                                            filteredBills.length, (index) {
-                                          final bill = filteredBills[index];
-                                          final isEven = index % 2 == 0;
-
-                                          return Container(
-                                            height: 60,
-                                            decoration: BoxDecoration(
-                                              color: isEven
-                                                  ? Colors.grey.shade50
-                                                  : Colors.white,
-                                              border: Border(
-                                                bottom: BorderSide(
-                                                  color: Colors.grey.shade200,
-                                                  width: 1,
-                                                ),
+                                            const SizedBox(height: 16),
+                                            Text(
+                                              'No bills found',
+                                              style: TextStyle(
+                                                fontSize: 18,
+                                                color: Colors.grey[600],
+                                                fontWeight: FontWeight.w500,
                                               ),
                                             ),
-                                            child: Row(
-                                              children: [
-                                                SizedBox(
-                                                  width: 100,
-                                                  child: Center(
-                                                    child: Text(
-                                                      bill['ba_no'] ?? '',
-                                                      style: const TextStyle(
-                                                          fontSize: 14),
-                                                      textAlign:
-                                                          TextAlign.center,
-                                                    ),
-                                                  ),
-                                                ),
-                                                SizedBox(
-                                                  width: 120,
-                                                  child: Center(
-                                                    child: Text(
-                                                      bill['rank'] ?? '',
-                                                      style: const TextStyle(
-                                                          fontSize: 14),
-                                                      textAlign:
-                                                          TextAlign.center,
-                                                    ),
-                                                  ),
-                                                ),
-                                                SizedBox(
-                                                  width: 150,
-                                                  child: Center(
-                                                    child: Text(
-                                                      bill['name'] ?? '',
-                                                      style: const TextStyle(
-                                                          fontSize: 14),
-                                                      textAlign:
-                                                          TextAlign.center,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                    ),
-                                                  ),
-                                                ),
-                                                SizedBox(
-                                                  width: 120,
-                                                  child: Center(
-                                                    child: Text(
-                                                      () {
-                                                        // Calculate total due automatically
-                                                        final currentBill =
-                                                            bill['current_bill']
-                                                                    ?.toDouble() ??
-                                                                0.0;
-                                                        final arrears = bill[
-                                                                    'arrears']
-                                                                ?.toDouble() ??
-                                                            0.0;
-                                                        final paidAmount = bill[
-                                                                    'paid_amount']
-                                                                ?.toDouble() ??
-                                                            0.0;
-                                                        final calculatedTotalDue =
-                                                            currentBill +
-                                                                arrears -
-                                                                paidAmount;
-
-                                                        return calculatedTotalDue <=
-                                                                0
-                                                            ? 'Paid'
-                                                            : 'Unpaid';
-                                                      }(),
-                                                      style: TextStyle(
-                                                        color: () {
-                                                          final currentBill =
-                                                              bill['current_bill']
-                                                                      ?.toDouble() ??
-                                                                  0.0;
-                                                          final arrears = bill[
-                                                                      'arrears']
-                                                                  ?.toDouble() ??
-                                                              0.0;
-                                                          final paidAmount =
-                                                              bill['paid_amount']
-                                                                      ?.toDouble() ??
-                                                                  0.0;
-                                                          final calculatedTotalDue =
-                                                              currentBill +
-                                                                  arrears -
-                                                                  paidAmount;
-
-                                                          return calculatedTotalDue <=
-                                                                  0
-                                                              ? Colors.green
-                                                              : Colors.red;
-                                                        }(),
-                                                        fontSize: 14,
-                                                        fontWeight:
-                                                            FontWeight.w500,
-                                                      ),
-                                                      textAlign:
-                                                          TextAlign.center,
-                                                    ),
-                                                  ),
-                                                ),
-                                                SizedBox(
-                                                  width: 120,
-                                                  child: Center(
-                                                    child: Text(
-                                                      '৳${bill['arrears'].toStringAsFixed(2)}',
-                                                      style: const TextStyle(
-                                                          fontSize: 14),
-                                                      textAlign:
-                                                          TextAlign.center,
-                                                    ),
-                                                  ),
-                                                ),
-                                                SizedBox(
-                                                  width: 120,
-                                                  child: Center(
-                                                    child: Text(
-                                                      '৳${bill['current_bill'].toStringAsFixed(2)}',
-                                                      style: const TextStyle(
-                                                          fontSize: 14),
-                                                      textAlign:
-                                                          TextAlign.center,
-                                                    ),
-                                                  ),
-                                                ),
-                                                SizedBox(
-                                                  width: 120,
-                                                  child: Center(
-                                                    child: Text(
-                                                      '৳${bill['paid_amount'].toStringAsFixed(2)}',
-                                                      style: const TextStyle(
-                                                        fontSize: 14,
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                        color: Colors.green,
-                                                      ),
-                                                      textAlign:
-                                                          TextAlign.center,
-                                                    ),
-                                                  ),
-                                                ),
-                                                SizedBox(
-                                                  width: 120,
-                                                  child: Center(
-                                                    child: Text(
-                                                      () {
-                                                        // Calculate total due automatically
-                                                        final currentBill =
-                                                            bill['current_bill']
-                                                                    ?.toDouble() ??
-                                                                0.0;
-                                                        final arrears = bill[
-                                                                    'arrears']
-                                                                ?.toDouble() ??
-                                                            0.0;
-                                                        final paidAmount = bill[
-                                                                    'paid_amount']
-                                                                ?.toDouble() ??
-                                                            0.0;
-                                                        final calculatedTotalDue =
-                                                            currentBill +
-                                                                arrears -
-                                                                paidAmount;
-
-                                                        return '৳${calculatedTotalDue.toStringAsFixed(2)}';
-                                                      }(),
-                                                      style: TextStyle(
-                                                        fontSize: 14,
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                        color: () {
-                                                          final currentBill =
-                                                              bill['current_bill']
-                                                                      ?.toDouble() ??
-                                                                  0.0;
-                                                          final arrears = bill[
-                                                                      'arrears']
-                                                                  ?.toDouble() ??
-                                                              0.0;
-                                                          final paidAmount =
-                                                              bill['paid_amount']
-                                                                      ?.toDouble() ??
-                                                                  0.0;
-                                                          final calculatedTotalDue =
-                                                              currentBill +
-                                                                  arrears -
-                                                                  paidAmount;
-
-                                                          return calculatedTotalDue <=
-                                                                  0
-                                                              ? Colors.green
-                                                              : Colors.black;
-                                                        }(),
-                                                      ),
-                                                      textAlign:
-                                                          TextAlign.center,
-                                                    ),
-                                                  ),
-                                                ),
-                                                SizedBox(
-                                                  width: 100,
-                                                  child: Center(
-                                                    child: IconButton(
-                                                      icon: const Icon(
-                                                        Icons.picture_as_pdf,
-                                                        color: Colors.red,
-                                                        size: 20,
-                                                      ),
-                                                      onPressed: () =>
-                                                          _generateUserBillPdf(
-                                                              bill),
-                                                      tooltip: 'Generate PDF',
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              'Click "Generate Bills" to create bills for all users',
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                color: Colors.grey[500],
+                                              ),
                                             ),
-                                          );
-                                        }),
+                                          ],
+                                        ),
+                                      )
+                                    : SingleChildScrollView(
+                                        child: Column(
+                                          children: List.generate(
+                                              filteredBills.length, (index) {
+                                            final bill = filteredBills[index];
+                                            final isEven = index % 2 == 0;
+                                            return Container(
+                                              height: 60,
+                                              decoration: BoxDecoration(
+                                                color: isEven
+                                                    ? Colors.grey.shade50
+                                                    : Colors.white,
+                                                border: Border(
+                                                  bottom: BorderSide(
+                                                    color: Colors.grey.shade200,
+                                                    width: 1,
+                                                  ),
+                                                ),
+                                              ),
+                                              child: Row(
+                                                children: [
+                                                  SizedBox(
+                                                    width: 100,
+                                                    child: Center(
+                                                      child: Text(
+                                                        bill['ba_no'] ?? '',
+                                                        style: const TextStyle(
+                                                            fontSize: 14),
+                                                        textAlign:
+                                                            TextAlign.center,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  SizedBox(
+                                                    width: 120,
+                                                    child: Center(
+                                                      child: Text(
+                                                        bill['rank'] ?? '',
+                                                        style: const TextStyle(
+                                                            fontSize: 14),
+                                                        textAlign:
+                                                            TextAlign.center,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  SizedBox(
+                                                    width: 150,
+                                                    child: Center(
+                                                      child: Text(
+                                                        bill['name'] ?? '',
+                                                        style: const TextStyle(
+                                                            fontSize: 14),
+                                                        textAlign:
+                                                            TextAlign.center,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  SizedBox(
+                                                    width: 120,
+                                                    child: Center(
+                                                      child: Text(
+                                                        () {
+                                                          final currentBill =
+                                                              bill['current_bill']
+                                                                      ?.toDouble() ??
+                                                                  0.0;
+                                                          final arrears = bill[
+                                                                      'arrears']
+                                                                  ?.toDouble() ??
+                                                              0.0;
+                                                          final paidAmount =
+                                                              bill['paid_amount']
+                                                                      ?.toDouble() ??
+                                                                  0.0;
+                                                          final calculatedTotalDue =
+                                                              currentBill +
+                                                                  arrears -
+                                                                  paidAmount;
+                                                          return calculatedTotalDue <=
+                                                                  0
+                                                              ? 'Paid'
+                                                              : 'Unpaid';
+                                                        }(),
+                                                        style: TextStyle(
+                                                          color: () {
+                                                            final currentBill =
+                                                                bill['current_bill']
+                                                                        ?.toDouble() ??
+                                                                    0.0;
+                                                            final arrears = bill[
+                                                                        'arrears']
+                                                                    ?.toDouble() ??
+                                                                0.0;
+                                                            final paidAmount =
+                                                                bill['paid_amount']
+                                                                        ?.toDouble() ??
+                                                                    0.0;
+                                                            final calculatedTotalDue =
+                                                                currentBill +
+                                                                    arrears -
+                                                                    paidAmount;
+                                                            return calculatedTotalDue <=
+                                                                    0
+                                                                ? Colors.green
+                                                                : Colors.red;
+                                                          }(),
+                                                          fontSize: 14,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                        ),
+                                                        textAlign:
+                                                            TextAlign.center,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  SizedBox(
+                                                    width: 120,
+                                                    child: Center(
+                                                      child: Text(
+                                                        '৳${bill['arrears'].toStringAsFixed(2)}',
+                                                        style: const TextStyle(
+                                                            fontSize: 14),
+                                                        textAlign:
+                                                            TextAlign.center,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  SizedBox(
+                                                    width: 120,
+                                                    child: Center(
+                                                      child: Text(
+                                                        '৳${bill['current_bill'].toStringAsFixed(2)}',
+                                                        style: const TextStyle(
+                                                            fontSize: 14),
+                                                        textAlign:
+                                                            TextAlign.center,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  SizedBox(
+                                                    width: 120,
+                                                    child: Center(
+                                                      child: Text(
+                                                        '৳${bill['paid_amount'].toStringAsFixed(2)}',
+                                                        style: const TextStyle(
+                                                            fontSize: 14,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                            color:
+                                                                Colors.green),
+                                                        textAlign:
+                                                            TextAlign.center,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  SizedBox(
+                                                    width: 120,
+                                                    child: Center(
+                                                      child: Text(
+                                                        () {
+                                                          final currentBill =
+                                                              bill['current_bill']
+                                                                      ?.toDouble() ??
+                                                                  0.0;
+                                                          final arrears = bill[
+                                                                      'arrears']
+                                                                  ?.toDouble() ??
+                                                              0.0;
+                                                          final paidAmount =
+                                                              bill['paid_amount']
+                                                                      ?.toDouble() ??
+                                                                  0.0;
+                                                          final calculatedTotalDue =
+                                                              currentBill +
+                                                                  arrears -
+                                                                  paidAmount;
+                                                          return '৳${calculatedTotalDue.toStringAsFixed(2)}';
+                                                        }(),
+                                                        style: TextStyle(
+                                                          fontSize: 14,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          color: () {
+                                                            final currentBill =
+                                                                bill['current_bill']
+                                                                        ?.toDouble() ??
+                                                                    0.0;
+                                                            final arrears = bill[
+                                                                        'arrears']
+                                                                    ?.toDouble() ??
+                                                                0.0;
+                                                            final paidAmount =
+                                                                bill['paid_amount']
+                                                                        ?.toDouble() ??
+                                                                    0.0;
+                                                            final calculatedTotalDue =
+                                                                currentBill +
+                                                                    arrears -
+                                                                    paidAmount;
+                                                            return calculatedTotalDue <=
+                                                                    0
+                                                                ? Colors.green
+                                                                : Colors.black;
+                                                          }(),
+                                                        ),
+                                                        textAlign:
+                                                            TextAlign.center,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  SizedBox(
+                                                    width: 100,
+                                                    child: Center(
+                                                      child: IconButton(
+                                                        icon: const Icon(
+                                                            Icons
+                                                                .picture_as_pdf,
+                                                            color: Colors.red,
+                                                            size: 20),
+                                                        onPressed: () =>
+                                                            _generateUserBillPdf(
+                                                                bill),
+                                                        tooltip: 'Generate PDF',
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                          }),
+                                        ),
                                       ),
-                                    ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+                              ), // closes child: of Expanded (table body)
+                            ], // closes children of Column (table)
+                          ), // closes Column (table)
+                        ), // closes SizedBox
+                      ), // closes SingleChildScrollView (horizontal)
+                    ), // closes Container
+                  ), // closes SafeArea
+                ), // closes Expanded (table)
               ],
             ),
           ),
