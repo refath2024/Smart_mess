@@ -658,18 +658,6 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
     }
   }
 
-  // Helper method to build flag toggle
-
-  void _filterBills(String query) {
-    setState(() {
-      filteredBills = bills.where((bill) {
-        final combined =
-            (bill['ba_no'] + bill['rank'] + bill['name']).toLowerCase();
-        return combined.contains(query.toLowerCase());
-      }).toList();
-    });
-  }
-
   // Generate PDF for individual user bill
   Future<void> _generateUserBillPdf(Map<String, dynamic> billData) async {
     try {
@@ -794,7 +782,7 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                                 ),
                               ),
                             ],
-                          ],
+                          },
                         ),
                       ),
                     ],
@@ -1621,6 +1609,18 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                                                               ? Colors.green
                                                               : Colors.black;
                                                         }(),
+                                                      ),
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                    ),
+                                                  ),
+                                                ),
+                                                SizedBox(
+                                                  width: 100,
+                                                  child: Center(
+                                                    child: IconButton(
+                                                      icon: const Icon(
+                                                        Icons.picture_as_pdf,
                                                       ),
                                                       textAlign:
                                                           TextAlign.center,
