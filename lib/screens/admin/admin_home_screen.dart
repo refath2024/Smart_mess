@@ -275,7 +275,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         builder: (context, constraints) {
           return Container(
             margin: const EdgeInsets.all(6),
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             height: 120, // Fixed height for all boxes
             decoration: BoxDecoration(
               color: color,
@@ -296,13 +296,17 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                Text(
-                  title,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
+                Flexible(
+                  child: Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: constraints.maxWidth < 120 ? 12 : 14,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ],
@@ -852,17 +856,25 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                       fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    _buildDemoBox(
-                        'Total Dining Members',
-                        _totalDiningMembers.toString(),
-                        const Color(0xFF1A4D8F)),
-                    _buildDemoBox(AppLocalizations.of(context)!.pendingRequests,
-                        _pendingRequests.toString(), const Color(0xFFE65100)),
-                    _buildDemoBox('Payment Requests',
-                        _paymentRequests.toString(), const Color(0xFF2E7D32)),
-                  ],
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    return Row(
+                      children: [
+                        _buildDemoBox(
+                            'Total Dining Members',
+                            _totalDiningMembers.toString(),
+                            const Color(0xFF1A4D8F)),
+                        _buildDemoBox(
+                            AppLocalizations.of(context)!.pendingRequests,
+                            _pendingRequests.toString(),
+                            const Color(0xFFE65100)),
+                        _buildDemoBox(
+                            'Payment Requests',
+                            _paymentRequests.toString(),
+                            const Color(0xFF2E7D32)),
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: 24),
                 Text(

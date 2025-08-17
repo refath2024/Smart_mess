@@ -128,7 +128,9 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${AppLocalizations.of(context)!.failedToLoadStaffData}: $e')),
+          SnackBar(
+              content: Text(
+                  '${AppLocalizations.of(context)!.failedToLoadStaffData}: $e')),
         );
       }
     }
@@ -211,7 +213,9 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${AppLocalizations.of(context)!.logoutFailed}: $e')),
+          SnackBar(
+              content:
+                  Text('${AppLocalizations.of(context)!.logoutFailed}: $e')),
         );
       }
     }
@@ -283,13 +287,17 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(AppLocalizations.of(context)!.changesSavedSuccessfully)),
+            SnackBar(
+                content: Text(
+                    AppLocalizations.of(context)!.changesSavedSuccessfully)),
           );
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${AppLocalizations.of(context)!.failedToSaveChanges}: $e')),
+            SnackBar(
+                content: Text(
+                    '${AppLocalizations.of(context)!.failedToSaveChanges}: $e')),
           );
         }
       }
@@ -321,7 +329,8 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('${AppLocalizations.of(context)!.confirmDeleteMessage} ("${row['name']}")'),
+              Text(
+                  '${AppLocalizations.of(context)!.confirmDeleteMessage} ("${row['name']}")'),
               const SizedBox(height: 8),
               Text(
                 AppLocalizations.of(context)!.permanentlyDeleteMessage,
@@ -405,7 +414,9 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
         if (mounted) {
           Navigator.of(context).pop(); // Close loading dialog
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${AppLocalizations.of(context)!.failedToDeleteStaffMember}: $e')),
+            SnackBar(
+                content: Text(
+                    '${AppLocalizations.of(context)!.failedToDeleteStaffMember}: $e')),
           );
         }
       }
@@ -446,27 +457,6 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
     );
   }
 
-  Widget _buildFlagToggle(LanguageProvider languageProvider) {
-    return GestureDetector(
-      onTap: () {
-        languageProvider.changeLanguage(
-          languageProvider.isEnglish ? const Locale('bn') : const Locale('en')
-        );
-      },
-      child: Container(
-        width: 40,
-        height: 25,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: Colors.white, width: 1),
-        ),
-        child: CustomPaint(
-          painter: languageProvider.isEnglish ? EnglandFlagPainter() : BangladeshFlagPainter(),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Consumer<LanguageProvider>(
@@ -480,767 +470,816 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
           );
         }
 
-    final filteredData = staffData.where((row) {
-      return row.values
-          .any((value) => value.toLowerCase().contains(searchTerm));
-    }).toList();
+        final filteredData = staffData.where((row) {
+          return row.values
+              .any((value) => value.toLowerCase().contains(searchTerm));
+        }).toList();
 
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF002B5B),
-        iconTheme: const IconThemeData(color: Colors.white),
-        centerTitle: true,
-        title: Text(
-          AppLocalizations.of(context)!.staffState,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
-          ),
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: _buildFlagToggle(languageProvider),
-          ),
-        ],
-      ),
-      drawer: Drawer(
-        child: Column(
-          children: [
-            DrawerHeader(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF002B5B), Color(0xFF1A4D8F)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+        return Scaffold(
+          appBar: AppBar(
+            backgroundColor: const Color(0xFF002B5B),
+            iconTheme: const IconThemeData(color: Colors.white),
+            centerTitle: true,
+            title: Text(
+              AppLocalizations.of(context)!.staffState,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
               ),
-              child: Row(
-                children: [
-                  const CircleAvatar(
-                    backgroundImage: AssetImage('assets/me.png'),
-                    radius: 30,
-                  ),
-                  const SizedBox(width: 10),
-                  Flexible(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          _currentUserName,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        if (_currentUserData != null) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            _currentUserData!['role'] ?? '',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
-                            ),
-                          ),
-                          Text(
-                            'BA: ${_currentUserData!['ba_no'] ?? ''}',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
-                            ),
-                          ),
+            ),
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 16.0),
+                child: PopupMenuButton<Locale>(
+                  icon: const Icon(Icons.language, color: Colors.white),
+                  onSelected: (Locale locale) {
+                    languageProvider.changeLanguage(locale);
+                  },
+                  itemBuilder: (BuildContext context) =>
+                      <PopupMenuEntry<Locale>>[
+                    PopupMenuItem<Locale>(
+                      value: const Locale('en'),
+                      child: Row(
+                        children: const [
+                          Text('🇬🇧'),
+                          SizedBox(width: 8),
+                          Text('English')
                         ],
-                      ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  _buildSidebarTile(
-                    icon: Icons.dashboard,
-                    title: AppLocalizations.of(context)!.home,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminHomeScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.people,
-                    title: AppLocalizations.of(context)!.users,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminUsersScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.pending,
-                    title: AppLocalizations.of(context)!.pendingIds,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminPendingIdsScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.history,
-                    title: AppLocalizations.of(context)!.shoppingHistory,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              const AdminShoppingHistoryScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.receipt,
-                    title: AppLocalizations.of(context)!.voucherList,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminVoucherScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.storage,
-                    title: AppLocalizations.of(context)!.inventory,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminInventoryScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.food_bank,
-                    title: AppLocalizations.of(context)!.messing,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminMessingScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.menu_book,
-                    title: AppLocalizations.of(context)!.monthlyMenu,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const EditMenuScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.analytics,
-                    title: AppLocalizations.of(context)!.mealState,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminMealStateScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.thumb_up,
-                    title: AppLocalizations.of(context)!.menuVote,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const MenuVoteScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.receipt_long,
-                    title: AppLocalizations.of(context)!.bills,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminBillScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.payment,
-                    title: AppLocalizations.of(context)!.payments,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const PaymentsDashboard(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.people_alt,
-                    title: AppLocalizations.of(context)!.diningMemberState,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const DiningMemberStatePage(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.manage_accounts,
-                    title: AppLocalizations.of(context)!.staffState,
-                    selected: true,
-                    onTap: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: Colors.grey.shade300),
-                ),
-              ),
-              child: Padding(
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.of(context).padding.bottom + 8,
-                  top: 8,
-                ),
-                child: _buildSidebarTile(
-                  icon: Icons.logout,
-                  title: AppLocalizations.of(context)!.logout,
-                  onTap: _logout,
-                  color: Colors.red,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            decoration: const InputDecoration(
-                              labelText: 'Search All Text Columns',
-                              border: OutlineInputBorder(),
-                              prefixIcon: Icon(Icons.search),
-                            ),
-                            onChanged: (value) {
-                              setState(() {
-                                searchTerm = value.toLowerCase();
-                              });
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        ElevatedButton.icon(
-                          onPressed: _navigateToAddStaff,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF0052CC),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 20, vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          icon: const Icon(Icons.add),
-                          label: const Text("Add Staff/Admin"),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Expanded(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.vertical,
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              minWidth: MediaQuery.of(context).size.width - 32,
-                            ),
-                            child: DataTable(
-                              columnSpacing: 12, // Reduced column spacing
-                              headingRowColor: WidgetStateProperty.all(
-                                  const Color(0xFF1A4D8F)),
-                              columns: [
-                                DataColumn(
-                                    label: Text(AppLocalizations.of(context)!.baIdNo,
-                                        style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12))),
-                                DataColumn(
-                                    label: Text(AppLocalizations.of(context)!.rank,
-                                        style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12))),
-                                DataColumn(
-                                    label: Text(AppLocalizations.of(context)!.name,
-                                        style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12))),
-                                DataColumn(
-                                    label: Text(AppLocalizations.of(context)!.unit,
-                                        style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12))),
-                                DataColumn(
-                                    label: Text(AppLocalizations.of(context)!.mobile,
-                                        style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12))),
-                                DataColumn(
-                                    label: Text(AppLocalizations.of(context)!.email,
-                                        style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12))),
-                                DataColumn(
-                                    label: Text(AppLocalizations.of(context)!.role,
-                                        style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12))),
-                                DataColumn(
-                                    label: Text(AppLocalizations.of(context)!.status,
-                                        style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12))),
-                                DataColumn(
-                                    label: Text(AppLocalizations.of(context)!.action,
-                                        style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12))),
-                              ],
-                              rows: filteredData.map((row) {
-                                final bool isEditing =
-                                    row['isEditing'] ?? false;
-                                final bool canEditRole =
-                                    _canEditRole(row['role']);
-                                final bool canEditStatus =
-                                    _canEditStatus(row['role']);
-
-                                return DataRow(cells: [
-                                  DataCell(
-                                    SizedBox(
-                                      width: 80,
-                                      child: isEditing
-                                          ? TextField(
-                                              controller: TextEditingController(
-                                                  text: row['ba_no']),
-                                              onChanged: (value) =>
-                                                  row['ba_no'] = value,
-                                              style:
-                                                  const TextStyle(fontSize: 12),
-                                              decoration: const InputDecoration(
-                                                border: InputBorder.none,
-                                                contentPadding:
-                                                    EdgeInsets.all(4),
-                                              ),
-                                            )
-                                          : Text(row['ba_no'] ?? '',
-                                              style: const TextStyle(
-                                                  fontSize: 12)),
-                                    ),
-                                  ),
-                                  DataCell(
-                                    SizedBox(
-                                      width: 100,
-                                      child: isEditing
-                                          ? TextField(
-                                              controller: TextEditingController(
-                                                  text: row['rank']),
-                                              onChanged: (value) =>
-                                                  row['rank'] = value,
-                                              style:
-                                                  const TextStyle(fontSize: 12),
-                                              decoration: const InputDecoration(
-                                                border: InputBorder.none,
-                                                contentPadding:
-                                                    EdgeInsets.all(4),
-                                              ),
-                                            )
-                                          : Text(row['rank'] ?? '',
-                                              style: const TextStyle(
-                                                  fontSize: 12)),
-                                    ),
-                                  ),
-                                  DataCell(
-                                    SizedBox(
-                                      width: 120,
-                                      child: isEditing
-                                          ? TextField(
-                                              controller: TextEditingController(
-                                                  text: row['name']),
-                                              onChanged: (value) =>
-                                                  row['name'] = value,
-                                              style:
-                                                  const TextStyle(fontSize: 12),
-                                              decoration: const InputDecoration(
-                                                border: InputBorder.none,
-                                                contentPadding:
-                                                    EdgeInsets.all(4),
-                                              ),
-                                            )
-                                          : Text(row['name'] ?? '',
-                                              style: const TextStyle(
-                                                  fontSize: 12)),
-                                    ),
-                                  ),
-                                  DataCell(
-                                    SizedBox(
-                                      width: 100,
-                                      child: isEditing
-                                          ? TextField(
-                                              controller: TextEditingController(
-                                                  text: row['unit']),
-                                              onChanged: (value) =>
-                                                  row['unit'] = value,
-                                              style:
-                                                  const TextStyle(fontSize: 12),
-                                              decoration: const InputDecoration(
-                                                border: InputBorder.none,
-                                                contentPadding:
-                                                    EdgeInsets.all(4),
-                                              ),
-                                            )
-                                          : Text(row['unit'] ?? '',
-                                              style: const TextStyle(
-                                                  fontSize: 12)),
-                                    ),
-                                  ),
-                                  DataCell(
-                                    SizedBox(
-                                      width: 100,
-                                      child: isEditing
-                                          ? TextField(
-                                              controller: TextEditingController(
-                                                  text: row['mobile']),
-                                              onChanged: (value) =>
-                                                  row['mobile'] = value,
-                                              style:
-                                                  const TextStyle(fontSize: 12),
-                                              decoration: const InputDecoration(
-                                                border: InputBorder.none,
-                                                contentPadding:
-                                                    EdgeInsets.all(4),
-                                              ),
-                                            )
-                                          : Text(row['mobile'] ?? '',
-                                              style: const TextStyle(
-                                                  fontSize: 12)),
-                                    ),
-                                  ),
-                                  DataCell(
-                                    SizedBox(
-                                      width: 150,
-                                      child: isEditing
-                                          ? TextField(
-                                              controller: TextEditingController(
-                                                  text: row['email']),
-                                              onChanged: (value) =>
-                                                  row['email'] = value,
-                                              style:
-                                                  const TextStyle(fontSize: 12),
-                                              decoration: const InputDecoration(
-                                                border: InputBorder.none,
-                                                contentPadding:
-                                                    EdgeInsets.all(4),
-                                              ),
-                                            )
-                                          : Text(row['email'] ?? '',
-                                              style:
-                                                  const TextStyle(fontSize: 12),
-                                              overflow: TextOverflow.ellipsis),
-                                    ),
-                                  ),
-                                  DataCell(
-                                    SizedBox(
-                                      width: 120,
-                                      child: isEditing && canEditRole
-                                          ? DropdownButton<String>(
-                                              value: _getAvailableRolesForEdit(
-                                                          row['role'])
-                                                      .contains(row['role'])
-                                                  ? row['role']
-                                                  : _getAvailableRolesForEdit(
-                                                          row['role'])
-                                                      .first,
-                                              isExpanded: true,
-                                              items: _getAvailableRolesForEdit(
-                                                      row['role'])
-                                                  .map((role) =>
-                                                      DropdownMenuItem(
-                                                        value: role,
-                                                        child: Text(role,
-                                                            style:
-                                                                const TextStyle(
-                                                                    fontSize:
-                                                                        12)),
-                                                      ))
-                                                  .toList(),
-                                              onChanged: (String? newValue) {
-                                                if (newValue != null) {
-                                                  setState(() {
-                                                    row['role'] = newValue;
-                                                  });
-                                                }
-                                              },
-                                              underline: Container(),
-                                            )
-                                          : Text(row['role'] ?? '',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: canEditRole
-                                                    ? Colors.black
-                                                    : Colors.grey,
-                                                fontWeight: _uniqueRoles
-                                                        .contains(row['role'])
-                                                    ? FontWeight.bold
-                                                    : FontWeight.normal,
-                                              )),
-                                    ),
-                                  ),
-                                  DataCell(
-                                    SizedBox(
-                                      width: 90,
-                                      child: isEditing && canEditStatus
-                                          ? DropdownButton<String>(
-                                              value: row['status'],
-                                              isExpanded: true,
-                                              items: [
-                                                DropdownMenuItem(
-                                                  value: 'Active',
-                                                  child: Text(AppLocalizations.of(context)!.active,
-                                                      style: const TextStyle(
-                                                          fontSize: 12)),
-                                                ),
-                                                DropdownMenuItem(
-                                                  value: 'Inactive',
-                                                  child: Text(AppLocalizations.of(context)!.inactive,
-                                                      style: const TextStyle(
-                                                          fontSize: 12)),
-                                                ),
-                                              ],
-                                              onChanged: (String? newValue) {
-                                                if (newValue != null) {
-                                                  setState(() {
-                                                    row['status'] = newValue;
-                                                  });
-                                                }
-                                              },
-                                              underline: Container(),
-                                            )
-                                          : Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      horizontal: 6,
-                                                      vertical: 2),
-                                              decoration: BoxDecoration(
-                                                color: row['status'] == 'Active'
-                                                    ? Colors.green.shade100
-                                                    : Colors.orange.shade100,
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                                border: Border.all(
-                                                  color:
-                                                      row['status'] == 'Active'
-                                                          ? Colors.green
-                                                          : Colors.orange,
-                                                ),
-                                              ),
-                                              child: Text(
-                                                row['status'] ?? 'Inactive',
-                                                style: TextStyle(
-                                                  color: row['status'] ==
-                                                          'Active'
-                                                      ? Colors.green.shade800
-                                                      : Colors.orange.shade800,
-                                                  fontWeight: FontWeight.w600,
-                                                  fontSize: 11,
-                                                ),
-                                              ),
-                                            ),
-                                    ),
-                                  ),
-                                  DataCell(
-                                    SizedBox(
-                                      width: 100,
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          if (isEditing) ...[
-                                            IconButton(
-                                              icon: const Icon(Icons.save,
-                                                  size: 18),
-                                              color: Colors.green,
-                                              onPressed: () => _saveEdit(row),
-                                              tooltip: 'Save',
-                                              padding: const EdgeInsets.all(4),
-                                              constraints: const BoxConstraints(
-                                                  minWidth: 32, minHeight: 32),
-                                            ),
-                                            IconButton(
-                                              icon: const Icon(Icons.cancel,
-                                                  size: 18),
-                                              color: Colors.red,
-                                              onPressed: () => _cancelEdit(row),
-                                              tooltip: 'Cancel',
-                                              padding: const EdgeInsets.all(4),
-                                              constraints: const BoxConstraints(
-                                                  minWidth: 32, minHeight: 32),
-                                            )
-                                          ] else ...[
-                                            IconButton(
-                                              icon: const Icon(Icons.edit,
-                                                  size: 18),
-                                              color: Colors.blue,
-                                              onPressed: () => _startEdit(row),
-                                              tooltip: 'Edit',
-                                              padding: const EdgeInsets.all(4),
-                                              constraints: const BoxConstraints(
-                                                  minWidth: 32, minHeight: 32),
-                                            ),
-                                            if (_canDeleteStaff(row['role']))
-                                              IconButton(
-                                                icon: const Icon(Icons.delete,
-                                                    size: 18),
-                                                color: Colors.red,
-                                                onPressed: () =>
-                                                    _deleteStaff(row),
-                                                tooltip: 'Delete',
-                                                padding:
-                                                    const EdgeInsets.all(4),
-                                                constraints:
-                                                    const BoxConstraints(
-                                                        minWidth: 32,
-                                                        minHeight: 32),
-                                              )
-                                            else
-                                              const IconButton(
-                                                icon: Icon(Icons.delete,
-                                                    size: 18),
-                                                color: Colors.grey,
-                                                onPressed: null,
-                                                tooltip:
-                                                    'PMC cannot be deleted (Super Admin protection)',
-                                                padding: EdgeInsets.all(4),
-                                                constraints: BoxConstraints(
-                                                    minWidth: 32,
-                                                    minHeight: 32),
-                                              ),
-                                          ]
-                                        ],
-                                      ),
-                                    ),
-                                  )
-                                ]);
-                              }).toList(),
-                            ),
-                          ),
-                        ),
+                    PopupMenuItem<Locale>(
+                      value: const Locale('bn'),
+                      child: Row(
+                        children: const [
+                          Text('🇧🇩'),
+                          SizedBox(width: 8),
+                          Text('বাংলা')
+                        ],
                       ),
                     ),
                   ],
                 ),
               ),
+            ],
+          ),
+          drawer: Drawer(
+            child: Column(
+              children: [
+                DrawerHeader(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF002B5B), Color(0xFF1A4D8F)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const CircleAvatar(
+                        backgroundImage: AssetImage('assets/me.png'),
+                        radius: 30,
+                      ),
+                      const SizedBox(width: 10),
+                      Flexible(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              _currentUserName,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            if (_currentUserData != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                _currentUserData!['role'] ?? '',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              Text(
+                                'BA: ${_currentUserData!['ba_no'] ?? ''}',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ListView(
+                    padding: EdgeInsets.zero,
+                    children: [
+                      _buildSidebarTile(
+                        icon: Icons.dashboard,
+                        title: AppLocalizations.of(context)!.home,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AdminHomeScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.people,
+                        title: AppLocalizations.of(context)!.users,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AdminUsersScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.pending,
+                        title: AppLocalizations.of(context)!.pendingIds,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const AdminPendingIdsScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.history,
+                        title: AppLocalizations.of(context)!.shoppingHistory,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const AdminShoppingHistoryScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.receipt,
+                        title: AppLocalizations.of(context)!.voucherList,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AdminVoucherScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.storage,
+                        title: AppLocalizations.of(context)!.inventory,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const AdminInventoryScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.food_bank,
+                        title: AppLocalizations.of(context)!.messing,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AdminMessingScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.menu_book,
+                        title: AppLocalizations.of(context)!.monthlyMenu,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const EditMenuScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.analytics,
+                        title: AppLocalizations.of(context)!.mealState,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const AdminMealStateScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.thumb_up,
+                        title: AppLocalizations.of(context)!.menuVote,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const MenuVoteScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.receipt_long,
+                        title: AppLocalizations.of(context)!.bills,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AdminBillScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.payment,
+                        title: AppLocalizations.of(context)!.payments,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const PaymentsDashboard(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.people_alt,
+                        title: AppLocalizations.of(context)!.diningMemberState,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const DiningMemberStatePage(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.manage_accounts,
+                        title: AppLocalizations.of(context)!.staffState,
+                        selected: true,
+                        onTap: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border(
+                      top: BorderSide(color: Colors.grey.shade300),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).padding.bottom + 8,
+                      top: 8,
+                    ),
+                    child: _buildSidebarTile(
+                      icon: Icons.logout,
+                      title: AppLocalizations.of(context)!.logout,
+                      onTap: _logout,
+                      color: Colors.red,
+                    ),
+                  ),
+                ),
+              ],
             ),
-    );
+          ),
+          body: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                decoration: const InputDecoration(
+                                  labelText: 'Search All Text Columns',
+                                  border: OutlineInputBorder(),
+                                  prefixIcon: Icon(Icons.search),
+                                ),
+                                onChanged: (value) {
+                                  setState(() {
+                                    searchTerm = value.toLowerCase();
+                                  });
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            ElevatedButton.icon(
+                              onPressed: _navigateToAddStaff,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF0052CC),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 20, vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              icon: const Icon(Icons.add),
+                              label: const Text("Add Staff/Admin"),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Expanded(
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.vertical,
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minWidth:
+                                      MediaQuery.of(context).size.width - 32,
+                                ),
+                                child: DataTable(
+                                  columnSpacing: 12, // Reduced column spacing
+                                  headingRowColor: WidgetStateProperty.all(
+                                      const Color(0xFF1A4D8F)),
+                                  columns: [
+                                    DataColumn(
+                                        label: Text(
+                                            AppLocalizations.of(context)!
+                                                .baIdNo,
+                                            style: const TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12))),
+                                    DataColumn(
+                                        label: Text(
+                                            AppLocalizations.of(context)!.rank,
+                                            style: const TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12))),
+                                    DataColumn(
+                                        label: Text(
+                                            AppLocalizations.of(context)!.name,
+                                            style: const TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12))),
+                                    DataColumn(
+                                        label: Text(
+                                            AppLocalizations.of(context)!.unit,
+                                            style: const TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12))),
+                                    DataColumn(
+                                        label: Text(
+                                            AppLocalizations.of(context)!
+                                                .mobile,
+                                            style: const TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12))),
+                                    DataColumn(
+                                        label: Text(
+                                            AppLocalizations.of(context)!.email,
+                                            style: const TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12))),
+                                    DataColumn(
+                                        label: Text(
+                                            AppLocalizations.of(context)!.role,
+                                            style: const TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12))),
+                                    DataColumn(
+                                        label: Text(
+                                            AppLocalizations.of(context)!
+                                                .status,
+                                            style: const TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12))),
+                                    DataColumn(
+                                        label: Text(
+                                            AppLocalizations.of(context)!
+                                                .action,
+                                            style: const TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12))),
+                                  ],
+                                  rows: filteredData.map((row) {
+                                    final bool isEditing =
+                                        row['isEditing'] ?? false;
+                                    final bool canEditRole =
+                                        _canEditRole(row['role']);
+                                    final bool canEditStatus =
+                                        _canEditStatus(row['role']);
+
+                                    return DataRow(cells: [
+                                      DataCell(
+                                        SizedBox(
+                                          width: 80,
+                                          child: isEditing
+                                              ? TextField(
+                                                  controller:
+                                                      TextEditingController(
+                                                          text: row['ba_no']),
+                                                  onChanged: (value) =>
+                                                      row['ba_no'] = value,
+                                                  style: const TextStyle(
+                                                      fontSize: 12),
+                                                  decoration:
+                                                      const InputDecoration(
+                                                    border: InputBorder.none,
+                                                    contentPadding:
+                                                        EdgeInsets.all(4),
+                                                  ),
+                                                )
+                                              : Text(row['ba_no'] ?? '',
+                                                  style: const TextStyle(
+                                                      fontSize: 12)),
+                                        ),
+                                      ),
+                                      DataCell(
+                                        SizedBox(
+                                          width: 100,
+                                          child: isEditing
+                                              ? TextField(
+                                                  controller:
+                                                      TextEditingController(
+                                                          text: row['rank']),
+                                                  onChanged: (value) =>
+                                                      row['rank'] = value,
+                                                  style: const TextStyle(
+                                                      fontSize: 12),
+                                                  decoration:
+                                                      const InputDecoration(
+                                                    border: InputBorder.none,
+                                                    contentPadding:
+                                                        EdgeInsets.all(4),
+                                                  ),
+                                                )
+                                              : Text(row['rank'] ?? '',
+                                                  style: const TextStyle(
+                                                      fontSize: 12)),
+                                        ),
+                                      ),
+                                      DataCell(
+                                        SizedBox(
+                                          width: 120,
+                                          child: isEditing
+                                              ? TextField(
+                                                  controller:
+                                                      TextEditingController(
+                                                          text: row['name']),
+                                                  onChanged: (value) =>
+                                                      row['name'] = value,
+                                                  style: const TextStyle(
+                                                      fontSize: 12),
+                                                  decoration:
+                                                      const InputDecoration(
+                                                    border: InputBorder.none,
+                                                    contentPadding:
+                                                        EdgeInsets.all(4),
+                                                  ),
+                                                )
+                                              : Text(row['name'] ?? '',
+                                                  style: const TextStyle(
+                                                      fontSize: 12)),
+                                        ),
+                                      ),
+                                      DataCell(
+                                        SizedBox(
+                                          width: 100,
+                                          child: isEditing
+                                              ? TextField(
+                                                  controller:
+                                                      TextEditingController(
+                                                          text: row['unit']),
+                                                  onChanged: (value) =>
+                                                      row['unit'] = value,
+                                                  style: const TextStyle(
+                                                      fontSize: 12),
+                                                  decoration:
+                                                      const InputDecoration(
+                                                    border: InputBorder.none,
+                                                    contentPadding:
+                                                        EdgeInsets.all(4),
+                                                  ),
+                                                )
+                                              : Text(row['unit'] ?? '',
+                                                  style: const TextStyle(
+                                                      fontSize: 12)),
+                                        ),
+                                      ),
+                                      DataCell(
+                                        SizedBox(
+                                          width: 100,
+                                          child: isEditing
+                                              ? TextField(
+                                                  controller:
+                                                      TextEditingController(
+                                                          text: row['mobile']),
+                                                  onChanged: (value) =>
+                                                      row['mobile'] = value,
+                                                  style: const TextStyle(
+                                                      fontSize: 12),
+                                                  decoration:
+                                                      const InputDecoration(
+                                                    border: InputBorder.none,
+                                                    contentPadding:
+                                                        EdgeInsets.all(4),
+                                                  ),
+                                                )
+                                              : Text(row['mobile'] ?? '',
+                                                  style: const TextStyle(
+                                                      fontSize: 12)),
+                                        ),
+                                      ),
+                                      DataCell(
+                                        SizedBox(
+                                          width: 150,
+                                          child: isEditing
+                                              ? TextField(
+                                                  controller:
+                                                      TextEditingController(
+                                                          text: row['email']),
+                                                  onChanged: (value) =>
+                                                      row['email'] = value,
+                                                  style: const TextStyle(
+                                                      fontSize: 12),
+                                                  decoration:
+                                                      const InputDecoration(
+                                                    border: InputBorder.none,
+                                                    contentPadding:
+                                                        EdgeInsets.all(4),
+                                                  ),
+                                                )
+                                              : Text(row['email'] ?? '',
+                                                  style: const TextStyle(
+                                                      fontSize: 12),
+                                                  overflow:
+                                                      TextOverflow.ellipsis),
+                                        ),
+                                      ),
+                                      DataCell(
+                                        SizedBox(
+                                          width: 120,
+                                          child: isEditing && canEditRole
+                                              ? DropdownButton<String>(
+                                                  value: _getAvailableRolesForEdit(
+                                                              row['role'])
+                                                          .contains(row['role'])
+                                                      ? row['role']
+                                                      : _getAvailableRolesForEdit(
+                                                              row['role'])
+                                                          .first,
+                                                  isExpanded: true,
+                                                  items:
+                                                      _getAvailableRolesForEdit(
+                                                              row['role'])
+                                                          .map((role) =>
+                                                              DropdownMenuItem(
+                                                                value: role,
+                                                                child: Text(
+                                                                    role,
+                                                                    style: const TextStyle(
+                                                                        fontSize:
+                                                                            12)),
+                                                              ))
+                                                          .toList(),
+                                                  onChanged:
+                                                      (String? newValue) {
+                                                    if (newValue != null) {
+                                                      setState(() {
+                                                        row['role'] = newValue;
+                                                      });
+                                                    }
+                                                  },
+                                                  underline: Container(),
+                                                )
+                                              : Text(row['role'] ?? '',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: canEditRole
+                                                        ? Colors.black
+                                                        : Colors.grey,
+                                                    fontWeight:
+                                                        _uniqueRoles.contains(
+                                                                row['role'])
+                                                            ? FontWeight.bold
+                                                            : FontWeight.normal,
+                                                  )),
+                                        ),
+                                      ),
+                                      DataCell(
+                                        SizedBox(
+                                          width: 90,
+                                          child: isEditing && canEditStatus
+                                              ? DropdownButton<String>(
+                                                  value: row['status'],
+                                                  isExpanded: true,
+                                                  items: [
+                                                    DropdownMenuItem(
+                                                      value: 'Active',
+                                                      child: Text(
+                                                          AppLocalizations.of(
+                                                                  context)!
+                                                              .active,
+                                                          style:
+                                                              const TextStyle(
+                                                                  fontSize:
+                                                                      12)),
+                                                    ),
+                                                    DropdownMenuItem(
+                                                      value: 'Inactive',
+                                                      child: Text(
+                                                          AppLocalizations.of(
+                                                                  context)!
+                                                              .inactive,
+                                                          style:
+                                                              const TextStyle(
+                                                                  fontSize:
+                                                                      12)),
+                                                    ),
+                                                  ],
+                                                  onChanged:
+                                                      (String? newValue) {
+                                                    if (newValue != null) {
+                                                      setState(() {
+                                                        row['status'] =
+                                                            newValue;
+                                                      });
+                                                    }
+                                                  },
+                                                  underline: Container(),
+                                                )
+                                              : Container(
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 6,
+                                                      vertical: 2),
+                                                  decoration: BoxDecoration(
+                                                    color: row['status'] ==
+                                                            'Active'
+                                                        ? Colors.green.shade100
+                                                        : Colors
+                                                            .orange.shade100,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            8),
+                                                    border: Border.all(
+                                                      color: row['status'] ==
+                                                              'Active'
+                                                          ? Colors.green
+                                                          : Colors.orange,
+                                                    ),
+                                                  ),
+                                                  child: Text(
+                                                    row['status'] ?? 'Inactive',
+                                                    style: TextStyle(
+                                                      color: row['status'] ==
+                                                              'Active'
+                                                          ? Colors
+                                                              .green.shade800
+                                                          : Colors
+                                                              .orange.shade800,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      fontSize: 11,
+                                                    ),
+                                                  ),
+                                                ),
+                                        ),
+                                      ),
+                                      DataCell(
+                                        SizedBox(
+                                          width: 100,
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              if (isEditing) ...[
+                                                IconButton(
+                                                  icon: const Icon(Icons.save,
+                                                      size: 18),
+                                                  color: Colors.green,
+                                                  onPressed: () =>
+                                                      _saveEdit(row),
+                                                  tooltip: 'Save',
+                                                  padding:
+                                                      const EdgeInsets.all(4),
+                                                  constraints:
+                                                      const BoxConstraints(
+                                                          minWidth: 32,
+                                                          minHeight: 32),
+                                                ),
+                                                IconButton(
+                                                  icon: const Icon(Icons.cancel,
+                                                      size: 18),
+                                                  color: Colors.red,
+                                                  onPressed: () =>
+                                                      _cancelEdit(row),
+                                                  tooltip: 'Cancel',
+                                                  padding:
+                                                      const EdgeInsets.all(4),
+                                                  constraints:
+                                                      const BoxConstraints(
+                                                          minWidth: 32,
+                                                          minHeight: 32),
+                                                )
+                                              ] else ...[
+                                                IconButton(
+                                                  icon: const Icon(Icons.edit,
+                                                      size: 18),
+                                                  color: Colors.blue,
+                                                  onPressed: () =>
+                                                      _startEdit(row),
+                                                  tooltip: 'Edit',
+                                                  padding:
+                                                      const EdgeInsets.all(4),
+                                                  constraints:
+                                                      const BoxConstraints(
+                                                          minWidth: 32,
+                                                          minHeight: 32),
+                                                ),
+                                                if (_canDeleteStaff(
+                                                    row['role']))
+                                                  IconButton(
+                                                    icon: const Icon(
+                                                        Icons.delete,
+                                                        size: 18),
+                                                    color: Colors.red,
+                                                    onPressed: () =>
+                                                        _deleteStaff(row),
+                                                    tooltip: 'Delete',
+                                                    padding:
+                                                        const EdgeInsets.all(4),
+                                                    constraints:
+                                                        const BoxConstraints(
+                                                            minWidth: 32,
+                                                            minHeight: 32),
+                                                  )
+                                                else
+                                                  const IconButton(
+                                                    icon: Icon(Icons.delete,
+                                                        size: 18),
+                                                    color: Colors.grey,
+                                                    onPressed: null,
+                                                    tooltip:
+                                                        'PMC cannot be deleted (Super Admin protection)',
+                                                    padding: EdgeInsets.all(4),
+                                                    constraints: BoxConstraints(
+                                                        minWidth: 32,
+                                                        minHeight: 32),
+                                                  ),
+                                              ]
+                                            ],
+                                          ),
+                                        ),
+                                      )
+                                    ]);
+                                  }).toList(),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+        );
       },
     );
   }
-}
-
-class EnglandFlagPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    // Draw England flag
-    Paint paint = Paint();
-    
-    // White background
-    paint.color = Colors.white;
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
-    
-    // Red cross
-    paint.color = Colors.red;
-    // Vertical line
-    canvas.drawRect(Rect.fromLTWH(size.width * 0.4, 0, size.width * 0.2, size.height), paint);
-    // Horizontal line
-    canvas.drawRect(Rect.fromLTWH(0, size.height * 0.4, size.width, size.height * 0.2), paint);
-  }
-  
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
-}
-
-class BangladeshFlagPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    // Draw Bangladesh flag
-    Paint paint = Paint();
-    
-    // Green background
-    paint.color = const Color(0xFF006A4E);
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
-    
-    // Red circle
-    paint.color = const Color(0xFFF42A41);
-    canvas.drawCircle(
-      Offset(size.width * 0.4, size.height * 0.5), 
-      size.height * 0.3, 
-      paint
-    );
-  }
-  
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

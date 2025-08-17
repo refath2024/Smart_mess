@@ -923,23 +923,7 @@ class _AdminMealStateScreenState extends State<AdminMealStateScreen> {
                 onPressed: _runAutoLoopBatch,
               ),
               PopupMenuButton<String>(
-                icon: Container(
-                  width: 32,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(3),
-                    border: Border.all(color: Colors.white70, width: 0.5),
-                  ),
-                  child: languageProvider.isEnglish
-                      ? CustomPaint(
-                          painter: _EnglandFlagPainter(),
-                          size: const Size(32, 24),
-                        )
-                      : CustomPaint(
-                          painter: _BangladeshFlagPainter(),
-                          size: const Size(32, 24),
-                        ),
-                ),
+                icon: const Icon(Icons.language, color: Colors.white),
                 onSelected: (String value) {
                   if (value == 'english') {
                     languageProvider.changeLanguage(const Locale('en'));
@@ -952,26 +936,9 @@ class _AdminMealStateScreenState extends State<AdminMealStateScreen> {
                     value: 'english',
                     child: Row(
                       children: [
-                        Container(
-                          width: 24,
-                          height: 18,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(2),
-                            border: Border.all(
-                                color: Colors.grey.shade300, width: 0.5),
-                          ),
-                          child: CustomPaint(
-                            painter: _EnglandFlagPainter(),
-                            size: const Size(24, 18),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
+                        Text('🇺🇸'),
+                        const SizedBox(width: 8),
                         Text(AppLocalizations.of(context)!.english),
-                        if (languageProvider.isEnglish) ...[
-                          const Spacer(),
-                          Icon(Icons.check,
-                              color: Colors.green.shade600, size: 18),
-                        ],
                       ],
                     ),
                   ),
@@ -979,26 +946,9 @@ class _AdminMealStateScreenState extends State<AdminMealStateScreen> {
                     value: 'bangla',
                     child: Row(
                       children: [
-                        Container(
-                          width: 24,
-                          height: 18,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(2),
-                            border: Border.all(
-                                color: Colors.grey.shade300, width: 0.5),
-                          ),
-                          child: CustomPaint(
-                            painter: _BangladeshFlagPainter(),
-                            size: const Size(24, 18),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
+                        Text('🇧🇩'),
+                        const SizedBox(width: 8),
                         Text(AppLocalizations.of(context)!.bangla),
-                        if (languageProvider.isBangla) ...[
-                          const Spacer(),
-                          Icon(Icons.check,
-                              color: Colors.green.shade600, size: 18),
-                        ],
                       ],
                     ),
                   ),
@@ -1731,71 +1681,4 @@ class _AdminMealStateScreenState extends State<AdminMealStateScreen> {
       },
     );
   }
-}
-
-class _EnglandFlagPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint();
-
-    // Blue background
-    paint.color = const Color(0xFF012169);
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
-
-    // White diagonal stripes
-    paint.color = Colors.white;
-    paint.strokeWidth = size.height * 0.15;
-
-    // Draw diagonal white stripes
-    canvas.drawLine(Offset(0, 0), Offset(size.width, size.height), paint);
-    canvas.drawLine(Offset(size.width, 0), Offset(0, size.height), paint);
-
-    // White cross
-    paint.strokeWidth = size.height * 0.25;
-    // Vertical line
-    canvas.drawLine(
-        Offset(size.width / 2, 0), Offset(size.width / 2, size.height), paint);
-    // Horizontal line
-    canvas.drawLine(
-        Offset(0, size.height / 2), Offset(size.width, size.height / 2), paint);
-
-    // Red cross
-    paint.color = const Color(0xFFC8102E);
-    paint.strokeWidth = size.height * 0.15;
-    // Vertical line
-    canvas.drawLine(
-        Offset(size.width / 2, 0), Offset(size.width / 2, size.height), paint);
-    // Horizontal line
-    canvas.drawLine(
-        Offset(0, size.height / 2), Offset(size.width, size.height / 2), paint);
-
-    // Red diagonal stripes
-    paint.strokeWidth = size.height * 0.08;
-    canvas.drawLine(Offset(0, 0), Offset(size.width, size.height), paint);
-    canvas.drawLine(Offset(size.width, 0), Offset(0, size.height), paint);
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
-}
-
-class _BangladeshFlagPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint();
-
-    // Green background
-    paint.color = const Color(0xFF006A4E);
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
-
-    // Red circle
-    paint.color = const Color(0xFFF42A41);
-    final center =
-        Offset(size.width * 0.45, size.height * 0.5); // Slightly left of center
-    final radius = size.height * 0.3;
-    canvas.drawCircle(center, radius, paint);
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

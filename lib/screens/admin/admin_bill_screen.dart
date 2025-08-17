@@ -32,6 +32,8 @@ class AdminBillScreen extends StatefulWidget {
 }
 
 class _AdminBillScreenState extends State<AdminBillScreen> {
+  // Filter state for Paid/Unpaid/All
+  String _billStatusFilter = 'All';
   final AdminAuthService _adminAuthService = AdminAuthService();
 
   bool _isLoading = true;
@@ -657,29 +659,6 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
   }
 
   // Helper method to build flag toggle
-  Widget _buildFlagToggle(BuildContext context) {
-    return Consumer<LanguageProvider>(
-      builder: (context, languageProvider, child) {
-        return GestureDetector(
-          onTap: () {
-            languageProvider.changeLanguage(
-                languageProvider.currentLocale.languageCode == 'en'
-                    ? const Locale('bn')
-                    : const Locale('en'));
-          },
-          child: Container(
-            padding: const EdgeInsets.all(8),
-            child: CustomPaint(
-              size: const Size(32, 20),
-              painter: languageProvider.currentLocale.languageCode == 'en'
-                  ? BangladeshFlagPainter()
-                  : EnglandFlagPainter(),
-            ),
-          ),
-        );
-      },
-    );
-  }
 
   void _filterBills(String query) {
     setState(() {
@@ -758,7 +737,12 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
         final filteredBills = bills.where((bill) {
           final combined =
               (bill['ba_no'] + bill['rank'] + bill['name']).toLowerCase();
-          return combined.contains(searchTerm.toLowerCase());
+          final matchesSearch = combined.contains(searchTerm.toLowerCase());
+          final matchesStatus = _billStatusFilter == 'All'
+              ? true
+              : (bill['bill_status']?.toString().toLowerCase() ==
+                  _billStatusFilter.toLowerCase());
+          return matchesSearch && matchesStatus;
         }).toList();
 
         return Scaffold(
@@ -1066,15 +1050,51 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                     ),
                 ],
               ),
-              _buildFlagToggle(context),
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.language, color: Colors.white),
+                onSelected: (String value) {
+                  if (value == 'english') {
+                    Provider.of<LanguageProvider>(context, listen: false)
+                        .changeLanguage(const Locale('en'));
+                  } else if (value == 'bangla') {
+                    Provider.of<LanguageProvider>(context, listen: false)
+                        .changeLanguage(const Locale('bn'));
+                  }
+                },
+                itemBuilder: (BuildContext context) => [
+                  PopupMenuItem<String>(
+                    value: 'english',
+                    child: Row(
+                      children: [
+                        Text('🇺🇸'),
+                        const SizedBox(width: 8),
+                        Text('English'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'bangla',
+                    child: Row(
+                      children: [
+                        Text('🇧🇩'),
+                        const SizedBox(width: 8),
+                        Text('বাংলা'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
           body: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                // Month/Year selector and Generate button
-                Row(
+                // Month/Year selector and Generate button (responsive)
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     DropdownButton<String>(
                       value: _selectedMonth,
@@ -1089,7 +1109,6 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                         }
                       },
                     ),
-                    const SizedBox(width: 16),
                     DropdownButton<int>(
                       value: _selectedYear,
                       items: List.generate(5, (i) => DateTime.now().year - i)
@@ -1103,7 +1122,6 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                         }
                       },
                     ),
-                    const SizedBox(width: 16),
                     ElevatedButton(
                       onPressed: _isGenerating ? null : _generateBills,
                       style: ElevatedButton.styleFrom(
@@ -1128,7 +1146,6 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                                   fontWeight: FontWeight.w600),
                             ),
                     ),
-                    const SizedBox(width: 12),
                     ElevatedButton(
                       onPressed: _recalculateAllBills,
                       style: ElevatedButton.styleFrom(
@@ -1144,10 +1161,43 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 16),
+                // Paid/Unpaid/All filter
+                Row(
+                  children: [
+                    const Text('Filter: ',
+                        style: TextStyle(fontWeight: FontWeight.w600)),
+                    ChoiceChip(
+                      label: const Text('All'),
+                      selected: _billStatusFilter == 'All',
+                      onSelected: (selected) {
+                        setState(() => _billStatusFilter = 'All');
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    ChoiceChip(
+                      label: const Text('Paid'),
+                      selected: _billStatusFilter == 'Paid',
+                      onSelected: (selected) {
+                        setState(() => _billStatusFilter = 'Paid');
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    ChoiceChip(
+                      label: const Text('Unpaid'),
+                      selected: _billStatusFilter == 'Unpaid',
+                      onSelected: (selected) {
+                        setState(() => _billStatusFilter = 'Unpaid');
+                      },
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 20),
 
-                // Search bar
-                Row(
+                // Search bar and total bills (responsive)
+                Wrap(
+                  spacing: 12,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     SizedBox(
                       width: 300,
@@ -1165,11 +1215,9 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                         ),
                         onChanged: (val) {
                           setState(() => searchTerm = val);
-                          _filterBills(val);
                         },
                       ),
                     ),
-                    const SizedBox(width: 12),
                     Text(
                       'Total Bills: ${filteredBills.length}',
                       style: const TextStyle(
@@ -1618,43 +1666,3 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
 }
 
 // Flag painter classes
-class EnglandFlagPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint whitePaint = Paint()..color = Colors.white;
-    final Paint redPaint = Paint()..color = Colors.red;
-
-    // White background
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), whitePaint);
-
-    // Red cross
-    canvas.drawRect(
-        Rect.fromLTWH(size.width * 0.4, 0, size.width * 0.2, size.height),
-        redPaint);
-    canvas.drawRect(
-        Rect.fromLTWH(0, size.height * 0.4, size.width, size.height * 0.2),
-        redPaint);
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
-}
-
-class BangladeshFlagPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint greenPaint = Paint()..color = const Color(0xFF006A4E);
-    final Paint redPaint = Paint()..color = const Color(0xFFF42A41);
-
-    // Green background
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), greenPaint);
-
-    // Red circle (offset slightly to the left)
-    final double radius = size.height * 0.3;
-    final Offset center = Offset(size.width * 0.4, size.width * 0.5);
-    canvas.drawCircle(center, radius, redPaint);
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
-}

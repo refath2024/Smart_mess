@@ -29,6 +29,8 @@ class PaymentsDashboard extends StatefulWidget {
 }
 
 class _PaymentsDashboardState extends State<PaymentsDashboard> {
+  DateTime? _startDate;
+  DateTime? _endDate;
   final AdminAuthService _adminAuthService = AdminAuthService();
   bool _isLoading = true;
   String _currentUserName = "Loading...";
@@ -321,29 +323,6 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
   }
 
   // Helper method to build flag toggle
-  Widget _buildFlagToggle(BuildContext context) {
-    return Consumer<LanguageProvider>(
-      builder: (context, languageProvider, child) {
-        return GestureDetector(
-          onTap: () {
-            languageProvider.changeLanguage(
-                languageProvider.currentLocale.languageCode == 'en'
-                    ? const Locale('bn')
-                    : const Locale('en'));
-          },
-          child: Container(
-            padding: const EdgeInsets.all(8),
-            child: CustomPaint(
-              size: const Size(32, 20),
-              painter: languageProvider.currentLocale.languageCode == 'en'
-                  ? BangladeshFlagPainter()
-                  : EnglandFlagPainter(),
-            ),
-          ),
-        );
-      },
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -357,13 +336,41 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
           );
         }
 
-        final filtered = paymentRequests.where((request) {
+        List<Map<String, dynamic>> filtered = paymentRequests.where((request) {
           final searchLower = searchQuery.toLowerCase();
-          return request['name'].toLowerCase().contains(searchLower) ||
-              request['ba_no'].toLowerCase().contains(searchLower) ||
-              request['rank'].toLowerCase().contains(searchLower) ||
-              request['payment_method'].toLowerCase().contains(searchLower);
+          // Combine all relevant fields into a single string for searching
+          final combined = [
+            request['name']?.toString() ?? '',
+            request['ba_no']?.toString() ?? '',
+            request['rank']?.toString() ?? '',
+            request['payment_method']?.toString() ?? '',
+            request['status']?.toString() ?? '',
+            request['amount']?.toString() ?? '',
+            request['transaction_id']?.toString() ?? '',
+            request['account_no']?.toString() ?? '',
+            request['bank_name']?.toString() ?? '',
+            request['card_number']?.toString() ?? '',
+            request['phone_number']?.toString() ?? '',
+          ].join(' ').toLowerCase();
+          bool matchesSearch = combined.contains(searchLower);
+          if (_startDate != null && request['request_time'] != null) {
+            final reqDate = request['request_time']?.toDate();
+            if (reqDate != null && reqDate.isBefore(_startDate!)) return false;
+          }
+          if (_endDate != null && request['request_time'] != null) {
+            final reqDate = request['request_time']?.toDate();
+            if (reqDate != null && reqDate.isAfter(_endDate!)) return false;
+          }
+          return matchesSearch;
         }).toList();
+        filtered.sort((a, b) {
+          final aTime = a['request_time']?.toDate();
+          final bTime = b['request_time']?.toDate();
+          if (aTime == null && bTime == null) return 0;
+          if (aTime == null) return 1;
+          if (bTime == null) return -1;
+          return bTime.compareTo(aTime);
+        });
 
         return Scaffold(
           drawer: Drawer(
@@ -534,7 +541,40 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
               ),
             ),
             actions: [
-              _buildFlagToggle(context),
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.language, color: Colors.white),
+                onSelected: (String value) {
+                  if (value == 'english') {
+                    Provider.of<LanguageProvider>(context, listen: false)
+                        .changeLanguage(const Locale('en'));
+                  } else if (value == 'bangla') {
+                    Provider.of<LanguageProvider>(context, listen: false)
+                        .changeLanguage(const Locale('bn'));
+                  }
+                },
+                itemBuilder: (BuildContext context) => [
+                  PopupMenuItem<String>(
+                    value: 'english',
+                    child: Row(
+                      children: [
+                        Text('🇺🇸'),
+                        const SizedBox(width: 8),
+                        Text('English'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'bangla',
+                    child: Row(
+                      children: [
+                        Text('🇧🇩'),
+                        const SizedBox(width: 8),
+                        Text('বাংলা'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
           body: Padding(
@@ -542,14 +582,18 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    Expanded(
+                    SizedBox(
+                      width: 300,
                       child: TextField(
                         decoration: InputDecoration(
                           hintText: AppLocalizations.of(context)!.search,
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                           prefixIcon: const Icon(Icons.search),
                           fillColor: Colors.white,
@@ -558,38 +602,126 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
                         onChanged: (val) => setState(() => searchQuery = val),
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    ElevatedButton.icon(
-                      onPressed: _loadPaymentRequests,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Refresh'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
+                    SizedBox(
+                      width: 170,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              icon: const Icon(Icons.date_range, size: 18),
+                              label: Text(_startDate == null
+                                  ? 'Start Date'
+                                  : '${_startDate!.day}/${_startDate!.month}/${_startDate!.year}'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.teal.shade700,
+                                side: BorderSide(color: Colors.teal.shade200),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 10),
+                              ),
+                              onPressed: () async {
+                                final picked = await showDatePicker(
+                                  context: context,
+                                  initialDate: _startDate ?? DateTime.now(),
+                                  firstDate: DateTime(2020),
+                                  lastDate: DateTime.now(),
+                                );
+                                if (picked != null)
+                                  setState(() => _startDate = picked);
+                              },
+                            ),
+                          ),
+                          if (_startDate != null)
+                            IconButton(
+                              icon: const Icon(Icons.clear, size: 18),
+                              tooltip: 'Clear',
+                              onPressed: () =>
+                                  setState(() => _startDate = null),
+                            ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    ElevatedButton.icon(
-                      onPressed: () async {
-                        final result = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                const InsertTransactionScreen(),
+                    SizedBox(
+                      width: 170,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              icon: const Icon(Icons.date_range, size: 18),
+                              label: Text(_endDate == null
+                                  ? 'End Date'
+                                  : '${_endDate!.day}/${_endDate!.month}/${_endDate!.year}'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.teal.shade700,
+                                side: BorderSide(color: Colors.teal.shade200),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 10),
+                              ),
+                              onPressed: () async {
+                                final picked = await showDatePicker(
+                                  context: context,
+                                  initialDate: _endDate ?? DateTime.now(),
+                                  firstDate: DateTime(2020),
+                                  lastDate: DateTime.now(),
+                                );
+                                if (picked != null)
+                                  setState(() => _endDate = picked);
+                              },
+                            ),
                           ),
-                        );
-                        if (result != null) {
-                          // Refresh payment requests after adding transaction
-                          _loadPaymentRequests();
-                        }
-                      },
-                      icon: const Icon(Icons.add),
-                      label: const Text('Add Transaction'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
+                          if (_endDate != null)
+                            IconButton(
+                              icon: const Icon(Icons.clear, size: 18),
+                              tooltip: 'Clear',
+                              onPressed: () => setState(() => _endDate = null),
+                            ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(
+                      height: 40,
+                      child: ElevatedButton.icon(
+                        onPressed: _loadPaymentRequests,
+                        icon: const Icon(Icons.refresh, size: 18),
+                        label: const Text('Refresh',
+                            style: TextStyle(fontSize: 14)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.teal.shade100,
+                          foregroundColor: Colors.teal.shade900,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
+                          elevation: 0,
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      height: 40,
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const InsertTransactionScreen(),
+                            ),
+                          );
+                          if (result != null) {
+                            _loadPaymentRequests();
+                          }
+                        },
+                        icon: const Icon(Icons.add, size: 18),
+                        label:
+                            const Text('Add', style: TextStyle(fontSize: 14)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.teal.shade50,
+                          foregroundColor: Colors.teal.shade900,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
+                          elevation: 0,
+                        ),
                       ),
                     ),
                   ],
@@ -741,43 +873,3 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
 }
 
 // Flag painter classes
-class EnglandFlagPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint whitePaint = Paint()..color = Colors.white;
-    final Paint redPaint = Paint()..color = Colors.red;
-
-    // White background
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), whitePaint);
-
-    // Red cross
-    canvas.drawRect(
-        Rect.fromLTWH(size.width * 0.4, 0, size.width * 0.2, size.height),
-        redPaint);
-    canvas.drawRect(
-        Rect.fromLTWH(0, size.height * 0.4, size.width, size.height * 0.2),
-        redPaint);
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
-}
-
-class BangladeshFlagPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint greenPaint = Paint()..color = const Color(0xFF006A4E);
-    final Paint redPaint = Paint()..color = const Color(0xFFF42A41);
-
-    // Green background
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), greenPaint);
-
-    // Red circle (offset slightly to the left)
-    final double radius = size.height * 0.3;
-    final Offset center = Offset(size.width * 0.4, size.height * 0.5);
-    canvas.drawCircle(center, radius, redPaint);
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
-}

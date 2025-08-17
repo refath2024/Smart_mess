@@ -129,7 +129,9 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${AppLocalizations.of(context)!.failedToFetchUsers}: $e')),
+          SnackBar(
+              content: Text(
+                  '${AppLocalizations.of(context)!.failedToFetchUsers}: $e')),
         );
       }
     }
@@ -148,7 +150,9 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${AppLocalizations.of(context)!.logoutFailed}: $e')),
+          SnackBar(
+              content:
+                  Text('${AppLocalizations.of(context)!.logoutFailed}: $e')),
         );
       }
     }
@@ -181,7 +185,8 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text(AppLocalizations.of(context)!.confirmDelete),
-          content: Text('${AppLocalizations.of(context)!.areYouSureYouWantToDelete} "${row['name']}"?'),
+          content: Text(
+              '${AppLocalizations.of(context)!.areYouSureYouWantToDelete} "${row['name']}"?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -214,13 +219,17 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(AppLocalizations.of(context)!.memberDeletedSuccessfully)),
+            SnackBar(
+                content: Text(
+                    AppLocalizations.of(context)!.memberDeletedSuccessfully)),
           );
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${AppLocalizations.of(context)!.failedToDeleteMember}: $e')),
+            SnackBar(
+                content: Text(
+                    '${AppLocalizations.of(context)!.failedToDeleteMember}: $e')),
           );
         }
       }
@@ -273,13 +282,17 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(AppLocalizations.of(context)!.memberUpdatedSuccessfully)),
+            SnackBar(
+                content: Text(
+                    AppLocalizations.of(context)!.memberUpdatedSuccessfully)),
           );
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${AppLocalizations.of(context)!.failedToSaveChanges}: $e')),
+            SnackBar(
+                content: Text(
+                    '${AppLocalizations.of(context)!.failedToSaveChanges}: $e')),
           );
         }
       }
@@ -327,27 +340,6 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
     );
   }
 
-  Widget _buildFlagToggle(LanguageProvider languageProvider) {
-    return GestureDetector(
-      onTap: () {
-        languageProvider.changeLanguage(
-          languageProvider.isEnglish ? const Locale('bn') : const Locale('en')
-        );
-      },
-      child: Container(
-        width: 40,
-        height: 25,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: Colors.white, width: 1),
-        ),
-        child: CustomPaint(
-          painter: languageProvider.isEnglish ? EnglandFlagPainter() : BangladeshFlagPainter(),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Consumer<LanguageProvider>(
@@ -361,799 +353,851 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
           );
         }
 
-    return Scaffold(
-      drawer: Drawer(
-        child: Column(
-          children: [
-            DrawerHeader(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF002B5B), Color(0xFF1A4D8F)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: Row(
-                children: [
-                  const CircleAvatar(
-                    backgroundImage: AssetImage('assets/me.png'),
-                    radius: 30,
-                  ),
-                  const SizedBox(width: 10),
-                  Flexible(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          _currentUserName,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        if (_currentUserData != null) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            _currentUserData!['role'] ?? '',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
-                            ),
-                          ),
-                          Text(
-                            'BA: ${_currentUserData!['ba_no'] ?? ''}',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ],
+        return Scaffold(
+          drawer: Drawer(
+            child: Column(
+              children: [
+                DrawerHeader(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF002B5B), Color(0xFF1A4D8F)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
                   ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  _buildSidebarTile(
-                      icon: Icons.dashboard,
-                      title: AppLocalizations.of(context)!.home,
-                      onTap: () => Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const AdminHomeScreen()))),
-                  _buildSidebarTile(
-                    icon: Icons.people,
-                    title: AppLocalizations.of(context)!.users,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminUsersScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.pending,
-                    title: AppLocalizations.of(context)!.pendingIds,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminPendingIdsScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.history,
-                    title: AppLocalizations.of(context)!.shoppingHistory,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              const AdminShoppingHistoryScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.receipt,
-                    title: AppLocalizations.of(context)!.voucherList,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminVoucherScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.storage,
-                    title: AppLocalizations.of(context)!.inventory,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminInventoryScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.food_bank,
-                    title: AppLocalizations.of(context)!.messing,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminMessingScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.menu_book,
-                    title: AppLocalizations.of(context)!.monthlyMenu,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const EditMenuScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.analytics,
-                    title: AppLocalizations.of(context)!.mealState,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminMealStateScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.thumb_up,
-                    title: AppLocalizations.of(context)!.menuVote,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const MenuVoteScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.receipt_long,
-                    title: AppLocalizations.of(context)!.bills,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminBillScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.payment,
-                    title: AppLocalizations.of(context)!.payments,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const PaymentsDashboard(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                      icon: Icons.people_alt,
-                      title: AppLocalizations.of(context)!.diningMemberState,
-                      selected: true,
-                      onTap: () => Navigator.pop(context)),
-                  _buildSidebarTile(
-                    icon: Icons.manage_accounts,
-                    title: AppLocalizations.of(context)!.staffState,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminStaffStateScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: Colors.grey.shade300),
-                ),
-              ),
-              child: Padding(
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.of(context).padding.bottom + 8,
-                  top: 8,
-                ),
-                child: _buildSidebarTile(
-                  icon: Icons.logout,
-                  title: AppLocalizations.of(context)!.logout,
-                  onTap: _logout,
-                  color: Colors.red,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF002B5B),
-        iconTheme: const IconThemeData(color: Colors.white),
-        centerTitle: true,
-        title: Text(
-          AppLocalizations.of(context)!.diningMemberState,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
-          ),
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: _buildFlagToggle(languageProvider),
-          ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // First row with search and filter
-            LayoutBuilder(
-              builder: (context, constraints) {
-                // Check if we have enough space for side-by-side layout
-                bool isWideScreen = constraints.maxWidth > 600;
-
-                if (isWideScreen) {
-                  return Row(
+                  child: Row(
                     children: [
-                      Expanded(
-                        flex: 3,
-                        child: TextField(
-                          controller: _searchController,
-                          onChanged: _search,
-                          decoration: InputDecoration(
-                            labelText: AppLocalizations.of(context)!.searchAllTextColumns,
-                            border: const OutlineInputBorder(),
-                            prefixIcon: const Icon(Icons.search),
-                            contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 8),
-                          ),
-                        ),
+                      const CircleAvatar(
+                        backgroundImage: AssetImage('assets/me.png'),
+                        radius: 30,
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        flex: 2,
-                        child: DropdownButtonFormField<String>(
-                          value: statusFilter,
-                          decoration: InputDecoration(
-                            labelText: AppLocalizations.of(context)!.filterByStatus,
-                            border: const OutlineInputBorder(),
-                            contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 8),
-                          ),
-                          style: const TextStyle(fontSize: 14),
-                          items: [
-                            DropdownMenuItem(
-                              value: 'all',
-                              child: Text(AppLocalizations.of(context)!.allStatus,
-                                  style: const TextStyle(fontSize: 14)),
+                      const SizedBox(width: 10),
+                      Flexible(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              _currentUserName,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                            DropdownMenuItem(
-                              value: 'active',
-                              child: Text(AppLocalizations.of(context)!.activeOnly,
-                                  style: const TextStyle(fontSize: 14)),
-                            ),
-                            DropdownMenuItem(
-                              value: 'inactive',
-                              child: Text(AppLocalizations.of(context)!.inactiveOnly,
-                                  style: const TextStyle(fontSize: 14)),
-                            ),
+                            if (_currentUserData != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                _currentUserData!['role'] ?? '',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              Text(
+                                'BA: ${_currentUserData!['ba_no'] ?? ''}',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
                           ],
-                          onChanged: (String? newValue) {
-                            if (newValue != null) {
-                              setState(() {
-                                statusFilter = newValue;
-                                _applyFilters();
-                              });
-                            }
-                          },
                         ),
                       ),
                     ],
-                  );
-                } else {
-                  // Stack vertically on smaller screens
-                  return Column(
+                  ),
+                ),
+                Expanded(
+                  child: ListView(
+                    padding: EdgeInsets.zero,
                     children: [
-                      TextField(
-                        controller: _searchController,
-                        onChanged: _search,
-                        decoration: InputDecoration(
-                          labelText: AppLocalizations.of(context)!.searchAllTextColumns,
-                          border: const OutlineInputBorder(),
-                          prefixIcon: const Icon(Icons.search),
-                          contentPadding:
-                              const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        ),
+                      _buildSidebarTile(
+                          icon: Icons.dashboard,
+                          title: AppLocalizations.of(context)!.home,
+                          onTap: () => Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      const AdminHomeScreen()))),
+                      _buildSidebarTile(
+                        icon: Icons.people,
+                        title: AppLocalizations.of(context)!.users,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AdminUsersScreen(),
+                            ),
+                          );
+                        },
                       ),
-                      const SizedBox(height: 8),
-                      DropdownButtonFormField<String>(
-                        value: statusFilter,
-                        decoration: InputDecoration(
-                          labelText: AppLocalizations.of(context)!.filterByStatus,
-                          border: const OutlineInputBorder(),
-                          contentPadding:
-                              const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        ),
-                        items: [
-                          DropdownMenuItem(
-                            value: 'all',
-                            child: Text(AppLocalizations.of(context)!.allStatus),
-                          ),
-                          DropdownMenuItem(
-                            value: 'active',
-                            child: Text(AppLocalizations.of(context)!.activeOnly),
-                          ),
-                          DropdownMenuItem(
-                            value: 'inactive',
-                            child: Text(AppLocalizations.of(context)!.inactiveOnly),
-                          ),
-                        ],
-                        onChanged: (String? newValue) {
-                          if (newValue != null) {
-                            setState(() {
-                              statusFilter = newValue;
-                              _applyFilters();
-                            });
-                          }
+                      _buildSidebarTile(
+                        icon: Icons.pending,
+                        title: AppLocalizations.of(context)!.pendingIds,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const AdminPendingIdsScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.history,
+                        title: AppLocalizations.of(context)!.shoppingHistory,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const AdminShoppingHistoryScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.receipt,
+                        title: AppLocalizations.of(context)!.voucherList,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AdminVoucherScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.storage,
+                        title: AppLocalizations.of(context)!.inventory,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const AdminInventoryScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.food_bank,
+                        title: AppLocalizations.of(context)!.messing,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AdminMessingScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.menu_book,
+                        title: AppLocalizations.of(context)!.monthlyMenu,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const EditMenuScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.analytics,
+                        title: AppLocalizations.of(context)!.mealState,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const AdminMealStateScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.thumb_up,
+                        title: AppLocalizations.of(context)!.menuVote,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const MenuVoteScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.receipt_long,
+                        title: AppLocalizations.of(context)!.bills,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AdminBillScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.payment,
+                        title: AppLocalizations.of(context)!.payments,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const PaymentsDashboard(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                          icon: Icons.people_alt,
+                          title:
+                              AppLocalizations.of(context)!.diningMemberState,
+                          selected: true,
+                          onTap: () => Navigator.pop(context)),
+                      _buildSidebarTile(
+                        icon: Icons.manage_accounts,
+                        title: AppLocalizations.of(context)!.staffState,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const AdminStaffStateScreen(),
+                            ),
+                          );
                         },
                       ),
                     ],
-                  );
-                }
-              },
-            ),
-            const SizedBox(height: 8),
-            // Second row with add button
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                ElevatedButton.icon(
-                  onPressed: () async {
-                    final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const AddDiningMemberForm()));
-
-                    // Refresh data when returning from add form
-                    if (result == true || result == null) {
-                      await _fetchUsersFromFirestore();
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0052CC),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 10),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border(
+                      top: BorderSide(color: Colors.grey.shade300),
                     ),
                   ),
-                  icon: const Icon(Icons.add, size: 18),
-                  label: Text(AppLocalizations.of(context)!.addDiningMember,
-                      style: TextStyle(fontSize: 14)),
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).padding.bottom + 8,
+                      top: 8,
+                    ),
+                    child: _buildSidebarTile(
+                      icon: Icons.logout,
+                      title: AppLocalizations.of(context)!.logout,
+                      onTap: _logout,
+                      color: Colors.red,
+                    ),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: Padding(
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.of(context).padding.bottom + 16,
-                ),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.vertical,
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minWidth: MediaQuery.of(context).size.width - 32,
-                      ),
-                      child: DataTable(
-                        columnSpacing: 12, // Reduced column spacing
-                        headingRowColor:
-                            WidgetStateProperty.all(const Color(0xFF1A4D8F)),
-                        columns: [
-                          DataColumn(
-                              label: Text(AppLocalizations.of(context)!.baNumber,
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12))),
-                          DataColumn(
-                              label: Text(AppLocalizations.of(context)!.rank,
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12))),
-                          DataColumn(
-                              label: Text(AppLocalizations.of(context)!.name,
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12))),
-                          DataColumn(
-                              label: Text(AppLocalizations.of(context)!.unit,
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12))),
-                          DataColumn(
-                              label: Text(AppLocalizations.of(context)!.mobile,
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12))),
-                          DataColumn(
-                              label: Text(AppLocalizations.of(context)!.email,
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12))),
-                          DataColumn(
-                              label: Text(AppLocalizations.of(context)!.role,
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12))),
-                          DataColumn(
-                              label: Text(AppLocalizations.of(context)!.status,
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12))),
-                          DataColumn(
-                              label: Text(AppLocalizations.of(context)!.approvedBy,
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12))),
-                          DataColumn(
-                              label: Text(AppLocalizations.of(context)!.action,
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12))),
+          ),
+          appBar: AppBar(
+            backgroundColor: const Color(0xFF002B5B),
+            iconTheme: const IconThemeData(color: Colors.white),
+            centerTitle: true,
+            title: Text(
+              AppLocalizations.of(context)!.diningMemberState,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
+              ),
+            ),
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 16.0),
+                child: PopupMenuButton<String>(
+                  icon: const Icon(Icons.language, color: Colors.white),
+                  onSelected: (String value) {
+                    if (value == 'english') {
+                      Provider.of<LanguageProvider>(context, listen: false)
+                          .changeLanguage(const Locale('en'));
+                    } else if (value == 'bangla') {
+                      Provider.of<LanguageProvider>(context, listen: false)
+                          .changeLanguage(const Locale('bn'));
+                    }
+                  },
+                  itemBuilder: (BuildContext context) => [
+                    PopupMenuItem<String>(
+                      value: 'english',
+                      child: Row(
+                        children: [
+                          Text('🇺🇸'),
+                          const SizedBox(width: 8),
+                          Text('English'),
                         ],
-                        rows: filtered.map((row) {
-                          final bool isEditing = row['isEditing'] ?? false;
-                          return DataRow(cells: [
-                            DataCell(
-                              SizedBox(
-                                width: 80,
-                                child: isEditing
-                                    ? TextField(
-                                        controller: TextEditingController(
-                                            text: row['no']),
-                                        onChanged: (value) => row['no'] = value,
-                                        style: const TextStyle(fontSize: 12),
-                                        decoration: const InputDecoration(
-                                          border: InputBorder.none,
-                                          contentPadding: EdgeInsets.all(4),
-                                        ),
-                                      )
-                                    : Text(row['no'] ?? '',
-                                        style: const TextStyle(fontSize: 12)),
+                      ),
+                    ),
+                    PopupMenuItem<String>(
+                      value: 'bangla',
+                      child: Row(
+                        children: [
+                          Text('🇧🇩'),
+                          const SizedBox(width: 8),
+                          Text('বাংলা'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          body: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                // First row with search and filter
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    // Check if we have enough space for side-by-side layout
+                    bool isWideScreen = constraints.maxWidth > 600;
+
+                    if (isWideScreen) {
+                      return Row(
+                        children: [
+                          Expanded(
+                            flex: 3,
+                            child: TextField(
+                              controller: _searchController,
+                              onChanged: _search,
+                              decoration: InputDecoration(
+                                labelText: AppLocalizations.of(context)!
+                                    .searchAllTextColumns,
+                                border: const OutlineInputBorder(),
+                                prefixIcon: const Icon(Icons.search),
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 8),
                               ),
                             ),
-                            DataCell(
-                              SizedBox(
-                                width: 100,
-                                child: isEditing
-                                    ? TextField(
-                                        controller: TextEditingController(
-                                            text: row['rank']),
-                                        onChanged: (value) =>
-                                            row['rank'] = value,
-                                        style: const TextStyle(fontSize: 12),
-                                        decoration: const InputDecoration(
-                                          border: InputBorder.none,
-                                          contentPadding: EdgeInsets.all(4),
-                                        ),
-                                      )
-                                    : Text(row['rank'] ?? '',
-                                        style: const TextStyle(fontSize: 12)),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            flex: 2,
+                            child: DropdownButtonFormField<String>(
+                              value: statusFilter,
+                              decoration: InputDecoration(
+                                labelText: AppLocalizations.of(context)!
+                                    .filterByStatus,
+                                border: const OutlineInputBorder(),
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 8),
                               ),
+                              style: const TextStyle(fontSize: 14),
+                              items: [
+                                DropdownMenuItem(
+                                  value: 'all',
+                                  child: Text(
+                                      AppLocalizations.of(context)!.allStatus,
+                                      style: const TextStyle(fontSize: 14)),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'active',
+                                  child: Text(
+                                      AppLocalizations.of(context)!.activeOnly,
+                                      style: const TextStyle(fontSize: 14)),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'inactive',
+                                  child: Text(
+                                      AppLocalizations.of(context)!
+                                          .inactiveOnly,
+                                      style: const TextStyle(fontSize: 14)),
+                                ),
+                              ],
+                              onChanged: (String? newValue) {
+                                if (newValue != null) {
+                                  setState(() {
+                                    statusFilter = newValue;
+                                    _applyFilters();
+                                  });
+                                }
+                              },
                             ),
-                            DataCell(
-                              SizedBox(
-                                width: 120,
-                                child: isEditing
-                                    ? TextField(
-                                        controller: TextEditingController(
-                                            text: row['name']),
-                                        onChanged: (value) =>
-                                            row['name'] = value,
-                                        style: const TextStyle(fontSize: 12),
-                                        decoration: const InputDecoration(
-                                          border: InputBorder.none,
-                                          contentPadding: EdgeInsets.all(4),
-                                        ),
-                                      )
-                                    : Text(row['name'] ?? '',
-                                        style: const TextStyle(fontSize: 12)),
-                              ),
+                          ),
+                        ],
+                      );
+                    } else {
+                      // Stack vertically on smaller screens
+                      return Column(
+                        children: [
+                          TextField(
+                            controller: _searchController,
+                            onChanged: _search,
+                            decoration: InputDecoration(
+                              labelText: AppLocalizations.of(context)!
+                                  .searchAllTextColumns,
+                              border: const OutlineInputBorder(),
+                              prefixIcon: const Icon(Icons.search),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
                             ),
-                            DataCell(
-                              SizedBox(
-                                width: 100,
-                                child: isEditing
-                                    ? TextField(
-                                        controller: TextEditingController(
-                                            text: row['unit']),
-                                        onChanged: (value) =>
-                                            row['unit'] = value,
-                                        style: const TextStyle(fontSize: 12),
-                                        decoration: const InputDecoration(
-                                          border: InputBorder.none,
-                                          contentPadding: EdgeInsets.all(4),
-                                        ),
-                                      )
-                                    : Text(row['unit'] ?? '',
-                                        style: const TextStyle(fontSize: 12)),
-                              ),
+                          ),
+                          const SizedBox(height: 8),
+                          DropdownButtonFormField<String>(
+                            value: statusFilter,
+                            decoration: InputDecoration(
+                              labelText:
+                                  AppLocalizations.of(context)!.filterByStatus,
+                              border: const OutlineInputBorder(),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
                             ),
-                            DataCell(
-                              SizedBox(
-                                width: 100,
-                                child: isEditing
-                                    ? TextField(
-                                        controller: TextEditingController(
-                                            text: row['mobile']),
-                                        onChanged: (value) =>
-                                            row['mobile'] = value,
-                                        style: const TextStyle(fontSize: 12),
-                                        decoration: const InputDecoration(
-                                          border: InputBorder.none,
-                                          contentPadding: EdgeInsets.all(4),
-                                        ),
-                                      )
-                                    : Text(row['mobile'] ?? '',
-                                        style: const TextStyle(fontSize: 12)),
-                              ),
-                            ),
-                            DataCell(
-                              SizedBox(
-                                width: 150,
-                                child: isEditing
-                                    ? TextField(
-                                        controller: TextEditingController(
-                                            text: row['email']),
-                                        onChanged: (value) =>
-                                            row['email'] = value,
-                                        style: const TextStyle(fontSize: 12),
-                                        decoration: const InputDecoration(
-                                          border: InputBorder.none,
-                                          contentPadding: EdgeInsets.all(4),
-                                        ),
-                                      )
-                                    : Text(row['email'] ?? '',
-                                        style: const TextStyle(fontSize: 12),
-                                        overflow: TextOverflow.ellipsis),
-                              ),
-                            ),
-                            DataCell(
-                              SizedBox(
-                                width: 100,
-                                child: Text(AppLocalizations.of(context)!.diningMember,
-                                    style: const TextStyle(fontSize: 12)),
-                              ),
-                            ),
-                            DataCell(
-                              SizedBox(
-                                width: 90,
-                                child: isEditing
-                                    ? DropdownButton<String>(
-                                        value: row['status'],
-                                        isExpanded: true,
-                                        items: [
-                                          DropdownMenuItem(
-                                            value: 'active',
-                                            child: Text(AppLocalizations.of(context)!.active,
-                                                style: const TextStyle(fontSize: 12)),
-                                          ),
-                                          DropdownMenuItem(
-                                            value: 'inactive',
-                                            child: Text(AppLocalizations.of(context)!.inactive,
-                                                style: const TextStyle(fontSize: 12)),
-                                          ),
-                                        ],
-                                        onChanged: (String? newValue) {
-                                          if (newValue != null) {
-                                            setState(() {
-                                              row['status'] = newValue;
-                                            });
-                                          }
-                                        },
-                                        underline: Container(),
-                                      )
-                                    : Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 6, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: row['status'] == 'active'
-                                              ? Colors.green.shade100
-                                              : Colors.orange.shade100,
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                          border: Border.all(
-                                            color: row['status'] == 'active'
-                                                ? Colors.green
-                                                : Colors.orange,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          row['status'] == 'active'
-                                              ? AppLocalizations.of(context)!.active
-                                              : AppLocalizations.of(context)!.inactive,
-                                          style: TextStyle(
-                                            color: row['status'] == 'active'
-                                                ? Colors.green.shade800
-                                                : Colors.orange.shade800,
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 11,
-                                          ),
-                                        ),
-                                      ),
-                              ),
-                            ),
-                            DataCell(
-                              SizedBox(
-                                width: 100,
+                            items: [
+                              DropdownMenuItem(
+                                value: 'all',
                                 child: Text(
-                                  row['approved_by'] ?? 'Admin',
-                                  style: const TextStyle(fontSize: 12),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                                    AppLocalizations.of(context)!.allStatus),
                               ),
-                            ),
-                            DataCell(
-                              SizedBox(
-                                width: 100,
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    if (isEditing) ...[
-                                      IconButton(
-                                        icon: const Icon(Icons.save, size: 18),
-                                        color: Colors.green,
-                                        onPressed: () => _saveEdit(row),
-                                        tooltip: AppLocalizations.of(context)!.saveTooltip,
-                                        padding: const EdgeInsets.all(4),
-                                        constraints: const BoxConstraints(
-                                            minWidth: 32, minHeight: 32),
-                                      ),
-                                      IconButton(
-                                        icon:
-                                            const Icon(Icons.cancel, size: 18),
-                                        color: Colors.red,
-                                        onPressed: () => _cancelEdit(row),
-                                        tooltip: AppLocalizations.of(context)!.cancelTooltip,
-                                        padding: const EdgeInsets.all(4),
-                                        constraints: const BoxConstraints(
-                                            minWidth: 32, minHeight: 32),
-                                      )
-                                    ] else ...[
-                                      IconButton(
-                                        icon: const Icon(Icons.edit, size: 18),
-                                        color: Colors.blue,
-                                        onPressed: () => _startEdit(row),
-                                        tooltip: AppLocalizations.of(context)!.editTooltip,
-                                        padding: const EdgeInsets.all(4),
-                                        constraints: const BoxConstraints(
-                                            minWidth: 32, minHeight: 32),
-                                      ),
-                                      IconButton(
-                                        icon:
-                                            const Icon(Icons.delete, size: 18),
-                                        color: Colors.red,
-                                        onPressed: () => _deleteStaff(row),
-                                        tooltip: AppLocalizations.of(context)!.deleteTooltip,
-                                        padding: const EdgeInsets.all(4),
-                                        constraints: const BoxConstraints(
-                                            minWidth: 32, minHeight: 32),
-                                      ),
-                                    ]
-                                  ],
-                                ),
+                              DropdownMenuItem(
+                                value: 'active',
+                                child: Text(
+                                    AppLocalizations.of(context)!.activeOnly),
                               ),
-                            )
-                          ]);
-                        }).toList(),
+                              DropdownMenuItem(
+                                value: 'inactive',
+                                child: Text(
+                                    AppLocalizations.of(context)!.inactiveOnly),
+                              ),
+                            ],
+                            onChanged: (String? newValue) {
+                              if (newValue != null) {
+                                setState(() {
+                                  statusFilter = newValue;
+                                  _applyFilters();
+                                });
+                              }
+                            },
+                          ),
+                        ],
+                      );
+                    }
+                  },
+                ),
+                const SizedBox(height: 8),
+                // Second row with add button
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const AddDiningMemberForm()));
+
+                        // Refresh data when returning from add form
+                        if (result == true || result == null) {
+                          await _fetchUsersFromFirestore();
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0052CC),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      icon: const Icon(Icons.add, size: 18),
+                      label: Text(AppLocalizations.of(context)!.addDiningMember,
+                          style: TextStyle(fontSize: 14)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).padding.bottom + 16,
+                    ),
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.vertical,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minWidth: MediaQuery.of(context).size.width - 32,
+                          ),
+                          child: DataTable(
+                            columnSpacing: 12, // Reduced column spacing
+                            headingRowColor: WidgetStateProperty.all(
+                                const Color(0xFF1A4D8F)),
+                            columns: [
+                              DataColumn(
+                                  label: Text(
+                                      AppLocalizations.of(context)!.baNumber,
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12))),
+                              DataColumn(
+                                  label: Text(
+                                      AppLocalizations.of(context)!.rank,
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12))),
+                              DataColumn(
+                                  label: Text(
+                                      AppLocalizations.of(context)!.name,
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12))),
+                              DataColumn(
+                                  label: Text(
+                                      AppLocalizations.of(context)!.unit,
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12))),
+                              DataColumn(
+                                  label: Text(
+                                      AppLocalizations.of(context)!.mobile,
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12))),
+                              DataColumn(
+                                  label: Text(
+                                      AppLocalizations.of(context)!.email,
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12))),
+                              DataColumn(
+                                  label: Text(
+                                      AppLocalizations.of(context)!.role,
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12))),
+                              DataColumn(
+                                  label: Text(
+                                      AppLocalizations.of(context)!.status,
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12))),
+                              DataColumn(
+                                  label: Text(
+                                      AppLocalizations.of(context)!.approvedBy,
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12))),
+                              DataColumn(
+                                  label: Text(
+                                      AppLocalizations.of(context)!.action,
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12))),
+                            ],
+                            rows: filtered.map((row) {
+                              final bool isEditing = row['isEditing'] ?? false;
+                              return DataRow(cells: [
+                                DataCell(
+                                  SizedBox(
+                                    width: 80,
+                                    child: isEditing
+                                        ? TextField(
+                                            controller: TextEditingController(
+                                                text: row['no']),
+                                            onChanged: (value) =>
+                                                row['no'] = value,
+                                            style:
+                                                const TextStyle(fontSize: 12),
+                                            decoration: const InputDecoration(
+                                              border: InputBorder.none,
+                                              contentPadding: EdgeInsets.all(4),
+                                            ),
+                                          )
+                                        : Text(row['no'] ?? '',
+                                            style:
+                                                const TextStyle(fontSize: 12)),
+                                  ),
+                                ),
+                                DataCell(
+                                  SizedBox(
+                                    width: 100,
+                                    child: isEditing
+                                        ? TextField(
+                                            controller: TextEditingController(
+                                                text: row['rank']),
+                                            onChanged: (value) =>
+                                                row['rank'] = value,
+                                            style:
+                                                const TextStyle(fontSize: 12),
+                                            decoration: const InputDecoration(
+                                              border: InputBorder.none,
+                                              contentPadding: EdgeInsets.all(4),
+                                            ),
+                                          )
+                                        : Text(row['rank'] ?? '',
+                                            style:
+                                                const TextStyle(fontSize: 12)),
+                                  ),
+                                ),
+                                DataCell(
+                                  SizedBox(
+                                    width: 120,
+                                    child: isEditing
+                                        ? TextField(
+                                            controller: TextEditingController(
+                                                text: row['name']),
+                                            onChanged: (value) =>
+                                                row['name'] = value,
+                                            style:
+                                                const TextStyle(fontSize: 12),
+                                            decoration: const InputDecoration(
+                                              border: InputBorder.none,
+                                              contentPadding: EdgeInsets.all(4),
+                                            ),
+                                          )
+                                        : Text(row['name'] ?? '',
+                                            style:
+                                                const TextStyle(fontSize: 12)),
+                                  ),
+                                ),
+                                DataCell(
+                                  SizedBox(
+                                    width: 100,
+                                    child: isEditing
+                                        ? TextField(
+                                            controller: TextEditingController(
+                                                text: row['unit']),
+                                            onChanged: (value) =>
+                                                row['unit'] = value,
+                                            style:
+                                                const TextStyle(fontSize: 12),
+                                            decoration: const InputDecoration(
+                                              border: InputBorder.none,
+                                              contentPadding: EdgeInsets.all(4),
+                                            ),
+                                          )
+                                        : Text(row['unit'] ?? '',
+                                            style:
+                                                const TextStyle(fontSize: 12)),
+                                  ),
+                                ),
+                                DataCell(
+                                  SizedBox(
+                                    width: 100,
+                                    child: isEditing
+                                        ? TextField(
+                                            controller: TextEditingController(
+                                                text: row['mobile']),
+                                            onChanged: (value) =>
+                                                row['mobile'] = value,
+                                            style:
+                                                const TextStyle(fontSize: 12),
+                                            decoration: const InputDecoration(
+                                              border: InputBorder.none,
+                                              contentPadding: EdgeInsets.all(4),
+                                            ),
+                                          )
+                                        : Text(row['mobile'] ?? '',
+                                            style:
+                                                const TextStyle(fontSize: 12)),
+                                  ),
+                                ),
+                                DataCell(
+                                  SizedBox(
+                                    width: 150,
+                                    child: isEditing
+                                        ? TextField(
+                                            controller: TextEditingController(
+                                                text: row['email']),
+                                            onChanged: (value) =>
+                                                row['email'] = value,
+                                            style:
+                                                const TextStyle(fontSize: 12),
+                                            decoration: const InputDecoration(
+                                              border: InputBorder.none,
+                                              contentPadding: EdgeInsets.all(4),
+                                            ),
+                                          )
+                                        : Text(row['email'] ?? '',
+                                            style:
+                                                const TextStyle(fontSize: 12),
+                                            overflow: TextOverflow.ellipsis),
+                                  ),
+                                ),
+                                DataCell(
+                                  SizedBox(
+                                    width: 100,
+                                    child: Text(
+                                        AppLocalizations.of(context)!
+                                            .diningMember,
+                                        style: const TextStyle(fontSize: 12)),
+                                  ),
+                                ),
+                                DataCell(
+                                  SizedBox(
+                                    width: 90,
+                                    child: isEditing
+                                        ? DropdownButton<String>(
+                                            value: row['status'],
+                                            isExpanded: true,
+                                            items: [
+                                              DropdownMenuItem(
+                                                value: 'active',
+                                                child: Text(
+                                                    AppLocalizations.of(
+                                                            context)!
+                                                        .active,
+                                                    style: const TextStyle(
+                                                        fontSize: 12)),
+                                              ),
+                                              DropdownMenuItem(
+                                                value: 'inactive',
+                                                child: Text(
+                                                    AppLocalizations.of(
+                                                            context)!
+                                                        .inactive,
+                                                    style: const TextStyle(
+                                                        fontSize: 12)),
+                                              ),
+                                            ],
+                                            onChanged: (String? newValue) {
+                                              if (newValue != null) {
+                                                setState(() {
+                                                  row['status'] = newValue;
+                                                });
+                                              }
+                                            },
+                                            underline: Container(),
+                                          )
+                                        : Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: row['status'] == 'active'
+                                                  ? Colors.green.shade100
+                                                  : Colors.orange.shade100,
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              border: Border.all(
+                                                color: row['status'] == 'active'
+                                                    ? Colors.green
+                                                    : Colors.orange,
+                                              ),
+                                            ),
+                                            child: Text(
+                                              row['status'] == 'active'
+                                                  ? AppLocalizations.of(
+                                                          context)!
+                                                      .active
+                                                  : AppLocalizations.of(
+                                                          context)!
+                                                      .inactive,
+                                              style: TextStyle(
+                                                color: row['status'] == 'active'
+                                                    ? Colors.green.shade800
+                                                    : Colors.orange.shade800,
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 11,
+                                              ),
+                                            ),
+                                          ),
+                                  ),
+                                ),
+                                DataCell(
+                                  SizedBox(
+                                    width: 100,
+                                    child: Text(
+                                      row['approved_by'] ?? 'Admin',
+                                      style: const TextStyle(fontSize: 12),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ),
+                                DataCell(
+                                  SizedBox(
+                                    width: 100,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        if (isEditing) ...[
+                                          IconButton(
+                                            icon: const Icon(Icons.save,
+                                                size: 18),
+                                            color: Colors.green,
+                                            onPressed: () => _saveEdit(row),
+                                            tooltip:
+                                                AppLocalizations.of(context)!
+                                                    .saveTooltip,
+                                            padding: const EdgeInsets.all(4),
+                                            constraints: const BoxConstraints(
+                                                minWidth: 32, minHeight: 32),
+                                          ),
+                                          IconButton(
+                                            icon: const Icon(Icons.cancel,
+                                                size: 18),
+                                            color: Colors.red,
+                                            onPressed: () => _cancelEdit(row),
+                                            tooltip:
+                                                AppLocalizations.of(context)!
+                                                    .cancelTooltip,
+                                            padding: const EdgeInsets.all(4),
+                                            constraints: const BoxConstraints(
+                                                minWidth: 32, minHeight: 32),
+                                          )
+                                        ] else ...[
+                                          IconButton(
+                                            icon: const Icon(Icons.edit,
+                                                size: 18),
+                                            color: Colors.blue,
+                                            onPressed: () => _startEdit(row),
+                                            tooltip:
+                                                AppLocalizations.of(context)!
+                                                    .editTooltip,
+                                            padding: const EdgeInsets.all(4),
+                                            constraints: const BoxConstraints(
+                                                minWidth: 32, minHeight: 32),
+                                          ),
+                                          IconButton(
+                                            icon: const Icon(Icons.delete,
+                                                size: 18),
+                                            color: Colors.red,
+                                            onPressed: () => _deleteStaff(row),
+                                            tooltip:
+                                                AppLocalizations.of(context)!
+                                                    .deleteTooltip,
+                                            padding: const EdgeInsets.all(4),
+                                            constraints: const BoxConstraints(
+                                                minWidth: 32, minHeight: 32),
+                                          ),
+                                        ]
+                                      ],
+                                    ),
+                                  ),
+                                )
+                              ]);
+                            }).toList(),
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
-            )
-          ],
-        ),
-      ),
-    );
+                )
+              ],
+            ),
+          ),
+        );
       },
     );
   }
-}
-
-class EnglandFlagPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    // Draw England flag
-    Paint paint = Paint();
-    
-    // White background
-    paint.color = Colors.white;
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
-    
-    // Red cross
-    paint.color = Colors.red;
-    // Vertical line
-    canvas.drawRect(Rect.fromLTWH(size.width * 0.4, 0, size.width * 0.2, size.height), paint);
-    // Horizontal line
-    canvas.drawRect(Rect.fromLTWH(0, size.height * 0.4, size.width, size.height * 0.2), paint);
-  }
-  
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
-}
-
-class BangladeshFlagPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    // Draw Bangladesh flag
-    Paint paint = Paint();
-    
-    // Green background
-    paint.color = const Color(0xFF006A4E);
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
-    
-    // Red circle
-    paint.color = const Color(0xFFF42A41);
-    canvas.drawCircle(
-      Offset(size.width * 0.4, size.height * 0.5), 
-      size.height * 0.3, 
-      paint
-    );
-  }
-  
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }
