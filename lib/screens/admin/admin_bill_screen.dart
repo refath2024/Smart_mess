@@ -782,7 +782,7 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                                 ),
                               ),
                             ],
-                          },
+                          ],
                         ),
                       ),
                     ],
@@ -1609,18 +1609,6 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                                                               ? Colors.green
                                                               : Colors.black;
                                                         }(),
-                                                      ),
-                                                      textAlign:
-                                                          TextAlign.center,
-                                                    ),
-                                                  ),
-                                                ),
-                                                SizedBox(
-                                                  width: 100,
-                                                  child: Center(
-                                                    child: IconButton(
-                                                      icon: const Icon(
-                                                        Icons.picture_as_pdf,
                                                       ),
                                                       textAlign:
                                                           TextAlign.center,
