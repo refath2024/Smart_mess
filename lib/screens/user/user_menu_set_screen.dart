@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class MenuSetScreen extends StatefulWidget {
   const MenuSetScreen({super.key});
@@ -87,7 +89,7 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
     );
   }
 
-  void _submitVote() {
+  Future<void> _submitVote() async {
     if (_selectedBreakfast == null &&
         _selectedLunch == null &&
         _selectedDinner == null) {
@@ -100,27 +102,183 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
       return;
     }
 
+    // Show loading dialog
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text(
-          "Vote Submitted Successfully",
-          style: TextStyle(fontWeight: FontWeight.bold),
+      barrierDismissible: false,
+      builder: (_) => const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 20),
+            Text("Submitting your vote..."),
+          ],
         ),
-        content: const Text(
-          "Your menu preference has been recorded and will be considered for the next committee review. Thank you for your participation.",
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              "ACKNOWLEDGED",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
       ),
     );
+
+    try {
+      // Get current user information
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) {
+        throw Exception("User not authenticated");
+      }
+
+      // Get user details from users collection or staff_state collection
+      String userName = "Unknown User";
+      String userRole = "user";
+      String baNo = "";
+
+      try {
+        // First try to get from users collection
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(currentUser.uid)
+            .get();
+        
+        if (userDoc.exists) {
+          final userData = userDoc.data() as Map<String, dynamic>;
+          userName = userData['name'] ?? currentUser.displayName ?? "Unknown User";
+          userRole = userData['role'] ?? "user";
+          baNo = userData['ba_no'] ?? "";
+        } else {
+          // Try staff_state collection if not found in users
+          final staffQuery = await FirebaseFirestore.instance
+              .collection('staff_state')
+              .where('email', isEqualTo: currentUser.email)
+              .limit(1)
+              .get();
+          
+          if (staffQuery.docs.isNotEmpty) {
+            final staffData = staffQuery.docs.first.data();
+            userName = staffData['name'] ?? "Unknown User";
+            userRole = staffData['role'] ?? "staff";
+            baNo = staffData['ba_no'] ?? "";
+          }
+        }
+      } catch (e) {
+        debugPrint("Error fetching user details: $e");
+        userName = currentUser.displayName ?? currentUser.email ?? "Unknown User";
+      }
+
+      // Generate week identifier for grouping votes
+      final now = DateTime.now();
+      final monday = now.subtract(Duration(days: now.weekday - 1));
+      final weekIdentifier = "${monday.year}-W${_getWeekNumber(monday)}";
+      final votingPeriod = "${now.year}-${now.month.toString().padLeft(2, '0')}";
+
+      // Create voting record data
+      final votingData = {
+        'userId': currentUser.uid,
+        'userEmail': currentUser.email,
+        'userName': userName,
+        'userRole': userRole,
+        'baNo': baNo,
+        'selectedDay': _selectedDay,
+        'selectedBreakfast': _selectedBreakfast,
+        'selectedLunch': _selectedLunch,
+        'selectedDinner': _selectedDinner,
+        'remarks': _remarksController.text.trim(),
+        'submittedAt': FieldValue.serverTimestamp(),
+        'weekIdentifier': weekIdentifier,
+        'votingPeriod': votingPeriod,
+        'status': 'submitted',
+      };
+
+      // Store in voting_records collection
+      await FirebaseFirestore.instance
+          .collection('voting_records')
+          .add(votingData);
+
+      debugPrint("✅ Voting record saved successfully");
+      
+      // Close loading dialog
+      if (mounted) {
+        Navigator.pop(context);
+      }
+
+      // Show success dialog
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text(
+              "Vote Submitted Successfully",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Your menu preference has been recorded and will be considered for the next committee review. Thank you for your participation.",
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  "Vote Details:",
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text("Day: $_selectedDay"),
+                if (_selectedBreakfast != null) Text("Breakfast: $_selectedBreakfast"),
+                if (_selectedLunch != null) Text("Lunch: $_selectedLunch"),
+                if (_selectedDinner != null) Text("Dinner: $_selectedDinner"),
+                if (_remarksController.text.isNotEmpty) 
+                  Text("Remarks: ${_remarksController.text}"),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _resetForm(); // Reset form after successful submission
+                },
+                child: const Text(
+                  "ACKNOWLEDGED",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+    } catch (e) {
+      debugPrint("❌ Error submitting vote: $e");
+      
+      // Close loading dialog
+      if (mounted) {
+        Navigator.pop(context);
+      }
+
+      // Show error dialog
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Failed to submit vote: ${e.toString()}"),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    }
+  }
+
+  /// Get week number of the year
+  int _getWeekNumber(DateTime date) {
+    final firstDayOfYear = DateTime(date.year, 1, 1);
+    final daysSinceFirstDay = date.difference(firstDayOfYear).inDays;
+    return ((daysSinceFirstDay + firstDayOfYear.weekday - 1) / 7).ceil();
+  }
+
+  /// Reset form after successful submission
+  void _resetForm() {
+    setState(() {
+      _selectedDay = 'Sunday';
+      _selectedBreakfast = null;
+      _selectedLunch = null;
+      _selectedDinner = null;
+      _remarksController.clear();
+    });
   }
 
   Widget _buildMealRow({
