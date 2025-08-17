@@ -373,190 +373,197 @@ class _InsertTransactionScreenState extends State<InsertTransactionScreen> {
       ),
       body: _isLoadingUsers
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        'Create Transaction',
-                        style: TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.bold),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 20),
-
-                      // User Selection
-                      const Text('Select User',
+          : SafeArea(
+              minimum: const EdgeInsets.only(bottom: 12),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'Create Transaction',
                           style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 8),
-                      DropdownButtonFormField<Map<String, dynamic>>(
-                        value: _selectedUser,
-                        hint: const Text('Choose a user'),
-                        items: _users.map((user) {
-                          return DropdownMenuItem(
-                            value: user,
-                            child: Text(
-                                '${user['ba_no']} - ${user['rank']} ${user['name']}'),
-                          );
-                        }).toList(),
-                        onChanged: (user) {
-                          setState(() {
-                            _selectedUser = user;
-                            if (user != null) {
-                              _loadUserBill(user['ba_no'].toString());
-                            }
-                          });
-                        },
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8)),
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
+                              fontSize: 20, fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center,
                         ),
-                      ),
+                        const SizedBox(height: 20),
 
-                      if (_selectedUser != null) ...[
-                        const SizedBox(height: 16),
-
-                        // Total Due Display
-                        if (_isLoadingBill)
-                          const Center(child: CircularProgressIndicator())
-                        else
-                          Card(
-                            color: _totalDue > 0
-                                ? Colors.red.shade50
-                                : Colors.green.shade50,
-                            child: Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.receipt,
-                                    color: _totalDue > 0
-                                        ? Colors.red
-                                        : Colors.green,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        const Text('Current Total Due',
-                                            style: TextStyle(
-                                                fontWeight: FontWeight.w600)),
-                                        Text(
-                                          '৳${_totalDue.toStringAsFixed(2)}',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            color: _totalDue > 0
-                                                ? Colors.red
-                                                : Colors.green,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-
-                        const SizedBox(height: 16),
-
-                        // Payment Method Selection
-                        const Text('Payment Method',
+                        // User Selection
+                        const Text('Select User',
                             style: TextStyle(
                                 fontSize: 16, fontWeight: FontWeight.w600)),
                         const SizedBox(height: 8),
-                        DropdownButtonFormField<String>(
-                          value: _selectedPaymentMethod,
-                          items: _paymentMethods.map((method) {
-                            return DropdownMenuItem(
-                                value: method, child: Text(method));
-                          }).toList(),
-                          onChanged: (method) {
-                            setState(() {
-                              _selectedPaymentMethod = method!;
-                              // Clear controllers when method changes
-                              _controllers.forEach((key, controller) {
-                                if (key != 'amount') controller.clear();
+                        Flexible(
+                          child: DropdownButtonFormField<Map<String, dynamic>>(
+                            value: _selectedUser,
+                            hint: const Text('Choose a user'),
+                            isExpanded: true,
+                            items: _users.map((user) {
+                              return DropdownMenuItem(
+                                value: user,
+                                child: Text(
+                                    '${user['ba_no']} - ${user['rank']} ${user['name']}'),
+                              );
+                            }).toList(),
+                            onChanged: (user) {
+                              setState(() {
+                                _selectedUser = user;
+                                if (user != null) {
+                                  _loadUserBill(user['ba_no'].toString());
+                                }
                               });
-                            });
-                          },
-                          decoration: InputDecoration(
-                            border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8)),
-                            contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 8),
-                          ),
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        // Payment Method Specific Fields
-                        if (_selectedPaymentMethod == 'bKash' ||
-                            _selectedPaymentMethod == 'Tap') ...[
-                          _buildInputField(
-                              'Phone Number', _controllers['phone']!),
-                          _buildInputField(
-                              'Transaction ID', _controllers['transactionId']!),
-                        ] else if (_selectedPaymentMethod == 'Bank') ...[
-                          _buildInputField(
-                              'Bank Account No', _controllers['accountNo']!),
-                          _buildInputField(
-                              'Bank Name', _controllers['bankName']!),
-                        ] else if (_selectedPaymentMethod == 'Card') ...[
-                          _buildInputField(
-                              'Card Number', _controllers['cardNumber']!),
-                          _buildInputField(
-                              'Expiry Date', _controllers['expiryDate']!),
-                          _buildInputField('CVV', _controllers['cvv']!,
-                              isNumber: true),
-                        ],
-
-                        _buildInputField('Amount', _controllers['amount']!,
-                            isNumber: true),
-
-                        const SizedBox(height: 24),
-
-                        // Submit Button
-                        ElevatedButton(
-                          onPressed: _isSubmitting ? null : _submitTransaction,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                            },
+                            decoration: InputDecoration(
+                              border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8)),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
                             ),
                           ),
-                          child: _isSubmitting
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Text(
-                                  'Create Transaction',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
                         ),
+
+                        if (_selectedUser != null) ...[
+                          const SizedBox(height: 16),
+
+                          // Total Due Display
+                          if (_isLoadingBill)
+                            const Center(child: CircularProgressIndicator())
+                          else
+                            Card(
+                              color: _totalDue > 0
+                                  ? Colors.red.shade50
+                                  : Colors.green.shade50,
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.receipt,
+                                      color: _totalDue > 0
+                                          ? Colors.red
+                                          : Colors.green,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const Text('Current Total Due',
+                                              style: TextStyle(
+                                                  fontWeight: FontWeight.w600)),
+                                          Text(
+                                            '৳${_totalDue.toStringAsFixed(2)}',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              color: _totalDue > 0
+                                                  ? Colors.red
+                                                  : Colors.green,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                          const SizedBox(height: 16),
+
+                          // Payment Method Selection
+                          const Text('Payment Method',
+                              style: TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 8),
+                          DropdownButtonFormField<String>(
+                            value: _selectedPaymentMethod,
+                            items: _paymentMethods.map((method) {
+                              return DropdownMenuItem(
+                                  value: method, child: Text(method));
+                            }).toList(),
+                            onChanged: (method) {
+                              setState(() {
+                                _selectedPaymentMethod = method!;
+                                // Clear controllers when method changes
+                                _controllers.forEach((key, controller) {
+                                  if (key != 'amount') controller.clear();
+                                });
+                              });
+                            },
+                            decoration: InputDecoration(
+                              border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8)),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
+                            ),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // Payment Method Specific Fields
+                          if (_selectedPaymentMethod == 'bKash' ||
+                              _selectedPaymentMethod == 'Tap') ...[
+                            _buildInputField(
+                                'Phone Number', _controllers['phone']!),
+                            _buildInputField('Transaction ID',
+                                _controllers['transactionId']!),
+                          ] else if (_selectedPaymentMethod == 'Bank') ...[
+                            _buildInputField(
+                                'Bank Account No', _controllers['accountNo']!),
+                            _buildInputField(
+                                'Bank Name', _controllers['bankName']!),
+                          ] else if (_selectedPaymentMethod == 'Card') ...[
+                            _buildInputField(
+                                'Card Number', _controllers['cardNumber']!),
+                            _buildInputField(
+                                'Expiry Date', _controllers['expiryDate']!),
+                            _buildInputField('CVV', _controllers['cvv']!,
+                                isNumber: true),
+                          ],
+
+                          _buildInputField('Amount', _controllers['amount']!,
+                              isNumber: true),
+
+                          const SizedBox(height: 24),
+
+                          // Submit Button
+                          ElevatedButton(
+                            onPressed:
+                                _isSubmitting ? null : _submitTransaction,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: _isSubmitting
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Text(
+                                    'Create Transaction',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
               ),

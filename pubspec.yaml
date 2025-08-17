@@ -30,6 +30,7 @@ dependencies:
   cloud_firestore: ^5.4.4   # For Firestore database
   firebase_storage: ^12.3.2 # For file uploads (optional)
   firebase_data_connect: any  # For Firebase Data Connect
+  dropdown_search: ^6.0.2
   
 dev_dependencies:
   flutter_test:
