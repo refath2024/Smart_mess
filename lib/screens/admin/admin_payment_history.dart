@@ -728,145 +728,153 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
                 ),
                 const SizedBox(height: 24),
                 Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.1),
-                          spreadRadius: 1,
-                          blurRadius: 6,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: SingleChildScrollView(
+                  child: SafeArea(
+                    top: false,
+                    minimum: const EdgeInsets.only(bottom: 12),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.1),
+                            spreadRadius: 1,
+                            blurRadius: 6,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
                       child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: DataTable(
-                          headingRowColor:
-                              WidgetStateProperty.all(const Color(0xFFF4F4F4)),
-                          columns: [
-                            DataColumn(
-                                label: Text(
-                                    AppLocalizations.of(context)!
-                                        .paymentAmountBdt,
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold))),
-                            DataColumn(
-                                label: Text(
-                                    AppLocalizations.of(context)!.paymentTime,
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold))),
-                            DataColumn(
-                                label: Text(
-                                    AppLocalizations.of(context)!.paymentMethod,
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold))),
-                            DataColumn(
-                                label: Text(AppLocalizations.of(context)!.baNo,
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold))),
-                            DataColumn(
-                                label: Text(AppLocalizations.of(context)!.rank,
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold))),
-                            DataColumn(
-                                label: Text(AppLocalizations.of(context)!.name,
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold))),
-                            DataColumn(
-                                label: Text('Status',
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold))),
-                            DataColumn(
-                                label: Text('Details',
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold))),
-                            DataColumn(
-                                label: Text(
-                                    AppLocalizations.of(context)!.actions,
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold))),
-                          ],
-                          rows: List.generate(filtered.length, (index) {
-                            final request = filtered[index];
-
-                            return DataRow(cells: [
-                              DataCell(Text(
-                                  '৳${request['amount'].toStringAsFixed(2)}')),
-                              DataCell(Text(request['request_time']
-                                      ?.toDate()
-                                      ?.toString() ??
-                                  'N/A')),
-                              DataCell(Text(request['payment_method'] ?? '')),
-                              DataCell(Text(request['ba_no'] ?? '')),
-                              DataCell(Text(request['rank'] ?? '')),
-                              DataCell(Text(request['name'] ?? '')),
-                              DataCell(
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: request['status'] == 'pending'
-                                        ? Colors.orange
-                                        : request['status'] == 'approved'
-                                            ? Colors.green
-                                            : Colors.red,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    request['status']?.toUpperCase() ??
-                                        'UNKNOWN',
-                                    style: const TextStyle(
-                                        color: Colors.white, fontSize: 12),
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: DataTable(
+                            headingRowColor: WidgetStateProperty.all(
+                                const Color(0xFFF4F4F4)),
+                            columns: [
+                              DataColumn(
+                                  label: Text(
+                                      AppLocalizations.of(context)!
+                                          .paymentAmountBdt,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold))),
+                              DataColumn(
+                                  label: Text(
+                                      AppLocalizations.of(context)!.paymentTime,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold))),
+                              DataColumn(
+                                  label: Text(
+                                      AppLocalizations.of(context)!
+                                          .paymentMethod,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold))),
+                              DataColumn(
+                                  label: Text(
+                                      AppLocalizations.of(context)!.baNo,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold))),
+                              DataColumn(
+                                  label: Text(
+                                      AppLocalizations.of(context)!.rank,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold))),
+                              DataColumn(
+                                  label: Text(
+                                      AppLocalizations.of(context)!.name,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold))),
+                              DataColumn(
+                                  label: Text('Status',
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold))),
+                              DataColumn(
+                                  label: Text('Details',
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold))),
+                              DataColumn(
+                                  label: Text(
+                                      AppLocalizations.of(context)!.actions,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold))),
+                            ],
+                            rows: List.generate(filtered.length, (index) {
+                              final request = filtered[index];
+                              return DataRow(cells: [
+                                DataCell(Text(
+                                    '৳${request['amount'].toStringAsFixed(2)}')),
+                                DataCell(Text(request['request_time']
+                                        ?.toDate()
+                                        ?.toString() ??
+                                    'N/A')),
+                                DataCell(Text(request['payment_method'] ?? '')),
+                                DataCell(Text(request['ba_no'] ?? '')),
+                                DataCell(Text(request['rank'] ?? '')),
+                                DataCell(Text(request['name'] ?? '')),
+                                DataCell(
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: request['status'] == 'pending'
+                                          ? Colors.orange
+                                          : request['status'] == 'approved'
+                                              ? Colors.green
+                                              : Colors.red,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      request['status']?.toUpperCase() ??
+                                          'UNKNOWN',
+                                      style: const TextStyle(
+                                          color: Colors.white, fontSize: 12),
+                                    ),
                                   ),
                                 ),
-                              ),
-                              DataCell(
-                                IconButton(
-                                  icon: const Icon(Icons.info,
-                                      color: Colors.blue),
-                                  onPressed: () => _showPaymentDetails(request),
+                                DataCell(
+                                  IconButton(
+                                    icon: const Icon(Icons.info,
+                                        color: Colors.blue),
+                                    onPressed: () =>
+                                        _showPaymentDetails(request),
+                                  ),
                                 ),
-                              ),
-                              DataCell(
-                                request['status'] == 'pending'
-                                    ? Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          IconButton(
-                                            icon: const Icon(Icons.check,
-                                                color: Colors.green),
-                                            onPressed: () =>
-                                                _approvePayment(request),
-                                            tooltip: 'Approve',
-                                          ),
-                                          IconButton(
-                                            icon: const Icon(Icons.close,
-                                                color: Colors.red),
-                                            onPressed: () =>
-                                                _rejectPayment(request),
-                                            tooltip: 'Reject',
-                                          ),
-                                        ],
-                                      )
-                                    : Text(request['status'] == 'approved'
-                                        ? 'Approved'
-                                        : 'Rejected'),
-                              ),
-                            ]);
-                          }),
+                                DataCell(
+                                  request['status'] == 'pending'
+                                      ? Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            IconButton(
+                                              icon: const Icon(Icons.check,
+                                                  color: Colors.green),
+                                              onPressed: () =>
+                                                  _approvePayment(request),
+                                              tooltip: 'Approve',
+                                            ),
+                                            IconButton(
+                                              icon: const Icon(Icons.close,
+                                                  color: Colors.red),
+                                              onPressed: () =>
+                                                  _rejectPayment(request),
+                                              tooltip: 'Reject',
+                                            ),
+                                          ],
+                                        )
+                                      : Text(request['status'] == 'approved'
+                                          ? 'Approved'
+                                          : 'Rejected'),
+                                ),
+                              ]);
+                            }),
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ],
-            ),
-          ),
-        );
+              ], // closes children of Column
+            ), // closes Column
+          ), // closes Padding
+        ); // closes Consumer
       },
     );
   }
