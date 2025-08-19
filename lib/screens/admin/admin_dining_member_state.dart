@@ -19,6 +19,8 @@ import 'admin_bill_screen.dart';
 import 'add_dining_member.dart';
 import 'admin_login_screen.dart';
 import '../../services/admin_auth_service.dart';
+import 'admin_all_login_sessions_screen.dart';
+import 'admin_all_user_activity_log_screen.dart';
 
 class DiningMemberStatePage extends StatefulWidget {
   const DiningMemberStatePage({super.key});
@@ -727,57 +729,135 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                         ],
                       );
                     } else {
-                      // Stack vertically on smaller screens
+                      // Stack vertically on smaller screens, but put search and All Login Sessions button in a Row
                       return Column(
                         children: [
-                          TextField(
-                            controller: _searchController,
-                            onChanged: _search,
-                            decoration: InputDecoration(
-                              labelText: AppLocalizations.of(context)!
-                                  .searchAllTextColumns,
-                              border: const OutlineInputBorder(),
-                              prefixIcon: const Icon(Icons.search),
-                              contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 8),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          DropdownButtonFormField<String>(
-                            value: statusFilter,
-                            decoration: InputDecoration(
-                              labelText:
-                                  AppLocalizations.of(context)!.filterByStatus,
-                              border: const OutlineInputBorder(),
-                              contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 8),
-                            ),
-                            items: [
-                              DropdownMenuItem(
-                                value: 'all',
-                                child: Text(
-                                    AppLocalizations.of(context)!.allStatus),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              ElevatedButton.icon(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const AdminAllLoginSessionsScreen(),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.security),
+                                label: const Text('All Login Sessions'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Color(0xFF0052CC),
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 10),
+                                  textStyle: const TextStyle(fontSize: 14),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
                               ),
-                              DropdownMenuItem(
-                                value: 'active',
-                                child: Text(
-                                    AppLocalizations.of(context)!.activeOnly),
-                              ),
-                              DropdownMenuItem(
-                                value: 'inactive',
-                                child: Text(
-                                    AppLocalizations.of(context)!.inactiveOnly),
+                              const SizedBox(width: 12),
+                              ElevatedButton.icon(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const AdminAllUserActivityLogScreen(),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.event_note),
+                                label: const Text('All User Activity Logs'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Color(0xFF0052CC),
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 10),
+                                  textStyle: const TextStyle(fontSize: 14),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
                               ),
                             ],
-                            onChanged: (String? newValue) {
-                              if (newValue != null) {
-                                setState(() {
-                                  statusFilter = newValue;
-                                  _applyFilters();
-                                });
-                              }
-                            },
                           ),
+                          const SizedBox(height: 16),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                flex: 3,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(right: 12.0),
+                                  child: SizedBox(
+                                    height: 48,
+                                    child: TextField(
+                                      controller: _searchController,
+                                      onChanged: _search,
+                                      decoration: InputDecoration(
+                                        labelText: AppLocalizations.of(context)!
+                                            .searchAllTextColumns,
+                                        border: const OutlineInputBorder(),
+                                        prefixIcon: const Icon(Icons.search),
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                                horizontal: 12, vertical: 8),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 2,
+                                child: SizedBox(
+                                  height: 48,
+                                  child: DropdownButtonFormField<String>(
+                                    value: statusFilter,
+                                    decoration: InputDecoration(
+                                      labelText: AppLocalizations.of(context)!
+                                          .filterByStatus,
+                                      border: const OutlineInputBorder(),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                              horizontal: 12, vertical: 8),
+                                    ),
+                                    items: [
+                                      DropdownMenuItem(
+                                        value: 'all',
+                                        child: Text(
+                                            AppLocalizations.of(context)!
+                                                .allStatus),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: 'active',
+                                        child: Text(
+                                            AppLocalizations.of(context)!
+                                                .activeOnly),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: 'inactive',
+                                        child: Text(
+                                            AppLocalizations.of(context)!
+                                                .inactiveOnly),
+                                      ),
+                                    ],
+                                    onChanged: (String? newValue) {
+                                      if (newValue != null) {
+                                        setState(() {
+                                          statusFilter = newValue;
+                                          _applyFilters();
+                                        });
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
                         ],
                       );
                     }
