@@ -14,6 +14,7 @@ import 'profile_screen.dart';
 import 'help_screen.dart';
 import 'change_password_screen.dart';
 import 'user_activity_log_screen.dart';
+import 'user_login_sessions_screen.dart';
 
 class UserHomeScreen extends StatefulWidget {
   const UserHomeScreen({super.key});
@@ -263,6 +264,18 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                         context,
                         MaterialPageRoute(
                             builder: (_) => const UserActivityLogScreen()),
+                      );
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.login),
+                    title: const Text('Login Sessions'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const UserLoginSessionsScreen()),
                       );
                     },
                   ),

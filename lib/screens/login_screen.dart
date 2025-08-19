@@ -7,6 +7,7 @@ import 'forgot_password_screen.dart';
 import 'register_screen.dart';
 import 'user/user_home_screen.dart';
 import '../services/user_auth_service.dart';
+import '../services/login_session_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -135,6 +136,9 @@ class _LoginScreenState extends State<LoginScreen> {
       if (result != null && result['success'] == true) {
         // Save email to history on successful login
         await _saveEmailToHistory(email);
+
+        // Log login session
+        await LoginSessionService.logSession();
 
         if (mounted) {
           Navigator.pushReplacement(
