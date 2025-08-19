@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'user_payment_history_screen.dart';
 
 class BillingScreen extends StatefulWidget {
   const BillingScreen({super.key});
@@ -373,6 +374,33 @@ class _BillingScreenState extends State<BillingScreen> {
           padding: const EdgeInsets.all(16),
           child: ListView(
             children: [
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.history, size: 20),
+                    label: const Text('Payment History',
+                        style: TextStyle(fontSize: 14)),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF002B5B),
+                      side: const BorderSide(color: Color(0xFF002B5B)),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const UserPaymentHistoryScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
               if (_paymentSuccess)
                 Card(
                   color: Colors.green.shade50,
