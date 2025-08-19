@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import '../../services/activity_log_service.dart';
 
 class MyProfilePage extends StatefulWidget {
   const MyProfilePage({super.key});
@@ -187,6 +188,21 @@ class _MyProfilePageState extends State<MyProfilePage> {
         _imageFile = null;
         _isEditing = false;
       });
+
+      // Log activity for profile update
+      await ActivityLogService.log(
+        'Profile Updated',
+        details: {
+          'name': _nameController.text.trim(),
+          'email': _emailController.text.trim(),
+          'mobile': _phoneController.text.trim(),
+          'ba_no': _noController.text.trim(),
+          'rank': _rankController.text.trim(),
+          'unit': _unitController.text.trim(),
+          if (uploadedImageUrl != null) 'image_url': uploadedImageUrl,
+          'date': DateTime.now().toIso8601String(),
+        },
+      );
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Profile updated successfully')),

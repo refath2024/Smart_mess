@@ -13,6 +13,7 @@ import 'notification_page.dart';
 import 'profile_screen.dart';
 import 'help_screen.dart';
 import 'change_password_screen.dart';
+import 'user_activity_log_screen.dart';
 
 class UserHomeScreen extends StatefulWidget {
   const UserHomeScreen({super.key});
@@ -250,6 +251,18 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                         context,
                         MaterialPageRoute(
                             builder: (_) => const MyProfilePage()),
+                      );
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.history),
+                    title: const Text('Activity Log'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const UserActivityLogScreen()),
                       );
                     },
                   ),

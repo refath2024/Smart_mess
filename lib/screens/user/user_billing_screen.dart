@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'user_payment_history_screen.dart';
+import '../../services/activity_log_service.dart';
 
 class BillingScreen extends StatefulWidget {
   const BillingScreen({super.key});
@@ -328,6 +329,16 @@ class _BillingScreenState extends State<BillingScreen> {
         _paymentSuccess = true;
         _isSubmitting = false;
       });
+
+      // Log activity
+      await ActivityLogService.log(
+        'Bill Payment Request',
+        details: {
+          'amount': amount,
+          'method': method,
+          'timestamp': timestamp.toIso8601String(),
+        },
+      );
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

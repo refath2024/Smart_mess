@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'user_meal_records_screen.dart';
+import '../../services/activity_log_service.dart';
 
 class MealInOutScreen extends StatefulWidget {
   const MealInOutScreen({super.key});
@@ -84,6 +85,14 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
               false; // Visually show as off, but don't update database
         });
 
+        // Log activity for entering manual override
+        await ActivityLogService.log(
+          'Entered Manual Override Mode',
+          details: {
+            'date': DateTime.now().toIso8601String(),
+          },
+        );
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
@@ -122,6 +131,14 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
           _manualOverrideMode = false;
           _autoLoopEnabled = true;
         });
+
+        // Log activity for re-enabling auto loop
+        await ActivityLogService.log(
+          'Auto Loop Re-enabled',
+          details: {
+            'date': DateTime.now().toIso8601String(),
+          },
+        );
 
         // Note: If this is re-enabling a loop, it will be handled in submit function
         ScaffoldMessenger.of(context).showSnackBar(
@@ -233,6 +250,13 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
           backgroundColor: Colors.orange,
           duration: Duration(seconds: 3),
         ),
+      );
+      // Log activity for disabling auto loop
+      await ActivityLogService.log(
+        'Auto Loop Disabled Permanently',
+        details: {
+          'date': DateTime.now().toIso8601String(),
+        },
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -437,6 +461,15 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
       });
 
       // Submit for today with disposal and remarks if provided
+      // Log activity for submitting/updating auto loop
+      await ActivityLogService.log(
+        'Auto Loop Pattern Submitted/Updated',
+        details: {
+          'meals': _selectedMeals.toList(),
+          'date': DateTime.now().toIso8601String(),
+          'mode': 'auto_loop',
+        },
+      );
       final todayData = {
         'name': userName,
         'rank': userRank,
@@ -469,6 +502,14 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 4),
           ),
+        );
+
+        // Log activity for entering manual override
+        await ActivityLogService.log(
+          'Entered Manual Override Mode',
+          details: {
+            'date': DateTime.now().toIso8601String(),
+          },
         );
 
         // Clear form but keep auto loop enabled
@@ -517,6 +558,13 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
 
     try {
       // Get user profile data for BA number, name, and rank
+      // Log activity for re-enabling auto loop
+      await ActivityLogService.log(
+        'Auto Loop Re-enabled',
+        details: {
+          'date': DateTime.now().toIso8601String(),
+        },
+      );
       final userDoc = await FirebaseFirestore.instance
           .collection('user_requests')
           .doc(user.uid)
@@ -551,6 +599,15 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
         // Show confirmation dialog for update
         final shouldUpdate = await _showUpdateConfirmationDialog();
         if (!shouldUpdate) {
+          await ActivityLogService.log(
+            'Meal Request Submitted (Auto Loop)',
+            details: {
+              'meals': _selectedMeals.toList(),
+              'remarks': _remarksController.text,
+              'date': _mealDate,
+              'mode': 'auto_loop',
+            },
+          );
           setState(() {
             _isSubmitting = false;
           });
@@ -581,6 +638,14 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
         'admin_generated': false, // User submitted
       };
 
+      // Log activity for disabling auto loop (if this is the correct place, otherwise move to the relevant function)
+      // await ActivityLogService.log(
+      //   'Auto Loop Disabled Permanently',
+      //   details: {
+      //     'date': DateTime.now().toIso8601String(),
+      //   },
+      // );
+
       // Save to user_meal_state collection
       await FirebaseFirestore.instance
           .collection('user_meal_state')
@@ -589,6 +654,16 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
         baNo: userData_toSave,
       }, SetOptions(merge: true));
 
+      // Log activity
+      await ActivityLogService.log(
+        'Meal Request Submitted',
+        details: {
+          'meals': _selectedMeals.toList(),
+          'remarks': _remarksController.text,
+          'date': _mealDate,
+          'mode': 'regular',
+        },
+      );
       // Calculate total cost for feedback
       double totalCost = 0.0;
       for (String mealType in _selectedMeals) {
@@ -677,6 +752,15 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
       if (dataExists) {
         final shouldUpdate = await _showUpdateConfirmationDialog();
         if (!shouldUpdate) {
+          await ActivityLogService.log(
+            'Meal Request Submitted (Auto Loop)',
+            details: {
+              'meals': _selectedMeals.toList(),
+              'remarks': _remarksController.text,
+              'date': _mealDate,
+              'mode': 'auto_loop',
+            },
+          );
           setState(() {
             _isSubmitting = false;
           });
@@ -715,6 +799,17 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
           .set({
         baNo: userData_toSave,
       }, SetOptions(merge: true));
+
+      // Log activity for manual override
+      await ActivityLogService.log(
+        'Meal Request Submitted (Manual Override)',
+        details: {
+          'meals': _selectedMeals.toList(),
+          'remarks': _remarksController.text,
+          'date': _mealDate,
+          'mode': 'manual_override',
+        },
+      );
 
       // Calculate total cost for feedback
       double totalCost = 0.0;

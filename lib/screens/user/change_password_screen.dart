@@ -1,3 +1,4 @@
+import '../../services/activity_log_service.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -174,6 +175,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
       // Update password (user is already re-authenticated from step 1)
       await user.updatePassword(newPassword);
+
+      await ActivityLogService.log(
+        'Password Changed',
+        details: {'changed_at': DateTime.now().toIso8601String()},
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
