@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../services/staff_activity_log_service.dart';
 
 class AdminNotificationScreen extends StatefulWidget {
   const AdminNotificationScreen({super.key});
@@ -14,6 +15,8 @@ class _AdminNotificationScreenState extends State<AdminNotificationScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _messageController = TextEditingController();
+
+  final StaffActivityLogService _activityLogService = StaffActivityLogService();
 
   String _selectedNotificationType = 'General';
   String _selectedTargetType = 'All Users';
@@ -96,19 +99,40 @@ class _AdminNotificationScreenState extends State<AdminNotificationScreen> {
 
     try {
       final currentAdmin = FirebaseAuth.instance.currentUser;
-      final adminData = await FirebaseFirestore.instance
-          .collection('admin_users')
+      // Try to get staff details from staff_state collection
+      final staffDoc = await FirebaseFirestore.instance
+          .collection('staff_state')
           .doc(currentAdmin!.uid)
           .get();
 
-      final senderName = adminData.data()?['name'] ?? 'Admin';
+      String baNo = '';
+      String rank = '';
+      String name = '';
+      String email = '';
+
+      if (staffDoc.exists) {
+        final staffData = staffDoc.data() as Map<String, dynamic>;
+        baNo = staffData['ba_no'] ?? '';
+        rank = staffData['rank'] ?? '';
+        name = staffData['name'] ?? '';
+        email = staffData['email'] ?? '';
+      } else {
+        // fallback to admin_users collection for name/email
+        final adminData = await FirebaseFirestore.instance
+            .collection('admin_users')
+            .doc(currentAdmin.uid)
+            .get();
+        final admin = adminData.data() ?? {};
+        name = admin['name'] ?? 'Admin';
+        email = admin['email'] ?? '';
+      }
 
       final notificationData = {
         'title': _titleController.text.trim(),
         'message': _messageController.text.trim(),
         'type': _selectedNotificationType,
         'sender_id': currentAdmin.uid,
-        'sender_name': senderName,
+        'sender_name': name,
         'created_at': FieldValue.serverTimestamp(),
         'is_read': false,
       };
@@ -130,6 +154,25 @@ class _AdminNotificationScreenState extends State<AdminNotificationScreen> {
 
         await batch.commit();
 
+        // Log staff activity for sending notification to all users
+        if (baNo.isNotEmpty) {
+          final now = DateTime.now();
+          final formattedTime =
+              '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} ${now.hour}:${now.minute.toString().padLeft(2, '0')}';
+          await _activityLogService.logActivity(
+            baNo: baNo,
+            rank: rank,
+            name: name,
+            email: email,
+            actionType: 'Send Notification',
+            message:
+                'Type:${_selectedNotificationType}\nTitle: ${_titleController.text.trim()}\nMessage: ${_messageController.text.trim()}\nTime:$formattedTime',
+            extraData: {
+              'receiver': 'All Officers',
+            },
+          );
+        }
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -144,6 +187,41 @@ class _AdminNotificationScreenState extends State<AdminNotificationScreen> {
           'user_id': _selectedUserId,
           'target_type': 'specific',
         });
+
+        // Get receiver details from user_requests
+        Map<String, dynamic>? receiverData;
+        if (_selectedUserId != null) {
+          final receiverDoc = await FirebaseFirestore.instance
+              .collection('user_requests')
+              .doc(_selectedUserId)
+              .get();
+          if (receiverDoc.exists) {
+            final data = receiverDoc.data() as Map<String, dynamic>;
+            receiverData = {
+              'receiver_ba_no': data['ba_no'] ?? '',
+              'receiver_rank': data['rank'] ?? '',
+              'receiver_name': data['name'] ?? '',
+              'receiver_email': data['email'] ?? '',
+            };
+          }
+        }
+
+        // Log staff activity for sending notification to a specific user
+        if (baNo.isNotEmpty) {
+          final now = DateTime.now();
+          final formattedTime =
+              '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} ${now.hour}:${now.minute.toString().padLeft(2, '0')}';
+          await _activityLogService.logActivity(
+            baNo: baNo,
+            rank: rank,
+            name: name,
+            email: email,
+            actionType: 'Send Notification',
+            message:
+                'Type:${_selectedNotificationType}\nTitle: ${_titleController.text.trim()}\nMessage: ${_messageController.text.trim()}\nTime:$formattedTime',
+            extraData: receiverData,
+          );
+        }
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

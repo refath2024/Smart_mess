@@ -17,9 +17,11 @@ import 'admin_bill_screen.dart';
 import 'admin_monthly_menu_screen.dart';
 import 'admin_menu_vote_screen.dart';
 import 'admin_notification_screen.dart';
+import 'admin_notification_history_screen.dart';
 import '../../services/admin_auth_service.dart';
 import '../../providers/language_provider.dart';
 import '../../l10n/app_localizations.dart';
+import 'staff_own_activity_log_screen.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -29,6 +31,29 @@ class AdminHomeScreen extends StatefulWidget {
 }
 
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
+  Widget _buildOwnActivityLogButton(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: ElevatedButton.icon(
+        icon: const Icon(Icons.history),
+        label: const Text('My Activity Log'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Color(0xFF002B5B),
+          foregroundColor: Colors.white,
+          minimumSize: const Size.fromHeight(48),
+        ),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const StaffOwnActivityLogScreen(),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   final AdminAuthService _adminAuthService = AdminAuthService();
 
   bool _isLoading = true;
@@ -460,6 +485,19 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   ],
                 ),
               ),
+              IconButton(
+                icon: const Icon(Icons.history, color: Colors.white),
+                tooltip: 'Notification History',
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          const AdminNotificationHistoryScreen(),
+                    ),
+                  );
+                },
+              ),
             ],
           ),
           const SizedBox(height: 20),
@@ -890,7 +928,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
                 // Notification Section
                 _buildNotificationSection(),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
+                _buildOwnActivityLogButton(context),
+                const SizedBox(height: 16),
 
                 _buildMenuCard(
                   AppLocalizations.of(context)!.todaysMenu,

@@ -4,6 +4,9 @@ import 'package:provider/provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/language_provider.dart';
 import '../../services/admin_auth_service.dart';
+import 'admin_all_login_sessions_screen.dart';
+// import 'admin_all_user_activity_log_screen.dart';
+import 'admin_all_staff_activity_log_screen.dart';
 import 'add_staff.dart';
 import 'admin_home_screen.dart';
 import 'admin_users_screen.dart';
@@ -780,6 +783,61 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       children: [
+                        // Top row: Activity/Session buttons
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const AdminAllLoginSessionsScreen(),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.security),
+                              label: const Text('All Staff Login Sessions'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Color(0xFF0052CC),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 10),
+                                textStyle: const TextStyle(fontSize: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const AdminAllStaffActivityLogScreen(),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.event_note),
+                              label: const Text('All Staff Activity Logs'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Color(0xFF0052CC),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 10),
+                                textStyle: const TextStyle(fontSize: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        // Search and Add button row
                         Row(
                           children: [
                             Expanded(
