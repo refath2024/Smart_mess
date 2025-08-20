@@ -189,6 +189,23 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
         'approved_by': _currentUserData?['name'] ?? 'Admin',
       });
 
+      // Log activity
+      final adminName = _currentUserData?['name'] ?? 'Admin';
+      final userName = userDoc.data()?['name'] ?? '';
+      final baNo = _currentUserData?['ba_no'] ?? '';
+      if (baNo.isNotEmpty) {
+        await FirebaseFirestore.instance
+            .collection('staff_activity_log')
+            .doc(baNo)
+            .collection('logs')
+            .add({
+          'timestamp': FieldValue.serverTimestamp(),
+          'actionType': 'Accept User',
+          'message': '$adminName accepted $userName.',
+          'name': adminName,
+        });
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(AppLocalizations.of(context)!.userAccepted),
@@ -198,7 +215,9 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
       await _fetchPendingUsers();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("${AppLocalizations.of(context)!.failedToAcceptUser}: $e")),
+        SnackBar(
+            content: Text(
+                "${AppLocalizations.of(context)!.failedToAcceptUser}: $e")),
       );
     }
   }
@@ -230,10 +249,33 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
     if (confirm != true) return;
 
     try {
+      // Get user name for log
+      final userDoc = await FirebaseFirestore.instance
+          .collection('user_requests')
+          .doc(docId)
+          .get();
+      final userName = userDoc.data()?['name'] ?? '';
+
       await FirebaseFirestore.instance
           .collection('user_requests')
           .doc(docId)
           .update({'rejected': true, 'status': "rejected"});
+
+      // Log activity
+      final adminName = _currentUserData?['name'] ?? 'Admin';
+      final baNo = _currentUserData?['ba_no'] ?? '';
+      if (baNo.isNotEmpty) {
+        await FirebaseFirestore.instance
+            .collection('staff_activity_log')
+            .doc(baNo)
+            .collection('logs')
+            .add({
+          'timestamp': FieldValue.serverTimestamp(),
+          'actionType': 'Reject User',
+          'message': '$adminName rejected $userName.',
+          'name': adminName,
+        });
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(AppLocalizations.of(context)!.userRejected)),
@@ -241,7 +283,9 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
       await _fetchPendingUsers();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("${AppLocalizations.of(context)!.failedToRejectUser}: $e")),
+        SnackBar(
+            content: Text(
+                "${AppLocalizations.of(context)!.failedToRejectUser}: $e")),
       );
     }
   }
@@ -302,423 +346,445 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
           );
         }
 
-    return Scaffold(
-      drawer: Drawer(
-        child: Column(
-          children: [
-            DrawerHeader(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF002B5B), Color(0xFF1A4D8F)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: Row(
-                children: [
-                  const CircleAvatar(
-                    backgroundImage: AssetImage('assets/me.png'),
-                    radius: 30,
+        return Scaffold(
+          drawer: Drawer(
+            child: Column(
+              children: [
+                DrawerHeader(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF002B5B), Color(0xFF1A4D8F)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
                   ),
-                  const SizedBox(width: 10),
-                  Flexible(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          _currentUserName,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
+                  child: Row(
+                    children: [
+                      const CircleAvatar(
+                        backgroundImage: AssetImage('assets/me.png'),
+                        radius: 30,
+                      ),
+                      const SizedBox(width: 10),
+                      Flexible(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              _currentUserName,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            if (_currentUserData != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                _currentUserData!['role'] ?? '',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              Text(
+                                'BA: ${_currentUserData!['ba_no'] ?? ''}',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
-                        if (_currentUserData != null) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            _currentUserData!['role'] ?? '',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
-                            ),
-                          ),
-                          Text(
-                            'BA: ${_currentUserData!['ba_no'] ?? ''}',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ListView(
+                    padding: EdgeInsets.zero,
+                    children: [
+                      _buildSidebarTile(
+                        icon: Icons.dashboard,
+                        title: AppLocalizations.of(context)!.home,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const AdminHomeScreen()),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.people,
+                        title: AppLocalizations.of(context)!.users,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const AdminUsersScreen()),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.pending,
+                        title: AppLocalizations.of(context)!.pendingIds,
+                        onTap: () => Navigator.pop(context),
+                        selected: true,
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.history,
+                        title: AppLocalizations.of(context)!.shoppingHistory,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) =>
+                                    const AdminShoppingHistoryScreen()),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.receipt,
+                        title: AppLocalizations.of(context)!.voucherList,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) =>
+                                    const AdminVoucherScreen()),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.storage,
+                        title: AppLocalizations.of(context)!.inventory,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) =>
+                                    const AdminInventoryScreen()),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.food_bank,
+                        title: AppLocalizations.of(context)!.messing,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) =>
+                                    const AdminMessingScreen()),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.menu_book,
+                        title: AppLocalizations.of(context)!.monthlyMenu,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const EditMenuScreen()),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.analytics,
+                        title: AppLocalizations.of(context)!.mealState,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) =>
+                                    const AdminMealStateScreen()),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.thumb_up,
+                        title: AppLocalizations.of(context)!.menuVote,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const MenuVoteScreen()),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.receipt_long,
+                        title: AppLocalizations.of(context)!.bills,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const AdminBillScreen()),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.payment,
+                        title: AppLocalizations.of(context)!.payments,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) =>
+                                    const PaymentsDashboard()),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.people_alt,
+                        title: AppLocalizations.of(context)!.diningMemberState,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) =>
+                                    const DiningMemberStatePage()),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.manage_accounts,
+                        title: AppLocalizations.of(context)!.staffState,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) =>
+                                    const AdminStaffStateScreen()),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border(
+                      top: BorderSide(color: Colors.grey.shade300),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).padding.bottom + 8,
+                      top: 8,
+                    ),
+                    child: _buildSidebarTile(
+                      icon: Icons.logout,
+                      title: AppLocalizations.of(context)!.logout,
+                      onTap: _logout,
+                      color: Colors.red,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          appBar: AppBar(
+            backgroundColor: const Color(0xFF002B5B),
+            iconTheme: const IconThemeData(color: Colors.white),
+            centerTitle: true,
+            title: Text(
+              AppLocalizations.of(context)!.pendingIds,
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
+              ),
+            ),
+            actions: [
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.language, color: Colors.white),
+                onSelected: (String value) {
+                  if (value == 'bn') {
+                    languageProvider.changeLanguage(const Locale('bn'));
+                  } else {
+                    languageProvider.changeLanguage(const Locale('en'));
+                  }
+                },
+                itemBuilder: (BuildContext context) => [
+                  PopupMenuItem<String>(
+                    value: 'en',
+                    child: Row(
+                      children: [
+                        Text('🇺🇸'),
+                        const SizedBox(width: 8),
+                        Text('English'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'bn',
+                    child: Row(
+                      children: [
+                        Text('🇧🇩'),
+                        const SizedBox(width: 8),
+                        Text('বাংলা'),
                       ],
                     ),
                   ),
                 ],
               ),
-            ),
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  _buildSidebarTile(
-                    icon: Icons.dashboard,
-                    title: AppLocalizations.of(context)!.home,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const AdminHomeScreen()),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.people,
-                    title: AppLocalizations.of(context)!.users,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const AdminUsersScreen()),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.pending,
-                    title: AppLocalizations.of(context)!.pendingIds,
-                    onTap: () => Navigator.pop(context),
-                    selected: true,
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.history,
-                    title: AppLocalizations.of(context)!.shoppingHistory,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) =>
-                                const AdminShoppingHistoryScreen()),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.receipt,
-                    title: AppLocalizations.of(context)!.voucherList,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const AdminVoucherScreen()),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.storage,
-                    title: AppLocalizations.of(context)!.inventory,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const AdminInventoryScreen()),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.food_bank,
-                    title: AppLocalizations.of(context)!.messing,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const AdminMessingScreen()),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.menu_book,
-                    title: AppLocalizations.of(context)!.monthlyMenu,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const EditMenuScreen()),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.analytics,
-                    title: AppLocalizations.of(context)!.mealState,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const AdminMealStateScreen()),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.thumb_up,
-                    title: AppLocalizations.of(context)!.menuVote,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const MenuVoteScreen()),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.receipt_long,
-                    title: AppLocalizations.of(context)!.bills,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const AdminBillScreen()),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.payment,
-                    title: AppLocalizations.of(context)!.payments,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const PaymentsDashboard()),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.people_alt,
-                    title: AppLocalizations.of(context)!.diningMemberState,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) =>
-                                const DiningMemberStatePage()),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.manage_accounts,
-                    title: AppLocalizations.of(context)!.staffState,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) =>
-                                const AdminStaffStateScreen()),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: Colors.grey.shade300),
-                ),
-              ),
-              child: Padding(
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.of(context).padding.bottom + 8,
-                  top: 8,
-                ),
-                child: _buildSidebarTile(
-                  icon: Icons.logout,
-                  title: AppLocalizations.of(context)!.logout,
-                  onTap: _logout,
-                  color: Colors.red,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF002B5B),
-        iconTheme: const IconThemeData(color: Colors.white),
-        centerTitle: true,
-        title: Text(
-          AppLocalizations.of(context)!.pendingIds,
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
-          ),
-        ),
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.language, color: Colors.white),
-            onSelected: (String value) {
-              if (value == 'bn') {
-                languageProvider.changeLanguage(const Locale('bn'));
-              } else {
-                languageProvider.changeLanguage(const Locale('en'));
-              }
-            },
-            itemBuilder: (BuildContext context) => [
-              PopupMenuItem<String>(
-                value: 'en',
-                child: Row(
-                  children: [
-                    Text('🇺🇸'),
-                    const SizedBox(width: 8),
-                    Text('English'),
-                  ],
-                ),
-              ),
-              PopupMenuItem<String>(
-                value: 'bn',
-                child: Row(
-                  children: [
-                    Text('🇧🇩'),
-                    const SizedBox(width: 8),
-                    Text('বাংলা'),
-                  ],
-                ),
-              ),
             ],
           ),
-        ],
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    "${AppLocalizations.of(context)!.search}:",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: TextField(
-                      controller: _searchController,
-                      onChanged: _search,
-                      decoration: InputDecoration(
-                        hintText: "${AppLocalizations.of(context)!.search}...",
-                        prefixIcon: const Icon(Icons.search),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
+                  Row(
+                    children: [
+                      Text(
+                        "${AppLocalizations.of(context)!.search}:",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          controller: _searchController,
+                          onChanged: _search,
+                          decoration: InputDecoration(
+                            hintText:
+                                "${AppLocalizations.of(context)!.search}...",
+                            prefixIcon: const Icon(Icons.search),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
                         ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: DataTable(
+                        columnSpacing: 20,
+                        headingRowHeight: 50,
+                        dataRowHeight: 60,
+                        headingRowColor:
+                            WidgetStateProperty.all(const Color(0xFF1A4D8F)),
+                        headingTextStyle: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 1.1,
+                          fontSize: 14,
+                        ),
+                        dataTextStyle: const TextStyle(
+                          color: Colors.black87,
+                          fontSize: 13,
+                          letterSpacing: 0.5,
+                        ),
+                        dividerThickness: 0.5,
+                        showBottomBorder: true,
+                        columns: [
+                          DataColumn(
+                              label:
+                                  Text(AppLocalizations.of(context)!.baNumber)),
+                          DataColumn(
+                              label: Text(AppLocalizations.of(context)!.rank)),
+                          DataColumn(
+                              label: Text(AppLocalizations.of(context)!.name)),
+                          DataColumn(
+                              label: Text(AppLocalizations.of(context)!.unit)),
+                          DataColumn(
+                              label: Text(AppLocalizations.of(context)!.email)),
+                          DataColumn(
+                              label:
+                                  Text(AppLocalizations.of(context)!.mobile)),
+                          DataColumn(
+                              label: Text(
+                                  AppLocalizations.of(context)!.requestedAt)),
+                          DataColumn(
+                              label:
+                                  Text(AppLocalizations.of(context)!.action)),
+                        ],
+                        rows: filteredUsers.map((user) {
+                          final docId = user['id'] as String;
+                          return DataRow(
+                            color: WidgetStateProperty.resolveWith<Color?>(
+                                (states) {
+                              return Colors.grey.shade100;
+                            }),
+                            cells: [
+                              DataCell(Text(user['ba_no'] ?? '')),
+                              DataCell(Text(user['rank'] ?? '')),
+                              DataCell(Text(user['name'] ?? '')),
+                              DataCell(Text(user['unit'] ?? '')),
+                              DataCell(Text(user['email'] ?? '')),
+                              DataCell(Text(user['mobile'] ?? '')),
+                              DataCell(Text(user['requestedAt'] ?? '')),
+                              DataCell(
+                                Row(
+                                  children: [
+                                    ElevatedButton.icon(
+                                      onPressed: () => _acceptUser(docId),
+                                      icon: const Icon(Icons.check, size: 16),
+                                      label: Text(
+                                          AppLocalizations.of(context)!.accept),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.green.shade600,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 6,
+                                        ),
+                                        textStyle: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(6),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    ElevatedButton.icon(
+                                      onPressed: () => _rejectUser(docId),
+                                      icon: const Icon(Icons.close, size: 16),
+                                      label: Text(
+                                          AppLocalizations.of(context)!.reject),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.red.shade600,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 6,
+                                        ),
+                                        textStyle: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(6),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          );
+                        }).toList(),
                       ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: DataTable(
-                    columnSpacing: 20,
-                    headingRowHeight: 50,
-                    dataRowHeight: 60,
-                    headingRowColor:
-                        WidgetStateProperty.all(const Color(0xFF1A4D8F)),
-                    headingTextStyle: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 1.1,
-                      fontSize: 14,
-                    ),
-                    dataTextStyle: const TextStyle(
-                      color: Colors.black87,
-                      fontSize: 13,
-                      letterSpacing: 0.5,
-                    ),
-                    dividerThickness: 0.5,
-                    showBottomBorder: true,
-                    columns: [
-                      DataColumn(label: Text(AppLocalizations.of(context)!.baNumber)),
-                      DataColumn(label: Text(AppLocalizations.of(context)!.rank)),
-                      DataColumn(label: Text(AppLocalizations.of(context)!.name)),
-                      DataColumn(label: Text(AppLocalizations.of(context)!.unit)),
-                      DataColumn(label: Text(AppLocalizations.of(context)!.email)),
-                      DataColumn(label: Text(AppLocalizations.of(context)!.mobile)),
-                      DataColumn(label: Text(AppLocalizations.of(context)!.requestedAt)),
-                      DataColumn(label: Text(AppLocalizations.of(context)!.action)),
-                    ],
-                    rows: filteredUsers.map((user) {
-                      final docId = user['id'] as String;
-                      return DataRow(
-                        color:
-                            WidgetStateProperty.resolveWith<Color?>((states) {
-                          return Colors.grey.shade100;
-                        }),
-                        cells: [
-                          DataCell(Text(user['ba_no'] ?? '')),
-                          DataCell(Text(user['rank'] ?? '')),
-                          DataCell(Text(user['name'] ?? '')),
-                          DataCell(Text(user['unit'] ?? '')),
-                          DataCell(Text(user['email'] ?? '')),
-                          DataCell(Text(user['mobile'] ?? '')),
-                          DataCell(Text(user['requestedAt'] ?? '')),
-                          DataCell(
-                            Row(
-                              children: [
-                                ElevatedButton.icon(
-                                  onPressed: () => _acceptUser(docId),
-                                  icon: const Icon(Icons.check, size: 16),
-                                  label: Text(AppLocalizations.of(context)!.accept),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.green.shade600,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 6,
-                                    ),
-                                    textStyle: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                ElevatedButton.icon(
-                                  onPressed: () => _rejectUser(docId),
-                                  icon: const Icon(Icons.close, size: 16),
-                                  label: Text(AppLocalizations.of(context)!.reject),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.red.shade600,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 6,
-                                    ),
-                                    textStyle: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
-    );
+        );
       },
     );
   }

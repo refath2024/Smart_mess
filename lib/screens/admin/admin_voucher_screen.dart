@@ -32,10 +32,12 @@ class AdminVoucherScreen extends StatefulWidget {
 class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
   final AdminAuthService _adminAuthService = AdminAuthService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  
+
   bool _isLoading = true;
   String _currentUserName = "Loading...";
   Map<String, dynamic>? _currentUserData;
+
+  // ...existing code...
 
   @override
   void initState() {
@@ -46,8 +48,9 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
 
   Future<void> _loadVoucherData() async {
     try {
-      final QuerySnapshot snapshot = await _firestore.collection('voucher').get();
-      
+      final QuerySnapshot snapshot =
+          await _firestore.collection('voucher').get();
+
       setState(() {
         voucherData = snapshot.docs.map((doc) {
           final data = doc.data() as Map<String, dynamic>;
@@ -60,7 +63,7 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
             'original': {},
           };
         }).toList();
-        
+
         filteredData = List.from(voucherData);
         _isLoading = false;
       });
@@ -70,7 +73,9 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${AppLocalizations.of(context)!.errorLoadingVouchers}: $e')),
+          SnackBar(
+              content: Text(
+                  '${AppLocalizations.of(context)!.errorLoadingVouchers}: $e')),
         );
       }
     }
@@ -141,31 +146,63 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
   void _saveEdit(int index) async {
     try {
       final docId = filteredData[index]['docId'];
-      
-      // Update in Firestore (no need for manual ID field)
+      final entry = filteredData[index];
+      final original = entry['original'] ?? {};
+
+      // Prepare change log
+      List<String> changes = [];
+      for (final field in ['buyer', 'date']) {
+        final oldVal = original[field];
+        final newVal = entry[field];
+        if (oldVal != null && oldVal.toString() != newVal.toString()) {
+          changes.add('$field: "$oldVal" → "$newVal"');
+        }
+      }
+
+      // Update in Firestore
       await _firestore.collection('voucher').doc(docId).update({
-        'buyer': filteredData[index]['buyer'],
-        'date': filteredData[index]['date'],
+        'buyer': entry['buyer'],
+        'date': entry['date'],
       });
 
       setState(() {
-        filteredData[index]['isEditing'] = false;
+        entry['isEditing'] = false;
 
         int origIndex = voucherData.indexWhere(
-          (e) => e['docId'] == filteredData[index]['docId'],
+          (e) => e['docId'] == entry['docId'],
         );
         if (origIndex != -1) {
-          voucherData[origIndex] = Map.from(filteredData[index]);
+          voucherData[origIndex] = Map.from(entry);
         }
       });
 
+      // Log activity
+      final adminName = _currentUserData?['name'] ?? 'Admin';
+      final baNo = _currentUserData?['ba_no'] ?? '';
+      if (baNo.isNotEmpty && changes.isNotEmpty) {
+        await _firestore
+            .collection('staff_activity_log')
+            .doc(baNo)
+            .collection('logs')
+            .add({
+          'timestamp': FieldValue.serverTimestamp(),
+          'actionType': 'Update Voucher',
+          'message':
+              '$adminName updated voucher for "${entry['buyer']}". Changes: ${changes.join(', ')}',
+          'name': adminName,
+        });
+      }
+
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.voucherUpdated)));
+      ).showSnackBar(SnackBar(
+          content: Text(AppLocalizations.of(context)!.voucherUpdated)));
     } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('${AppLocalizations.of(context)!.errorUpdatingVoucher}: $e')));
+      ).showSnackBar(SnackBar(
+          content: Text(
+              '${AppLocalizations.of(context)!.errorUpdatingVoucher}: $e')));
     }
   }
 
@@ -195,7 +232,12 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
     if (confirm == true) {
       try {
         final docId = filteredData[index]['docId'];
-        
+        final entry = filteredData[index];
+        final adminName = _currentUserData?['name'] ?? 'Admin';
+        final baNo = _currentUserData?['ba_no'] ?? '';
+        final buyer = entry['buyer'] ?? '';
+        final date = entry['date'] ?? '';
+
         // Delete from Firestore
         await _firestore.collection('voucher').doc(docId).delete();
 
@@ -204,15 +246,32 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
           voucherData.removeWhere((e) => e['docId'] == docId);
         });
 
+        // Log activity
+        if (baNo.isNotEmpty) {
+          await _firestore
+              .collection('staff_activity_log')
+              .doc(baNo)
+              .collection('logs')
+              .add({
+            'timestamp': FieldValue.serverTimestamp(),
+            'actionType': 'Delete Voucher',
+            'message': '$adminName deleted voucher for "$buyer" (Date: $date).',
+            'name': adminName,
+          });
+        }
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(AppLocalizations.of(context)!.voucherDeleted)),
+            SnackBar(
+                content: Text(AppLocalizations.of(context)!.voucherDeleted)),
           );
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${AppLocalizations.of(context)!.errorDeletingVoucher}: $e')),
+            SnackBar(
+                content: Text(
+                    '${AppLocalizations.of(context)!.errorDeletingVoucher}: $e')),
           );
         }
       }
@@ -297,7 +356,9 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${AppLocalizations.of(context)!.logoutFailed}: $e')),
+          SnackBar(
+              content:
+                  Text('${AppLocalizations.of(context)!.logoutFailed}: $e')),
         );
       }
     }
@@ -316,523 +377,554 @@ class _AdminVoucherScreenState extends State<AdminVoucherScreen> {
     return Consumer<LanguageProvider>(
       builder: (context, languageProvider, child) {
         return Scaffold(
-      drawer: Drawer(
-        child: Column(
-          children: [
-            DrawerHeader(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF002B5B), Color(0xFF1A4D8F)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: Row(
-                children: [
-                  const CircleAvatar(
-                    backgroundImage: AssetImage('assets/me.png'),
-                    radius: 30,
-                  ),
-                  const SizedBox(width: 10),
-                  Flexible(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          _currentUserName,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        if (_currentUserData != null) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            _currentUserData!['role'] ?? '',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
-                            ),
-                          ),
-                          Text(
-                            'BA: ${_currentUserData!['ba_no'] ?? ''}',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  _buildSidebarTile(
-                    icon: Icons.dashboard,
-                    title: AppLocalizations.of(context)!.home,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminHomeScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.people,
-                    title: AppLocalizations.of(context)!.users,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminUsersScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.pending,
-                    title: AppLocalizations.of(context)!.pendingIds,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminPendingIdsScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.history,
-                    title: AppLocalizations.of(context)!.shoppingHistory,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              const AdminShoppingHistoryScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.receipt,
-                    title: AppLocalizations.of(context)!.voucherList,
-                    onTap: () => Navigator.pop(context),
-                    selected: true,
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.storage,
-                    title: AppLocalizations.of(context)!.inventory,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminInventoryScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.food_bank,
-                    title: AppLocalizations.of(context)!.messing,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminMessingScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.menu_book,
-                    title: AppLocalizations.of(context)!.monthlyMenu,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const EditMenuScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.analytics,
-                    title: AppLocalizations.of(context)!.mealState,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminMealStateScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.thumb_up,
-                    title: AppLocalizations.of(context)!.menuVote,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const MenuVoteScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.receipt_long,
-                    title: AppLocalizations.of(context)!.bills,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminBillScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.payment,
-                    title: AppLocalizations.of(context)!.payments,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const PaymentsDashboard(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.people_alt,
-                    title: AppLocalizations.of(context)!.diningMemberState,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const DiningMemberStatePage(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.manage_accounts,
-                    title: AppLocalizations.of(context)!.staffState,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminStaffStateScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: Colors.grey.shade300),
-                ),
-              ),
-              child: Padding(
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.of(context).padding.bottom + 8,
-                  top: 8,
-                ),
-                child: _buildSidebarTile(
-                  icon: Icons.logout,
-                  title: AppLocalizations.of(context)!.logout,
-                  onTap: _logout,
-                  color: Colors.red,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF002B5B),
-        iconTheme: const IconThemeData(color: Colors.white),
-        centerTitle: true,
-        title: Text(
-          AppLocalizations.of(context)!.voucherList,
-          style: TextStyle(
-        color: Colors.white,
-        fontWeight: FontWeight.w600,
-        fontSize: 18,
-          ),
-        ),
-        actions: [
-          PopupMenuButton<String>(
-        icon: const Icon(Icons.language, color: Colors.white),
-        onSelected: (String value) {
-          if (value == 'bn') {
-            Provider.of<LanguageProvider>(context, listen: false).changeLanguage(const Locale('bn'));
-          } else {
-            Provider.of<LanguageProvider>(context, listen: false).changeLanguage(const Locale('en'));
-          }
-        },
-        itemBuilder: (BuildContext context) => [
-          PopupMenuItem<String>(
-            value: 'en',
-            child: Row(
-          children: [
-            Text('🇺🇸'),
-            const SizedBox(width: 8),
-            Text('English'),
-          ],
-            ),
-          ),
-          PopupMenuItem<String>(
-            value: 'bn',
-            child: Row(
-          children: [
-            Text('🇧🇩'),
-            const SizedBox(width: 8),
-            Text('বাংলা'),
-          ],
-            ),
-          ),
-        ],
-          ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ✅ Add Voucher Button First
-            Row(
+          drawer: Drawer(
+            child: Column(
               children: [
-                ElevatedButton.icon(
-                  onPressed: () async {
-                    final result = await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const AdminAddShoppingScreen(),
-                      ),
-                    );
-                    // Refresh data when returning from add screen
-                    if (result == true) {
-                      _loadVoucherData();
-                    }
-                  },
-                  icon: const Icon(Icons.add),
-                  label: Text(AppLocalizations.of(context)!.addVoucher),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0052CC),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                DrawerHeader(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF002B5B), Color(0xFF1A4D8F)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
                   ),
+                  child: Row(
+                    children: [
+                      const CircleAvatar(
+                        backgroundImage: AssetImage('assets/me.png'),
+                        radius: 30,
+                      ),
+                      const SizedBox(width: 10),
+                      Flexible(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              _currentUserName,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            if (_currentUserData != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                _currentUserData!['role'] ?? '',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              Text(
+                                'BA: ${_currentUserData!['ba_no'] ?? ''}',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(width: 10),
-                ElevatedButton.icon(
-                  onPressed: _loadVoucherData,
-                  icon: const Icon(Icons.refresh),
-                  label: Text(AppLocalizations.of(context)!.refresh),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
+                Expanded(
+                  child: ListView(
+                    padding: EdgeInsets.zero,
+                    children: [
+                      _buildSidebarTile(
+                        icon: Icons.dashboard,
+                        title: AppLocalizations.of(context)!.home,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AdminHomeScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.people,
+                        title: AppLocalizations.of(context)!.users,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AdminUsersScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.pending,
+                        title: AppLocalizations.of(context)!.pendingIds,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const AdminPendingIdsScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.history,
+                        title: AppLocalizations.of(context)!.shoppingHistory,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const AdminShoppingHistoryScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.receipt,
+                        title: AppLocalizations.of(context)!.voucherList,
+                        onTap: () => Navigator.pop(context),
+                        selected: true,
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.storage,
+                        title: AppLocalizations.of(context)!.inventory,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const AdminInventoryScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.food_bank,
+                        title: AppLocalizations.of(context)!.messing,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AdminMessingScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.menu_book,
+                        title: AppLocalizations.of(context)!.monthlyMenu,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const EditMenuScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.analytics,
+                        title: AppLocalizations.of(context)!.mealState,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const AdminMealStateScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.thumb_up,
+                        title: AppLocalizations.of(context)!.menuVote,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const MenuVoteScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.receipt_long,
+                        title: AppLocalizations.of(context)!.bills,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AdminBillScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.payment,
+                        title: AppLocalizations.of(context)!.payments,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const PaymentsDashboard(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.people_alt,
+                        title: AppLocalizations.of(context)!.diningMemberState,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const DiningMemberStatePage(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.manage_accounts,
+                        title: AppLocalizations.of(context)!.staffState,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const AdminStaffStateScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border(
+                      top: BorderSide(color: Colors.grey.shade300),
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).padding.bottom + 8,
+                      top: 8,
+                    ),
+                    child: _buildSidebarTile(
+                      icon: Icons.logout,
+                      title: AppLocalizations.of(context)!.logout,
+                      onTap: _logout,
+                      color: Colors.red,
                     ),
                   ),
                 ),
               ],
             ),
-
-            const SizedBox(height: 16),
-
-            // ✅ Search Bar
-            TextFormField(
-              controller: _searchController,
-              onChanged: (value) {
-                setState(() {
-                  filteredData = voucherData.where((entry) {
-                    return entry.values.any(
-                      (v) => v.toString().toLowerCase().contains(
-                            value.toLowerCase(),
-                          ),
-                    );
-                  }).toList();
-                });
-              },
-              decoration: InputDecoration(
-                labelText: AppLocalizations.of(context)!.search,
-                hintText: AppLocalizations.of(context)!.searchByVoucherIdBuyerDate,
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFF0052CC)),
-                ),
+          ),
+          appBar: AppBar(
+            backgroundColor: const Color(0xFF002B5B),
+            iconTheme: const IconThemeData(color: Colors.white),
+            centerTitle: true,
+            title: Text(
+              AppLocalizations.of(context)!.voucherList,
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
               ),
             ),
-
-            const SizedBox(height: 16),
-
-            // ✅ Voucher Table
-            Expanded(
-              child: filteredData.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.receipt_outlined,
-                            size: 64,
-                            color: Colors.grey,
+            actions: [
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.language, color: Colors.white),
+                onSelected: (String value) {
+                  if (value == 'bn') {
+                    Provider.of<LanguageProvider>(context, listen: false)
+                        .changeLanguage(const Locale('bn'));
+                  } else {
+                    Provider.of<LanguageProvider>(context, listen: false)
+                        .changeLanguage(const Locale('en'));
+                  }
+                },
+                itemBuilder: (BuildContext context) => [
+                  PopupMenuItem<String>(
+                    value: 'en',
+                    child: Row(
+                      children: [
+                        Text('🇺🇸'),
+                        const SizedBox(width: 8),
+                        Text('English'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'bn',
+                    child: Row(
+                      children: [
+                        Text('🇧🇩'),
+                        const SizedBox(width: 8),
+                        Text('বাংলা'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          body: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ✅ Add Voucher Button First
+                Row(
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const AdminAddShoppingScreen(),
                           ),
-                          const SizedBox(height: 16),
-                          Text(
-                            AppLocalizations.of(context)!.noVouchersFound,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              color: Colors.grey,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            AppLocalizations.of(context)!.addSomeVouchers,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
+                        );
+                        // Refresh data when returning from add screen
+                        if (result == true) {
+                          _loadVoucherData();
+                        }
+                      },
+                      icon: const Icon(Icons.add),
+                      label: Text(AppLocalizations.of(context)!.addVoucher),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0052CC),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
-                    )
-                  : SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: DataTable(
-                        headingRowColor: WidgetStateProperty.all(
-                          const Color(0xFF134074),
+                    ),
+                    const SizedBox(width: 10),
+                    ElevatedButton.icon(
+                      onPressed: _loadVoucherData,
+                      icon: const Icon(Icons.refresh),
+                      label: Text(AppLocalizations.of(context)!.refresh),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
                         ),
-                        headingTextStyle: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        columns: [
-                          DataColumn(label: Text(AppLocalizations.of(context)!.index)),
-                          DataColumn(label: Text(AppLocalizations.of(context)!.buyerName)),
-                          DataColumn(label: Text(AppLocalizations.of(context)!.date)),
-                          DataColumn(label: Text(AppLocalizations.of(context)!.images)),
-                          DataColumn(label: Text(AppLocalizations.of(context)!.action)),
-                        ],
-                        rows: List.generate(filteredData.length, (index) {
-                          final entry = filteredData[index];
-                          final isEditing = entry['isEditing'] as bool;
+                      ),
+                    ),
+                  ],
+                ),
 
-                          return DataRow(
-                            cells: [
-                              DataCell(
-                                Text(
-                                  '${index + 1}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                    color: Color(0xFF134074),
-                                  ),
+                const SizedBox(height: 16),
+
+                // ✅ Search Bar
+                TextFormField(
+                  controller: _searchController,
+                  onChanged: (value) {
+                    setState(() {
+                      filteredData = voucherData.where((entry) {
+                        return entry.values.any(
+                          (v) => v.toString().toLowerCase().contains(
+                                value.toLowerCase(),
+                              ),
+                        );
+                      }).toList();
+                    });
+                  },
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.of(context)!.search,
+                    hintText: AppLocalizations.of(context)!
+                        .searchByVoucherIdBuyerDate,
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Color(0xFF0052CC)),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // ✅ Voucher Table
+                Expanded(
+                  child: filteredData.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.receipt_outlined,
+                                size: 64,
+                                color: Colors.grey,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                AppLocalizations.of(context)!.noVouchersFound,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.grey,
                                 ),
                               ),
-                              DataCell(
-                                isEditing
-                                    ? _editableTextField(
-                                        initialValue: entry['buyer'],
-                                        onChanged: (val) => entry['buyer'] = val,
-                                      )
-                                    : Text(entry['buyer']),
-                              ),
-                              DataCell(
-                                isEditing
-                                    ? _editableTextField(
-                                        initialValue: entry['date'],
-                                        onChanged: (val) => entry['date'] = val,
-                                      )
-                                    : Text(entry['date']),
-                              ),
-                              DataCell(
-                                ElevatedButton.icon(
-                                  onPressed: () {
-                                    // TODO: Implement image view dialog
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text(AppLocalizations.of(context)!.viewImagesFeatureComingSoon)),
-                                    );
-                                  },
-                                  icon: const Icon(Icons.image),
-                                  label: Text(AppLocalizations.of(context)!.viewImages),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF0052CC),
-                                    foregroundColor: Colors.white,
-                                  ),
-                                ),
-                              ),
-                              DataCell(
-                                Row(
-                                  children: [
-                                    if (!isEditing)
-                                      _actionButton(
-                                        text: AppLocalizations.of(context)!.edit,
-                                        color: const Color(0xFF0052CC),
-                                        onPressed: () => _startEdit(index),
-                                      ),
-                                    if (isEditing) ...[
-                                      _actionButton(
-                                        text: AppLocalizations.of(context)!.save,
-                                        color: Colors.green,
-                                        onPressed: () => _saveEdit(index),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      _actionButton(
-                                        text: AppLocalizations.of(context)!.cancel,
-                                        color: Colors.grey,
-                                        onPressed: () => _cancelEdit(index),
-                                      ),
-                                    ],
-                                    const SizedBox(width: 6),
-                                    _actionButton(
-                                      text: AppLocalizations.of(context)!.delete,
-                                      color: Colors.red,
-                                      onPressed: () => _deleteRow(index),
-                                    ),
-                                  ],
+                              const SizedBox(height: 8),
+                              Text(
+                                AppLocalizations.of(context)!.addSomeVouchers,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey,
                                 ),
                               ),
                             ],
-                          );
-                        }),
-                      ),
-                    ),
+                          ),
+                        )
+                      : SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: DataTable(
+                            headingRowColor: WidgetStateProperty.all(
+                              const Color(0xFF134074),
+                            ),
+                            headingTextStyle: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            columns: [
+                              DataColumn(
+                                  label: Text(
+                                      AppLocalizations.of(context)!.index)),
+                              DataColumn(
+                                  label: Text(
+                                      AppLocalizations.of(context)!.buyerName)),
+                              DataColumn(
+                                  label:
+                                      Text(AppLocalizations.of(context)!.date)),
+                              DataColumn(
+                                  label: Text(
+                                      AppLocalizations.of(context)!.images)),
+                              DataColumn(
+                                  label: Text(
+                                      AppLocalizations.of(context)!.action)),
+                            ],
+                            rows: List.generate(filteredData.length, (index) {
+                              final entry = filteredData[index];
+                              final isEditing = entry['isEditing'] as bool;
+
+                              return DataRow(
+                                cells: [
+                                  DataCell(
+                                    Text(
+                                      '${index + 1}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                        color: Color(0xFF134074),
+                                      ),
+                                    ),
+                                  ),
+                                  DataCell(
+                                    isEditing
+                                        ? _editableTextField(
+                                            initialValue: entry['buyer'],
+                                            onChanged: (val) =>
+                                                entry['buyer'] = val,
+                                          )
+                                        : Text(entry['buyer']),
+                                  ),
+                                  DataCell(
+                                    isEditing
+                                        ? _editableTextField(
+                                            initialValue: entry['date'],
+                                            onChanged: (val) =>
+                                                entry['date'] = val,
+                                          )
+                                        : Text(entry['date']),
+                                  ),
+                                  DataCell(
+                                    ElevatedButton.icon(
+                                      onPressed: () {
+                                        // TODO: Implement image view dialog
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                              content: Text(AppLocalizations.of(
+                                                      context)!
+                                                  .viewImagesFeatureComingSoon)),
+                                        );
+                                      },
+                                      icon: const Icon(Icons.image),
+                                      label: Text(AppLocalizations.of(context)!
+                                          .viewImages),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor:
+                                            const Color(0xFF0052CC),
+                                        foregroundColor: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                  DataCell(
+                                    Row(
+                                      children: [
+                                        if (!isEditing)
+                                          _actionButton(
+                                            text: AppLocalizations.of(context)!
+                                                .edit,
+                                            color: const Color(0xFF0052CC),
+                                            onPressed: () => _startEdit(index),
+                                          ),
+                                        if (isEditing) ...[
+                                          _actionButton(
+                                            text: AppLocalizations.of(context)!
+                                                .save,
+                                            color: Colors.green,
+                                            onPressed: () => _saveEdit(index),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          _actionButton(
+                                            text: AppLocalizations.of(context)!
+                                                .cancel,
+                                            color: Colors.grey,
+                                            onPressed: () => _cancelEdit(index),
+                                          ),
+                                        ],
+                                        const SizedBox(width: 6),
+                                        _actionButton(
+                                          text: AppLocalizations.of(context)!
+                                              .delete,
+                                          color: Colors.red,
+                                          onPressed: () => _deleteRow(index),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }),
+                          ),
+                        ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
+          ),
+        );
       },
     );
   }

@@ -45,8 +45,9 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
 
   Future<void> _loadInventoryData() async {
     try {
-      final QuerySnapshot snapshot = await _firestore.collection('inventory').get();
-      
+      final QuerySnapshot snapshot =
+          await _firestore.collection('inventory').get();
+
       setState(() {
         inventoryData = snapshot.docs.map((doc) {
           final data = doc.data() as Map<String, dynamic>;
@@ -59,7 +60,7 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
             'original': {},
           };
         }).toList();
-        
+
         filteredData = List.from(inventoryData);
         _isLoading = false;
       });
@@ -69,7 +70,9 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${AppLocalizations.of(context)!.errorLoadingInventory}: $e')),
+          SnackBar(
+              content: Text(
+                  '${AppLocalizations.of(context)!.errorLoadingInventory}: $e')),
         );
       }
     }
@@ -133,7 +136,9 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${AppLocalizations.of(context)!.logoutFailed}: $e')),
+          SnackBar(
+              content:
+                  Text('${AppLocalizations.of(context)!.logoutFailed}: $e')),
         );
       }
     }
@@ -210,24 +215,53 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
   void _saveEdit(int index) async {
     try {
       final docId = filteredData[index]['docId'];
-      
-      // Update in Firestore (no need for manual ID field)
+      final entry = filteredData[index];
+      final original = entry['original'] ?? {};
+
+      // Prepare change log
+      List<String> changes = [];
+      for (final field in ['productName', 'quantityHeld', 'type']) {
+        final oldVal = original[field];
+        final newVal = entry[field];
+        if (oldVal != null && oldVal.toString() != newVal.toString()) {
+          changes.add('$field: "$oldVal" → "$newVal"');
+        }
+      }
+
+      // Update in Firestore
       await _firestore.collection('inventory').doc(docId).update({
-        'productName': filteredData[index]['productName'],
-        'quantityHeld': filteredData[index]['quantityHeld'],
-        'type': filteredData[index]['type'],
+        'productName': entry['productName'],
+        'quantityHeld': entry['quantityHeld'],
+        'type': entry['type'],
       });
 
       setState(() {
-        filteredData[index]['isEditing'] = false;
+        entry['isEditing'] = false;
 
         int origIndex = inventoryData.indexWhere(
-          (e) => e['docId'] == filteredData[index]['docId'],
+          (e) => e['docId'] == entry['docId'],
         );
         if (origIndex != -1) {
-          inventoryData[origIndex] = Map.from(filteredData[index]);
+          inventoryData[origIndex] = Map.from(entry);
         }
       });
+
+      // Log activity
+      final adminName = _currentUserData?['name'] ?? 'Admin';
+      final baNo = _currentUserData?['ba_no'] ?? '';
+      if (baNo.isNotEmpty && changes.isNotEmpty) {
+        await _firestore
+            .collection('staff_activity_log')
+            .doc(baNo)
+            .collection('logs')
+            .add({
+          'timestamp': FieldValue.serverTimestamp(),
+          'actionType': 'Update Inventory',
+          'message':
+              '$adminName updated inventory item "${entry['productName']}". Changes: ${changes.join(', ')}',
+          'name': adminName,
+        });
+      }
 
       ScaffoldMessenger.of(
         context,
@@ -235,7 +269,9 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
     } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('${AppLocalizations.of(context)!.errorUpdatingInventory}: $e')));
+      ).showSnackBar(SnackBar(
+          content: Text(
+              '${AppLocalizations.of(context)!.errorUpdatingInventory}: $e')));
     }
   }
 
@@ -265,7 +301,12 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
     if (confirm == true) {
       try {
         final docId = filteredData[index]['docId'];
-        
+        final entry = filteredData[index];
+        final adminName = _currentUserData?['name'] ?? 'Admin';
+        final baNo = _currentUserData?['ba_no'] ?? '';
+        final productName = entry['productName'] ?? '';
+        final type = entry['type'] ?? '';
+
         // Delete from Firestore
         await _firestore.collection('inventory').doc(docId).delete();
 
@@ -274,15 +315,34 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
           inventoryData.removeWhere((e) => e['docId'] == docId);
         });
 
+        // Log activity
+        if (baNo.isNotEmpty) {
+          await _firestore
+              .collection('staff_activity_log')
+              .doc(baNo)
+              .collection('logs')
+              .add({
+            'timestamp': FieldValue.serverTimestamp(),
+            'actionType': 'Delete Inventory',
+            'message':
+                '$adminName deleted inventory item "$productName" (Type: $type).',
+            'name': adminName,
+          });
+        }
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(AppLocalizations.of(context)!.inventoryItemDeleted)),
+            SnackBar(
+                content:
+                    Text(AppLocalizations.of(context)!.inventoryItemDeleted)),
           );
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${AppLocalizations.of(context)!.errorDeletingInventory}: $e')),
+            SnackBar(
+                content: Text(
+                    '${AppLocalizations.of(context)!.errorDeletingInventory}: $e')),
           );
         }
       }
@@ -351,51 +411,392 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
     return Consumer<LanguageProvider>(
       builder: (context, languageProvider, child) {
         return Scaffold(
-      drawer: Drawer(
-        child: Column(
-          children: [
-            DrawerHeader(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF002B5B), Color(0xFF1A4D8F)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: Row(
-                children: [
-                  const CircleAvatar(
-                    backgroundImage: AssetImage('assets/me.png'),
-                    radius: 30,
+          drawer: Drawer(
+            child: Column(
+              children: [
+                DrawerHeader(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF002B5B), Color(0xFF1A4D8F)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
                   ),
-                  const SizedBox(width: 10),
-                  Flexible(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          _currentUserName,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
+                  child: Row(
+                    children: [
+                      const CircleAvatar(
+                        backgroundImage: AssetImage('assets/me.png'),
+                        radius: 30,
+                      ),
+                      const SizedBox(width: 10),
+                      Flexible(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              _currentUserName,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            if (_currentUserData != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                _currentUserData!['role'] ?? '',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              Text(
+                                '${AppLocalizations.of(context)!.baNumber}: ${_currentUserData!['ba_no'] ?? ''}',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
-                        if (_currentUserData != null) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            _currentUserData!['role'] ?? '',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ListView(
+                    padding: EdgeInsets.zero,
+                    children: [
+                      _buildSidebarTile(
+                        icon: Icons.dashboard,
+                        title: AppLocalizations.of(context)!.home,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const AdminHomeScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.people,
+                        title: AppLocalizations.of(context)!.users,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AdminUsersScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.pending,
+                        title: AppLocalizations.of(context)!.pendingIds,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const AdminPendingIdsScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.history,
+                        title: AppLocalizations.of(context)!.shoppingHistory,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const AdminShoppingHistoryScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.receipt,
+                        title: AppLocalizations.of(context)!.voucherList,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AdminVoucherScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.storage,
+                        title: AppLocalizations.of(context)!.inventory,
+                        onTap: () => Navigator.pop(context),
+                        selected: true,
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.food_bank,
+                        title: AppLocalizations.of(context)!.messing,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AdminMessingScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.menu_book,
+                        title: AppLocalizations.of(context)!.monthlyMenu,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const EditMenuScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.analytics,
+                        title: AppLocalizations.of(context)!.mealState,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const AdminMealStateScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.how_to_vote,
+                        title: AppLocalizations.of(context)!.menuVote,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const MenuVoteScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.receipt_long,
+                        title: AppLocalizations.of(context)!.bills,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AdminBillScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.payment,
+                        title: AppLocalizations.of(context)!.payments,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const PaymentsDashboard(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.people_alt,
+                        title: AppLocalizations.of(context)!.diningMemberState,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const DiningMemberStatePage(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.manage_accounts,
+                        title: AppLocalizations.of(context)!.staffState,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const AdminStaffStateScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border(
+                      top: BorderSide(color: Colors.grey.shade300),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).padding.bottom + 8,
+                      top: 8,
+                    ),
+                    child: _buildSidebarTile(
+                      icon: Icons.logout,
+                      title: AppLocalizations.of(context)!.logout,
+                      onTap: _logout,
+                      color: Colors.red,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          appBar: AppBar(
+            backgroundColor: const Color(0xFF002B5B),
+            iconTheme: const IconThemeData(color: Colors.white),
+            centerTitle: true,
+            title: Text(
+              AppLocalizations.of(context)!.inventory,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
+              ),
+            ),
+            actions: [
+              PopupMenuButton<Locale>(
+                icon: const Icon(
+                  Icons.language,
+                  color: Colors.white,
+                ),
+                onSelected: (Locale locale) {
+                  languageProvider.changeLanguage(locale);
+                },
+                itemBuilder: (BuildContext context) => [
+                  PopupMenuItem<Locale>(
+                    value: const Locale('en'),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 20,
+                          height: 14,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(2),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(1),
+                            child: Stack(
+                              children: [
+                                // Red cross background
+                                Container(
+                                    color: const Color(
+                                        0xFF012169)), // Blue background
+                                // White cross
+                                Positioned(
+                                  left: 0,
+                                  right: 0,
+                                  top: 6,
+                                  child:
+                                      Container(height: 2, color: Colors.white),
+                                ),
+                                Positioned(
+                                  top: 0,
+                                  bottom: 0,
+                                  left: 9,
+                                  child:
+                                      Container(width: 2, color: Colors.white),
+                                ),
+                                // Red cross
+                                Positioned(
+                                  left: 0,
+                                  right: 0,
+                                  top: 6.5,
+                                  child: Container(
+                                      height: 1,
+                                      color: const Color(0xFFCE1124)),
+                                ),
+                                Positioned(
+                                  top: 0,
+                                  bottom: 0,
+                                  left: 9.5,
+                                  child: Container(
+                                      width: 1, color: const Color(0xFFCE1124)),
+                                ),
+                              ],
                             ),
                           ),
-                          Text(
-                            '${AppLocalizations.of(context)!.baNumber}: ${_currentUserData!['ba_no'] ?? ''}',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(AppLocalizations.of(context)!.english),
+                        if (languageProvider.isEnglish) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: Colors.green,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem<Locale>(
+                    value: const Locale('bn'),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 20,
+                          height: 14,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(2),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(1),
+                            child: Stack(
+                              children: [
+                                // Green background
+                                Container(color: const Color(0xFF006A4E)),
+                                // Red circle
+                                Positioned(
+                                  left: 6,
+                                  top: 3,
+                                  child: Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFFF42A41),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(AppLocalizations.of(context)!.bangla),
+                        if (languageProvider.isBangla) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: Colors.green,
+                              shape: BoxShape.circle,
                             ),
                           ),
                         ],
@@ -404,575 +805,263 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
                   ),
                 ],
               ),
-            ),
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  _buildSidebarTile(
-                    icon: Icons.dashboard,
-                    title: AppLocalizations.of(context)!.home,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const AdminHomeScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.people,
-                    title: AppLocalizations.of(context)!.users,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminUsersScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.pending,
-                    title: AppLocalizations.of(context)!.pendingIds,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminPendingIdsScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.history,
-                    title: AppLocalizations.of(context)!.shoppingHistory,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              const AdminShoppingHistoryScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.receipt,
-                    title: AppLocalizations.of(context)!.voucherList,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminVoucherScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.storage,
-                    title: AppLocalizations.of(context)!.inventory,
-                    onTap: () => Navigator.pop(context),
-                    selected: true,
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.food_bank,
-                    title: AppLocalizations.of(context)!.messing,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminMessingScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.menu_book,
-                    title: AppLocalizations.of(context)!.monthlyMenu,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const EditMenuScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.analytics,
-                    title: AppLocalizations.of(context)!.mealState,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminMealStateScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.how_to_vote,
-                    title: AppLocalizations.of(context)!.menuVote,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const MenuVoteScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.receipt_long,
-                    title: AppLocalizations.of(context)!.bills,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminBillScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.payment,
-                    title: AppLocalizations.of(context)!.payments,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const PaymentsDashboard(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.people_alt,
-                    title: AppLocalizations.of(context)!.diningMemberState,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const DiningMemberStatePage(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.manage_accounts,
-                    title: AppLocalizations.of(context)!.staffState,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminStaffStateScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: Colors.grey.shade300),
-                ),
-              ),
-              child: Padding(
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.of(context).padding.bottom + 8,
-                  top: 8,
-                ),
-                child: _buildSidebarTile(
-                  icon: Icons.logout,
-                  title: AppLocalizations.of(context)!.logout,
-                  onTap: _logout,
-                  color: Colors.red,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF002B5B),
-        iconTheme: const IconThemeData(color: Colors.white),
-        centerTitle: true,
-        title: Text(
-          AppLocalizations.of(context)!.inventory,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
-          ),
-        ),
-        actions: [
-          PopupMenuButton<Locale>(
-            icon: const Icon(
-              Icons.language,
-              color: Colors.white,
-            ),
-            onSelected: (Locale locale) {
-              languageProvider.changeLanguage(locale);
-            },
-            itemBuilder: (BuildContext context) => [
-              PopupMenuItem<Locale>(
-                value: const Locale('en'),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 20,
-                      height: 14,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(2),
-                        border: Border.all(color: Colors.grey.shade300),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(1),
-                        child: Stack(
-                          children: [
-                            // Red cross background
-                            Container(color: const Color(0xFF012169)), // Blue background
-                            // White cross
-                            Positioned(
-                              left: 0,
-                              right: 0,
-                              top: 6,
-                              child: Container(height: 2, color: Colors.white),
-                            ),
-                            Positioned(
-                              top: 0,
-                              bottom: 0,
-                              left: 9,
-                              child: Container(width: 2, color: Colors.white),
-                            ),
-                            // Red cross
-                            Positioned(
-                              left: 0,
-                              right: 0,
-                              top: 6.5,
-                              child: Container(height: 1, color: const Color(0xFFCE1124)),
-                            ),
-                            Positioned(
-                              top: 0,
-                              bottom: 0,
-                              left: 9.5,
-                              child: Container(width: 1, color: const Color(0xFFCE1124)),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(AppLocalizations.of(context)!.english),
-                    if (languageProvider.isEnglish) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Colors.green,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              PopupMenuItem<Locale>(
-                value: const Locale('bn'),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 20,
-                      height: 14,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(2),
-                        border: Border.all(color: Colors.grey.shade300),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(1),
-                        child: Stack(
-                          children: [
-                            // Green background
-                            Container(color: const Color(0xFF006A4E)),
-                            // Red circle
-                            Positioned(
-                              left: 6,
-                              top: 3,
-                              child: Container(
-                                width: 8,
-                                height: 8,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFFF42A41),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(AppLocalizations.of(context)!.bangla),
-                    if (languageProvider.isBangla) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Colors.green,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
             ],
           ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+          body: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ElevatedButton.icon(
-                  onPressed: () async {
-                    final result = await Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const AddInventoryScreen()),
-                    );
-                    // Refresh data when returning from add screen
-                    if (result == true) {
-                      _loadInventoryData();
-                    }
-                  },
-                  icon: const Icon(Icons.add),
-                  label: Text(AppLocalizations.of(context)!.addInventoryEntry),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0052CC),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                ElevatedButton.icon(
-                  onPressed: _loadInventoryData,
-                  icon: const Icon(Icons.refresh),
-                  label: const Text("Refresh"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Search bar
-            TextFormField(
-              controller: _searchController,
-              onChanged: (value) {
-                setState(() {
-                  filteredData = inventoryData.where((entry) {
-                    return entry.values.any(
-                      (v) => v.toString().toLowerCase().contains(
-                            value.toLowerCase(),
-                          ),
-                    );
-                  }).toList();
-                });
-              },
-              decoration: InputDecoration(
-                labelText: AppLocalizations.of(context)!.search,
-                hintText: AppLocalizations.of(context)!.searchByProductName,
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFF0052CC)),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Inventory table
-            Expanded(
-              child: filteredData.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.inventory_2_outlined,
-                            size: 64,
-                            color: Colors.grey,
-                          ),
-                          SizedBox(height: 16),
-                          Text(
-                            AppLocalizations.of(context)!.noInventoryItemsFound,
-                            style: TextStyle(
-                              fontSize: 18,
-                              color: Colors.grey,
-                            ),
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            AppLocalizations.of(context)!.addSomeInventoryItems,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
+                Row(
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const AddInventoryScreen()),
+                        );
+                        // Refresh data when returning from add screen
+                        if (result == true) {
+                          _loadInventoryData();
+                        }
+                      },
+                      icon: const Icon(Icons.add),
+                      label:
+                          Text(AppLocalizations.of(context)!.addInventoryEntry),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0052CC),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
-                    )
-                  : SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: DataTable(
-                        headingRowColor: WidgetStateProperty.all(
-                          const Color(0xFF134074),
+                    ),
+                    const SizedBox(width: 10),
+                    ElevatedButton.icon(
+                      onPressed: _loadInventoryData,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text("Refresh"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
                         ),
-                        headingTextStyle: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        columns: [
-                          DataColumn(label: Text(AppLocalizations.of(context)!.index)),
-                          DataColumn(label: Text(AppLocalizations.of(context)!.productName)),
-                          DataColumn(label: Text(AppLocalizations.of(context)!.quantityHeld)),
-                          DataColumn(label: Text(AppLocalizations.of(context)!.type)),
-                          DataColumn(label: Text(AppLocalizations.of(context)!.action)),
-                        ],
-                        rows: List.generate(filteredData.length, (index) {
-                          final entry = filteredData[index];
-                          final isEditing = entry['isEditing'] as bool;
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
 
-                          return DataRow(
-                            cells: [
-                              DataCell(
-                                Text(
-                                  '${index + 1}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                    color: Color(0xFF134074),
-                                  ),
+                // Search bar
+                TextFormField(
+                  controller: _searchController,
+                  onChanged: (value) {
+                    setState(() {
+                      filteredData = inventoryData.where((entry) {
+                        return entry.values.any(
+                          (v) => v.toString().toLowerCase().contains(
+                                value.toLowerCase(),
+                              ),
+                        );
+                      }).toList();
+                    });
+                  },
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.of(context)!.search,
+                    hintText: AppLocalizations.of(context)!.searchByProductName,
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Color(0xFF0052CC)),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Inventory table
+                Expanded(
+                  child: filteredData.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.inventory_2_outlined,
+                                size: 64,
+                                color: Colors.grey,
+                              ),
+                              SizedBox(height: 16),
+                              Text(
+                                AppLocalizations.of(context)!
+                                    .noInventoryItemsFound,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.grey,
                                 ),
                               ),
-                              DataCell(
-                                isEditing
-                                    ? _editableTextField(
-                                        initialValue: entry['productName'],
-                                        onChanged: (val) =>
-                                            entry['productName'] = val,
-                                      )
-                                    : Text(entry['productName']),
-                              ),
-                              DataCell(
-                                isEditing
-                                    ? _editableTextField(
-                                        initialValue:
-                                            entry['quantityHeld'].toString(),
-                                        keyboardType: TextInputType.number,
-                                        onChanged: (val) {
-                                          entry['quantityHeld'] =
-                                              int.tryParse(val) ?? 0;
-                                          setState(() {});
-                                        },
-                                      )
-                                    : Text('${entry['quantityHeld']}'),
-                              ),
-                              DataCell(
-                                isEditing
-                                    ? DropdownButton<String>(
-                                        value: entry['type'],
-                                        onChanged: (val) {
-                                          if (val != null) {
-                                            setState(() {
-                                              entry['type'] = val;
-                                            });
-                                          }
-                                        },
-                                        items: _types
-                                            .map(
-                                              (type) => DropdownMenuItem(
-                                                value: type,
-                                                child: Text(
-                                                  _getTranslatedType(type),
-                                                ),
-                                              ),
-                                            )
-                                            .toList(),
-                                      )
-                                    : Text(
-                                        _getTranslatedType(entry['type']),
-                                      ),
-                              ),
-                              DataCell(
-                                Row(
-                                  children: [
-                                    if (!isEditing)
-                                      _actionButton(
-                                        text: AppLocalizations.of(context)!.edit,
-                                        color: const Color(0xFF0052CC),
-                                        onPressed: () => _startEdit(index),
-                                      ),
-                                    if (isEditing) ...[
-                                      _actionButton(
-                                        text: AppLocalizations.of(context)!.save,
-                                        color: Colors.green,
-                                        onPressed: () => _saveEdit(index),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      _actionButton(
-                                        text: AppLocalizations.of(context)!.cancel,
-                                        color: Colors.grey,
-                                        onPressed: () => _cancelEdit(index),
-                                      ),
-                                    ],
-                                    const SizedBox(width: 6),
-                                    _actionButton(
-                                      text: AppLocalizations.of(context)!.delete,
-                                      color: Colors.red,
-                                      onPressed: () => _deleteRow(index),
-                                    ),
-                                  ],
+                              SizedBox(height: 8),
+                              Text(
+                                AppLocalizations.of(context)!
+                                    .addSomeInventoryItems,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey,
                                 ),
                               ),
                             ],
-                          );
-                        }),
-                      ),
-                    ),
+                          ),
+                        )
+                      : SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: DataTable(
+                            headingRowColor: WidgetStateProperty.all(
+                              const Color(0xFF134074),
+                            ),
+                            headingTextStyle: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            columns: [
+                              DataColumn(
+                                  label: Text(
+                                      AppLocalizations.of(context)!.index)),
+                              DataColumn(
+                                  label: Text(AppLocalizations.of(context)!
+                                      .productName)),
+                              DataColumn(
+                                  label: Text(AppLocalizations.of(context)!
+                                      .quantityHeld)),
+                              DataColumn(
+                                  label:
+                                      Text(AppLocalizations.of(context)!.type)),
+                              DataColumn(
+                                  label: Text(
+                                      AppLocalizations.of(context)!.action)),
+                            ],
+                            rows: List.generate(filteredData.length, (index) {
+                              final entry = filteredData[index];
+                              final isEditing = entry['isEditing'] as bool;
+
+                              return DataRow(
+                                cells: [
+                                  DataCell(
+                                    Text(
+                                      '${index + 1}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                        color: Color(0xFF134074),
+                                      ),
+                                    ),
+                                  ),
+                                  DataCell(
+                                    isEditing
+                                        ? _editableTextField(
+                                            initialValue: entry['productName'],
+                                            onChanged: (val) =>
+                                                entry['productName'] = val,
+                                          )
+                                        : Text(entry['productName']),
+                                  ),
+                                  DataCell(
+                                    isEditing
+                                        ? _editableTextField(
+                                            initialValue: entry['quantityHeld']
+                                                .toString(),
+                                            keyboardType: TextInputType.number,
+                                            onChanged: (val) {
+                                              entry['quantityHeld'] =
+                                                  int.tryParse(val) ?? 0;
+                                              setState(() {});
+                                            },
+                                          )
+                                        : Text('${entry['quantityHeld']}'),
+                                  ),
+                                  DataCell(
+                                    isEditing
+                                        ? DropdownButton<String>(
+                                            value: entry['type'],
+                                            onChanged: (val) {
+                                              if (val != null) {
+                                                setState(() {
+                                                  entry['type'] = val;
+                                                });
+                                              }
+                                            },
+                                            items: _types
+                                                .map(
+                                                  (type) => DropdownMenuItem(
+                                                    value: type,
+                                                    child: Text(
+                                                      _getTranslatedType(type),
+                                                    ),
+                                                  ),
+                                                )
+                                                .toList(),
+                                          )
+                                        : Text(
+                                            _getTranslatedType(entry['type']),
+                                          ),
+                                  ),
+                                  DataCell(
+                                    Row(
+                                      children: [
+                                        if (!isEditing)
+                                          _actionButton(
+                                            text: AppLocalizations.of(context)!
+                                                .edit,
+                                            color: const Color(0xFF0052CC),
+                                            onPressed: () => _startEdit(index),
+                                          ),
+                                        if (isEditing) ...[
+                                          _actionButton(
+                                            text: AppLocalizations.of(context)!
+                                                .save,
+                                            color: Colors.green,
+                                            onPressed: () => _saveEdit(index),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          _actionButton(
+                                            text: AppLocalizations.of(context)!
+                                                .cancel,
+                                            color: Colors.grey,
+                                            onPressed: () => _cancelEdit(index),
+                                          ),
+                                        ],
+                                        const SizedBox(width: 6),
+                                        _actionButton(
+                                          text: AppLocalizations.of(context)!
+                                              .delete,
+                                          color: Colors.red,
+                                          onPressed: () => _deleteRow(index),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }),
+                          ),
+                        ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
+          ),
+        );
       },
     );
   }

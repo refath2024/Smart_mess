@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../services/admin_auth_service.dart';
 
 class AdminAddShoppingScreen extends StatefulWidget {
   const AdminAddShoppingScreen({super.key});
@@ -9,6 +11,8 @@ class AdminAddShoppingScreen extends StatefulWidget {
 }
 
 class _AdminAddShoppingScreenState extends State<AdminAddShoppingScreen> {
+  final AdminAuthService _adminAuthService = AdminAuthService();
+  Map<String, dynamic>? _currentUserData;
   final _formKey = GlobalKey<FormState>();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -22,10 +26,21 @@ class _AdminAddShoppingScreenState extends State<AdminAddShoppingScreen> {
   bool _isLoading = false;
 
   @override
+  @override
   void initState() {
     super.initState();
     _unitPriceController.addListener(_calculateTotal);
     _amountController.addListener(_calculateTotal);
+    _loadAdminData();
+  }
+
+  Future<void> _loadAdminData() async {
+    final data = await _adminAuthService.getCurrentAdminData();
+    if (mounted) {
+      setState(() {
+        _currentUserData = data;
+      });
+    }
   }
 
   @override
@@ -53,16 +68,42 @@ class _AdminAddShoppingScreenState extends State<AdminAddShoppingScreen> {
       });
 
       try {
-        // Add shopping data to Firestore (Firebase will auto-generate the document ID)
+        // Prepare data
+        final productName = _productController.text.trim();
+        final unitPrice = double.tryParse(_unitPriceController.text) ?? 0.0;
+        final amount = double.tryParse(_amountController.text) ?? 0.0;
+        final totalPrice = double.tryParse(_totalPriceController.text) ?? 0.0;
+        final date = _dateController.text.trim();
+        final voucherId = _voucherIdController.text.trim();
+
+        // Add shopping data to Firestore
         await _firestore.collection('shopping').add({
-          'productName': _productController.text.trim(),
-          'unitPrice': double.tryParse(_unitPriceController.text) ?? 0.0,
-          'amount': double.tryParse(_amountController.text) ?? 0.0,
-          'totalPrice': double.tryParse(_totalPriceController.text) ?? 0.0,
-          'date': _dateController.text.trim(),
-          'voucherId': _voucherIdController.text.trim(),
+          'productName': productName,
+          'unitPrice': unitPrice,
+          'amount': amount,
+          'totalPrice': totalPrice,
+          'date': date,
+          'voucherId': voucherId,
           'created_at': FieldValue.serverTimestamp(),
         });
+
+        // Log activity
+        final adminName = _currentUserData?['name'] ?? 'Admin';
+        final baNo = _currentUserData?['ba_no'] ?? '';
+        if (baNo.isNotEmpty) {
+          final details =
+              'Product: $productName, Unit Price: $unitPrice, Amount: $amount, Total Price: $totalPrice, Date: $date, Voucher ID: $voucherId';
+          await _firestore
+              .collection('staff_activity_log')
+              .doc(baNo)
+              .collection('logs')
+              .add({
+            'timestamp': FieldValue.serverTimestamp(),
+            'actionType': 'Add Shopping Entry',
+            'message': '$adminName added shopping entry. Details: $details',
+            'name': adminName,
+          });
+        }
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -190,7 +231,6 @@ class _AdminAddShoppingScreenState extends State<AdminAddShoppingScreen> {
                     }
                   },
                 ),
-
                 _buildTextField("Voucher ID", _voucherIdController),
                 Row(
                   children: [
@@ -206,7 +246,8 @@ class _AdminAddShoppingScreenState extends State<AdminAddShoppingScreen> {
                                 height: 20,
                                 width: 20,
                                 child: CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
                                   strokeWidth: 2,
                                 ),
                               )

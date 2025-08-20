@@ -1,6 +1,7 @@
 // add_inventory_screen.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../services/admin_auth_service.dart';
 
 class AddInventoryScreen extends StatefulWidget {
   const AddInventoryScreen({super.key});
@@ -10,11 +11,28 @@ class AddInventoryScreen extends StatefulWidget {
 }
 
 class _AddInventoryScreenState extends State<AddInventoryScreen> {
+  final AdminAuthService _adminAuthService = AdminAuthService();
+  Map<String, dynamic>? _currentUserData;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final TextEditingController _productNameController = TextEditingController();
   final TextEditingController _quantityHeldController = TextEditingController();
   String? _selectedType;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAdminData();
+  }
+
+  Future<void> _loadAdminData() async {
+    final data = await _adminAuthService.getCurrentAdminData();
+    if (mounted) {
+      setState(() {
+        _currentUserData = data;
+      });
+    }
+  }
 
   Future<void> _submitForm() async {
     final productName = _productNameController.text.trim();
@@ -65,6 +83,24 @@ class _AddInventoryScreenState extends State<AddInventoryScreen> {
           'quantityHeld': quantity,
           'type': _selectedType,
         });
+
+        // Log activity
+        final adminName = _currentUserData?['name'] ?? 'Admin';
+        final baNo = _currentUserData?['ba_no'] ?? '';
+        if (baNo.isNotEmpty) {
+          final details =
+              'Product: $productName, Quantity: $quantity, Type: $_selectedType';
+          await _firestore
+              .collection('staff_activity_log')
+              .doc(baNo)
+              .collection('logs')
+              .add({
+            'timestamp': FieldValue.serverTimestamp(),
+            'actionType': 'Add Inventory',
+            'message': '$adminName added inventory item. Details: $details',
+            'name': adminName,
+          });
+        }
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

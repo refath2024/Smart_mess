@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../services/admin_auth_service.dart';
 
 class AdminAddShoppingScreen extends StatefulWidget {
   const AdminAddShoppingScreen({super.key});
@@ -12,6 +13,8 @@ class AdminAddShoppingScreen extends StatefulWidget {
 }
 
 class _AdminAddShoppingScreenState extends State<AdminAddShoppingScreen> {
+  final AdminAuthService _adminAuthService = AdminAuthService();
+  Map<String, dynamic>? _currentUserData;
   final _formKey = GlobalKey<FormState>();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -24,6 +27,16 @@ class _AdminAddShoppingScreenState extends State<AdminAddShoppingScreen> {
   @override
   void initState() {
     super.initState();
+    _loadAdminData();
+  }
+
+  Future<void> _loadAdminData() async {
+    final data = await _adminAuthService.getCurrentAdminData();
+    if (mounted) {
+      setState(() {
+        _currentUserData = data;
+      });
+    }
   }
 
   @override
@@ -51,12 +64,33 @@ class _AdminAddShoppingScreenState extends State<AdminAddShoppingScreen> {
       });
 
       try {
-        // Add voucher to Firestore (Firebase will auto-generate the document ID)
+        // Prepare data
+        final buyer = _buyerController.text.trim();
+        final date = _dateController.text.trim();
+
+        // Add voucher to Firestore
         await _firestore.collection('voucher').add({
-          'buyer': _buyerController.text.trim(),
-          'date': _dateController.text.trim(),
+          'buyer': buyer,
+          'date': date,
           'created_at': FieldValue.serverTimestamp(),
         });
+
+        // Log activity
+        final adminName = _currentUserData?['name'] ?? 'Admin';
+        final baNo = _currentUserData?['ba_no'] ?? '';
+        if (baNo.isNotEmpty) {
+          final details = 'Buyer: $buyer, Date: $date';
+          await _firestore
+              .collection('staff_activity_log')
+              .doc(baNo)
+              .collection('logs')
+              .add({
+            'timestamp': FieldValue.serverTimestamp(),
+            'actionType': 'Add Voucher',
+            'message': '$adminName added voucher. Details: $details',
+            'name': adminName,
+          });
+        }
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -219,7 +253,8 @@ class _AdminAddShoppingScreenState extends State<AdminAddShoppingScreen> {
                                 height: 20,
                                 width: 20,
                                 child: CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
                                   strokeWidth: 2,
                                 ),
                               )
