@@ -1,3 +1,4 @@
+import '../../services/admin_auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -115,11 +116,51 @@ class _AddIndlEntryScreenState extends State<AddIndlEntryScreen> {
         return;
       }
 
-      // Update the record in local data
+      // Track changes for logging
+      final List<String> changedFields = [];
       final recordIndex = _userData.indexWhere((r) => r['id'] == record['id']);
       if (recordIndex != -1) {
+        if (_userData[recordIndex]['extra_chit'] != extraChit) {
+          changedFields.add('extra_chit');
+        }
+        if (_userData[recordIndex]['bar_chit'] != barChit) {
+          changedFields.add('bar_chit');
+        }
         _userData[recordIndex]['extra_chit'] = extraChit;
         _userData[recordIndex]['bar_chit'] = barChit;
+      }
+      // Log activity if any field changed
+      if (changedFields.isNotEmpty) {
+        final adminData = await AdminAuthService().getCurrentAdminData();
+        final adminBaNo = adminData?['ba_no'] ?? '';
+        final userName = record['name'] ?? '';
+        final userRank = record['rank'] ?? '';
+        final baNumber = record['ba_number'] ?? '';
+        final date = dateStr;
+        for (final field in changedFields) {
+          String itemName = field == 'extra_chit' ? 'Extra Chit' : 'Bar Chit';
+          String newValue =
+              field == 'extra_chit' ? extraChit.toString() : barChit.toString();
+          String msg =
+              'Admin ${adminData?['name'] ?? 'Unknown'} edited $itemName for user $userName (Rank: $userRank, BA: $baNumber) on $date. New value: $newValue.';
+          if (adminBaNo.isNotEmpty) {
+            await FirebaseFirestore.instance
+                .collection('staff_activity_log')
+                .doc(adminBaNo)
+                .collection('logs')
+                .add({
+              'timestamp': FieldValue.serverTimestamp(),
+              'actionType': 'Edit Individual Entry',
+              'message': msg,
+              'admin_id': adminData?['uid'] ?? '',
+              'admin_name': adminData?['name'] ?? '',
+              'user_ba_number': baNumber,
+              'user_name': userName,
+              'user_rank': userRank,
+              'date': date,
+            });
+          }
+        }
       }
 
       // Update in Firestore

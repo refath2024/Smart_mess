@@ -1,3 +1,4 @@
+import '../../services/admin_auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -298,6 +299,25 @@ class _AddMessingScreenState extends State<AddMessingScreen> {
       };
 
       // Add the new meal item
+      // Log activity after successful add
+      final adminData = await AdminAuthService().getCurrentAdminData();
+      final adminBaNo = adminData?['ba_no'] ?? '';
+      final adminName = adminData?['name'] ?? 'Unknown';
+      if (adminBaNo.isNotEmpty) {
+        final msg =
+            '$adminName added a messing entry on $dateStr: Meal Type: $_selectedMealType, Product: ${_productNameController.text.trim()}, Unit Price: ${_unitPriceController.text}, Amount Used: ${_amountUsedController.text}, Dining Members: ${_diningMembersController.text}, Price Expended: $_priceExpended, Price Per Member: $_pricePerMember, Inventory Item ID: ${_selectedInventoryItem!['id']}.';
+        await FirebaseFirestore.instance
+            .collection('staff_activity_log')
+            .doc(adminBaNo)
+            .collection('logs')
+            .add({
+          'timestamp': FieldValue.serverTimestamp(),
+          'actionType': 'Add Messing Entry',
+          'message': msg,
+          'admin_id': adminData?['uid'] ?? '',
+          'admin_name': adminName,
+        });
+      }
       await FirebaseFirestore.instance
           .collection('messing_data')
           .doc(dateStr)

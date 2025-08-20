@@ -1,3 +1,4 @@
+import '../../services/admin_auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -9,6 +10,25 @@ class AutoLoopUsersScreen extends StatefulWidget {
 }
 
 class _AutoLoopUsersScreenState extends State<AutoLoopUsersScreen> {
+  final AdminAuthService _adminAuthService = AdminAuthService();
+  Map<String, dynamic>? _currentUserData;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchCurrentAdminData();
+    _fetchAutoLoopUsers();
+  }
+
+  void _fetchCurrentAdminData() async {
+    final data = await _adminAuthService.getCurrentAdminData();
+    if (mounted) {
+      setState(() {
+        _currentUserData = data;
+      });
+    }
+  }
+
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   List<Map<String, dynamic>> autoLoopUsers = [];
   bool _isLoading = true;
@@ -22,11 +42,7 @@ class _AutoLoopUsersScreenState extends State<AutoLoopUsersScreen> {
   bool _dinnerEnabled = false;
   bool _enabled = true;
 
-  @override
-  void initState() {
-    super.initState();
-    _fetchAutoLoopUsers();
-  }
+  // Removed duplicate initState
 
   @override
   void dispose() {
@@ -82,6 +98,29 @@ class _AutoLoopUsersScreenState extends State<AutoLoopUsersScreen> {
       await _firestore.collection('user_auto_loop').doc(docId).update({
         'enabled': !currentEnabled,
       });
+
+      // Activity log for toggle
+      final adminName = _currentUserData?['name'] ?? 'Admin';
+      final adminBaNo = _currentUserData?['ba_no'] ?? '';
+      // Find user info for log
+      final user =
+          autoLoopUsers.firstWhere((u) => u['id'] == docId, orElse: () => {});
+      final userName = user['name'] ?? '';
+      final userBaNo = user['ba_no'] ?? '';
+      final statusMsg = !currentEnabled ? 'Enabled' : 'Disabled';
+      if (adminBaNo.isNotEmpty) {
+        await _firestore
+            .collection('staff_activity_log')
+            .doc(adminBaNo)
+            .collection('logs')
+            .add({
+          'timestamp': FieldValue.serverTimestamp(),
+          'actionType': 'Toggle Auto Loop User',
+          'message':
+              '$adminName toggled auto loop user $userName ($userBaNo) to $statusMsg.',
+          'name': adminName,
+        });
+      }
 
       // Update local data
       setState(() {
@@ -163,10 +202,29 @@ class _AutoLoopUsersScreenState extends State<AutoLoopUsersScreen> {
                     const Text('Auto Loop Status: '),
                     Switch(
                       value: _enabled,
-                      onChanged: (value) {
+                      onChanged: (value) async {
                         setDialogState(() {
                           _enabled = value;
                         });
+                        // Activity log for toggle
+                        final adminName = _currentUserData?['name'] ?? 'Admin';
+                        final adminBaNo = _currentUserData?['ba_no'] ?? '';
+                        final userName = _nameController.text.trim();
+                        final userBaNo = _baNoController.text.trim();
+                        final statusMsg = value ? 'Enabled' : 'Disabled';
+                        if (adminBaNo.isNotEmpty) {
+                          await _firestore
+                              .collection('staff_activity_log')
+                              .doc(adminBaNo)
+                              .collection('logs')
+                              .add({
+                            'timestamp': FieldValue.serverTimestamp(),
+                            'actionType': 'Toggle Auto Loop User',
+                            'message':
+                                '$adminName toggled auto loop user $userName ($userBaNo) to $statusMsg.',
+                            'name': adminName,
+                          });
+                        }
                       },
                     ),
                     Text(_enabled ? 'Enabled' : 'Disabled'),
@@ -230,6 +288,14 @@ class _AutoLoopUsersScreenState extends State<AutoLoopUsersScreen> {
 
   Future<void> _saveUser(String docId) async {
     try {
+      final oldUser = autoLoopUsers.firstWhere((user) => user['id'] == docId,
+          orElse: () => {});
+      final oldPattern = oldUser['meal_pattern'] ?? {};
+      final oldEnabled = oldUser['enabled'];
+      final oldName = oldUser['name'] ?? '';
+      final oldRank = oldUser['rank'] ?? '';
+      final oldBaNo = oldUser['ba_no'] ?? '';
+
       await _firestore.collection('user_auto_loop').doc(docId).update({
         'ba_no': _baNoController.text.trim(),
         'name': _nameController.text.trim(),
@@ -241,6 +307,53 @@ class _AutoLoopUsersScreenState extends State<AutoLoopUsersScreen> {
           'dinner': _dinnerEnabled,
         },
       });
+
+      // Activity log for edit
+      final adminName = _currentUserData?['name'] ?? 'Admin';
+      final adminBaNo = _currentUserData?['ba_no'] ?? '';
+      if (adminBaNo.isNotEmpty) {
+        List<String> changes = [];
+        if (oldName != _nameController.text.trim()) {
+          changes.add('Name: $oldName → ${_nameController.text.trim()}');
+        }
+        if (oldRank != _rankController.text.trim()) {
+          changes.add('Rank: $oldRank → ${_rankController.text.trim()}');
+        }
+        if (oldBaNo != _baNoController.text.trim()) {
+          changes.add('BA No: $oldBaNo → ${_baNoController.text.trim()}');
+        }
+        if (oldEnabled != _enabled) {
+          changes.add(
+              'Status: ${oldEnabled ? 'Enabled' : 'Disabled'} → ${_enabled ? 'Enabled' : 'Disabled'}');
+        }
+        if (oldPattern['breakfast'] != _breakfastEnabled) {
+          changes.add(
+              'Breakfast: ${oldPattern['breakfast'] == true ? 'Yes' : 'No'} → ${_breakfastEnabled ? 'Yes' : 'No'}');
+        }
+        if (oldPattern['lunch'] != _lunchEnabled) {
+          changes.add(
+              'Lunch: ${oldPattern['lunch'] == true ? 'Yes' : 'No'} → ${_lunchEnabled ? 'Yes' : 'No'}');
+        }
+        if (oldPattern['dinner'] != _dinnerEnabled) {
+          changes.add(
+              'Dinner: ${oldPattern['dinner'] == true ? 'Yes' : 'No'} → ${_dinnerEnabled ? 'Yes' : 'No'}');
+        }
+        final details =
+            'Edited auto loop user ${_nameController.text.trim()} (${_baNoController.text.trim()}). ' +
+                (changes.isNotEmpty
+                    ? 'Changes: ' + changes.join('; ')
+                    : 'No field changed.');
+        await _firestore
+            .collection('staff_activity_log')
+            .doc(adminBaNo)
+            .collection('logs')
+            .add({
+          'timestamp': FieldValue.serverTimestamp(),
+          'actionType': 'Edit Auto Loop User',
+          'message': '$adminName edited auto loop user. $details',
+          'name': adminName,
+        });
+      }
 
       if (mounted) {
         Navigator.of(context).pop();
@@ -284,7 +397,37 @@ class _AutoLoopUsersScreenState extends State<AutoLoopUsersScreen> {
 
     if (confirm == true) {
       try {
+        // Get user details before delete
+        final user =
+            autoLoopUsers.firstWhere((u) => u['id'] == docId, orElse: () => {});
+        final baNo = user['ba_no'] ?? '';
+        final name = user['name'] ?? '';
+        final rank = user['rank'] ?? '';
+        final pattern = user['meal_pattern'] ?? {};
+        final enabled = user['enabled'] ?? false;
+
         await _firestore.collection('user_auto_loop').doc(docId).delete();
+
+        // Activity log for delete
+        final adminName = _currentUserData?['name'] ?? 'Admin';
+        final adminBaNo = _currentUserData?['ba_no'] ?? '';
+        if (adminBaNo.isNotEmpty) {
+          final details =
+              'Deleted auto loop user $name ($baNo), Rank: $rank, Status: ${enabled ? 'Enabled' : 'Disabled'}, '
+              'Breakfast: ${pattern['breakfast'] == true ? 'Yes' : 'No'}, '
+              'Lunch: ${pattern['lunch'] == true ? 'Yes' : 'No'}, '
+              'Dinner: ${pattern['dinner'] == true ? 'Yes' : 'No'}';
+          await _firestore
+              .collection('staff_activity_log')
+              .doc(adminBaNo)
+              .collection('logs')
+              .add({
+            'timestamp': FieldValue.serverTimestamp(),
+            'actionType': 'Delete Auto Loop User',
+            'message': '$adminName deleted auto loop user. $details',
+            'name': adminName,
+          });
+        }
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

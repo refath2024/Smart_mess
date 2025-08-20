@@ -270,6 +270,30 @@ class _AdminMealStateScreenState extends State<AdminMealStateScreen> {
 
       if (!mounted) return;
 
+      // Activity log for batch operation
+      final adminName = _currentUserData?['name'] ?? 'Admin';
+      final adminBaNo = _currentUserData?['ba_no'] ?? '';
+      final firestore = FirebaseFirestore.instance;
+      if (adminBaNo.isNotEmpty) {
+        String summary = '';
+        if (result['success'] == true) {
+          summary =
+              'Batch completed. Processed: ${result['processed']} users, Skipped: ${result['skipped']} users, Total: ${result['total_auto_loop_users']}.';
+        } else {
+          summary = 'Batch failed: ${result['message']}';
+        }
+        await firestore
+            .collection('staff_activity_log')
+            .doc(adminBaNo)
+            .collection('logs')
+            .add({
+          'timestamp': FieldValue.serverTimestamp(),
+          'actionType': 'Run Auto Loop Batch',
+          'message': '$adminName ran auto loop batch. $summary',
+          'name': adminName,
+        });
+      }
+
       // Show detailed results
       if (result['success']) {
         showDialog(
@@ -335,6 +359,22 @@ class _AdminMealStateScreenState extends State<AdminMealStateScreen> {
             backgroundColor: Colors.red,
           ),
         );
+      }
+      // Activity log for error
+      final adminName = _currentUserData?['name'] ?? 'Admin';
+      final adminBaNo = _currentUserData?['ba_no'] ?? '';
+      final firestore = FirebaseFirestore.instance;
+      if (adminBaNo.isNotEmpty) {
+        await firestore
+            .collection('staff_activity_log')
+            .doc(adminBaNo)
+            .collection('logs')
+            .add({
+          'timestamp': FieldValue.serverTimestamp(),
+          'actionType': 'Run Auto Loop Batch',
+          'message': '$adminName encountered error running auto loop batch: $e',
+          'name': adminName,
+        });
       }
     }
   }
@@ -418,6 +458,14 @@ class _AdminMealStateScreenState extends State<AdminMealStateScreen> {
         final dateStr = _formatDateForFirestore(selectedDate);
         final baNo = record['ba_no'];
 
+        // Get old values
+        final oldBreakfast = record['breakfast'] ?? '';
+        final oldLunch = record['lunch'] ?? '';
+        final oldDinner = record['dinner'] ?? '';
+        final oldDisposalType = record['disposal_type'] ?? '';
+        final oldRemarks = record['remarks'] ?? '';
+        final oldDisposalDates = record['disposal_dates'] ?? '';
+
         // Format remarks - auto convert to N/A if empty or variations of n/a
         String finalRemarks = _remarksController.text.trim();
         if (finalRemarks.isEmpty ||
@@ -434,6 +482,10 @@ class _AdminMealStateScreenState extends State<AdminMealStateScreen> {
             _disposalToDate != null) {
           disposalFrom = _formatDateForFirestore(_disposalFromDate!);
           disposalTo = _formatDateForFirestore(_disposalToDate!);
+        }
+        String newDisposalDates = '';
+        if (disposalFrom.isNotEmpty && disposalTo.isNotEmpty) {
+          newDisposalDates = '$disposalFrom - $disposalTo';
         }
 
         // Update Firebase
@@ -453,6 +505,49 @@ class _AdminMealStateScreenState extends State<AdminMealStateScreen> {
           '$baNo.remarks': finalRemarks == 'N/A' ? '' : finalRemarks,
           '$baNo.timestamp': FieldValue.serverTimestamp(),
         });
+
+        // Build change details
+        List<String> changes = [];
+        if (oldBreakfast != _breakfastController.text) {
+          changes
+              .add('Breakfast: $oldBreakfast → ${_breakfastController.text}');
+        }
+        if (oldLunch != _lunchController.text) {
+          changes.add('Lunch: $oldLunch → ${_lunchController.text}');
+        }
+        if (oldDinner != _dinnerController.text) {
+          changes.add('Dinner: $oldDinner → ${_dinnerController.text}');
+        }
+        if (oldDisposalType != _disposalTypeController.text) {
+          changes.add(
+              'Disposal Type: $oldDisposalType → ${_disposalTypeController.text}');
+        }
+        if (oldRemarks != finalRemarks) {
+          changes.add('Remarks: $oldRemarks → $finalRemarks');
+        }
+        if (oldDisposalDates != newDisposalDates) {
+          changes.add('Disposal Dates: $oldDisposalDates → $newDisposalDates');
+        }
+
+        // Log activity for edit
+        final adminName = _currentUserData?['name'] ?? 'Admin';
+        final adminBaNo = _currentUserData?['ba_no'] ?? '';
+        if (adminBaNo.isNotEmpty) {
+          final details = 'Meal state edited for $baNo on $dateStr. ' +
+              (changes.isNotEmpty
+                  ? 'Changes: ' + changes.join('; ')
+                  : 'No field changed.');
+          await FirebaseFirestore.instance
+              .collection('staff_activity_log')
+              .doc(adminBaNo)
+              .collection('logs')
+              .add({
+            'timestamp': FieldValue.serverTimestamp(),
+            'actionType': 'Edit Meal State',
+            'message': '$adminName edited meal state. $details',
+            'name': adminName,
+          });
+        }
 
         // Refresh data
         await _fetchMealStateData();
@@ -529,6 +624,23 @@ class _AdminMealStateScreenState extends State<AdminMealStateScreen> {
             .update({
           baNo: FieldValue.delete(),
         });
+
+        // Log activity for delete
+        final adminName = _currentUserData?['name'] ?? 'Admin';
+        final adminBaNo = _currentUserData?['ba_no'] ?? '';
+        if (adminBaNo.isNotEmpty) {
+          final details = 'Meal state deleted for $baNo on $dateStr';
+          await FirebaseFirestore.instance
+              .collection('staff_activity_log')
+              .doc(adminBaNo)
+              .collection('logs')
+              .add({
+            'timestamp': FieldValue.serverTimestamp(),
+            'actionType': 'Delete Meal State',
+            'message': '$adminName deleted meal state. $details',
+            'name': adminName,
+          });
+        }
 
         // Refresh data
         await _fetchMealStateData();
@@ -916,12 +1028,7 @@ class _AdminMealStateScreenState extends State<AdminMealStateScreen> {
               ),
             ),
             actions: [
-              // Manual Auto Loop Batch Button
-              IconButton(
-                icon: const Icon(Icons.autorenew, color: Colors.white),
-                tooltip: 'Run Auto Loop Batch',
-                onPressed: _runAutoLoopBatch,
-              ),
+              // No batch button in AppBar
               PopupMenuButton<String>(
                 icon: const Icon(Icons.language, color: Colors.white),
                 onSelected: (String value) {
@@ -1069,6 +1176,21 @@ class _AdminMealStateScreenState extends State<AdminMealStateScreen> {
                               ),
                             ),
                           ),
+                        ),
+                        const SizedBox(width: 12),
+                        // Run Auto Loop Batch Button (now in body)
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.autorenew),
+                          label: const Text('Run Auto Loop Batch'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFF002B5B),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
+                            textStyle:
+                                const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          onPressed: _runAutoLoopBatch,
                         ),
                       ],
                     ),

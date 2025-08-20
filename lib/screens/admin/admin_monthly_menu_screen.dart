@@ -29,6 +29,41 @@ class EditMenuScreen extends StatefulWidget {
 }
 
 class _EditMenuScreenState extends State<EditMenuScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  DateTime? _filterFromDate;
+  DateTime? _filterToDate;
+
+  List<Map<String, dynamic>> get filteredMenuData {
+    String search = _searchController.text.toLowerCase();
+    return menuData.where((item) {
+      // Date filter
+      DateTime? itemDate;
+      try {
+        itemDate = DateTime.parse(item['date']);
+      } catch (_) {}
+      if (_filterFromDate != null && _filterToDate == null) {
+        if (itemDate == null || itemDate.compareTo(_filterFromDate!) != 0)
+          return false;
+      }
+      if (_filterFromDate != null && _filterToDate != null) {
+        if (itemDate == null ||
+            itemDate.isBefore(_filterFromDate!) ||
+            itemDate.isAfter(_filterToDate!)) return false;
+      }
+      // Search filter
+      if (search.isEmpty) return true;
+      return [
+        item['date'],
+        item['breakfast'],
+        item['breakfastPrice'],
+        item['lunch'],
+        item['lunchPrice'],
+        item['dinner'],
+        item['dinnerPrice'],
+      ].any((v) => v != null && v.toString().toLowerCase().contains(search));
+    }).toList();
+  }
+
   final AdminAuthService _adminAuthService = AdminAuthService();
 
   bool _isLoading = true;
@@ -100,7 +135,7 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
       // Get all menu documents from Firestore
       final QuerySnapshot querySnapshot = await firestore
           .collection('monthly_menu')
-          .orderBy('date', descending: false)
+          .orderBy('date', descending: true)
           .get();
 
       final List<Map<String, dynamic>> fetchedMenuData = [];
@@ -220,10 +255,7 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                 Navigator.of(context).pop(false);
               }
             },
-            style: TextButton.styleFrom(
-              backgroundColor: Colors.grey,
-              foregroundColor: Colors.white,
-            ),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: Text(AppLocalizations.of(context)!.cancel),
           ),
           TextButton(
@@ -251,10 +283,7 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                 Navigator.of(context).pop(true);
               }
             },
-            style: TextButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-            ),
+            style: TextButton.styleFrom(foregroundColor: Colors.green),
             child: Text(AppLocalizations.of(context)!.save),
           ),
         ],
@@ -263,7 +292,6 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
 
     if (shouldSave == true) {
       try {
-        // Show loading indicator
         if (mounted) {
           showDialog(
             context: context,
@@ -273,20 +301,32 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                 children: [
                   const CircularProgressIndicator(),
                   const SizedBox(width: 16),
-                  Text(AppLocalizations.of(context)!.savingChanges),
+                  Text('Updating menu...'),
                 ],
               ),
             ),
           );
         }
-
         final firestore = FirebaseFirestore.instance;
         final dateId = item['date'] as String;
+        final updateData = <String, dynamic>{};
+        List<String> changes = [];
+        void compareField(String label, String oldVal, String newVal) {
+          if (oldVal != newVal) {
+            changes.add('$label: "$oldVal" → "$newVal"');
+          }
+        }
 
-        // Prepare data with smart NULL handling
-        Map<String, dynamic> updateData = {};
-
-        // Add breakfast data if provided
+        compareField(
+            'breakfast', item['breakfast'] ?? '', breakfastController.text);
+        compareField('breakfastPrice', item['breakfastPrice'] ?? '',
+            breakfastPriceController.text);
+        compareField('lunch', item['lunch'] ?? '', lunchController.text);
+        compareField(
+            'lunchPrice', item['lunchPrice'] ?? '', lunchPriceController.text);
+        compareField('dinner', item['dinner'] ?? '', dinnerController.text);
+        compareField('dinnerPrice', item['dinnerPrice'] ?? '',
+            dinnerPriceController.text);
         if (breakfastController.text.isNotEmpty ||
             breakfastPriceController.text.isNotEmpty) {
           updateData['breakfast'] = {
@@ -296,11 +336,8 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
               'price': double.tryParse(breakfastPriceController.text) ?? 0.0,
           };
         } else {
-          // Remove breakfast data if both fields are empty
           updateData['breakfast'] = FieldValue.delete();
         }
-
-        // Add lunch data if provided
         if (lunchController.text.isNotEmpty ||
             lunchPriceController.text.isNotEmpty) {
           updateData['lunch'] = {
@@ -310,11 +347,8 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
               'price': double.tryParse(lunchPriceController.text) ?? 0.0,
           };
         } else {
-          // Remove lunch data if both fields are empty
           updateData['lunch'] = FieldValue.delete();
         }
-
-        // Add dinner data if provided
         if (dinnerController.text.isNotEmpty ||
             dinnerPriceController.text.isNotEmpty) {
           updateData['dinner'] = {
@@ -324,23 +358,13 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
               'price': double.tryParse(dinnerPriceController.text) ?? 0.0,
           };
         } else {
-          // Remove dinner data if both fields are empty
           updateData['dinner'] = FieldValue.delete();
         }
-
-        // Add metadata
-        final dateObj =
-            DateTime.tryParse(dateId.replaceAll('-', '/')) ?? DateTime.now();
-        updateData['date'] = dateObj;
         updateData['lastUpdated'] = FieldValue.serverTimestamp();
-
-        // Save to Firestore
         await firestore
             .collection('monthly_menu')
             .doc(dateId)
             .set(updateData, SetOptions(merge: true));
-
-        // Update local data
         setState(() {
           menuData[index]['breakfast'] = breakfastController.text;
           menuData[index]['breakfastPrice'] = breakfastPriceController.text;
@@ -349,8 +373,6 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
           menuData[index]['dinner'] = dinnerController.text;
           menuData[index]['dinnerPrice'] = dinnerPriceController.text;
         });
-
-        // Dismiss loading dialog
         if (mounted) {
           Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
@@ -359,8 +381,23 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                     AppLocalizations.of(context)!.menuUpdatedSuccessfully)),
           );
         }
+        // Activity log for edit
+        final adminName = _currentUserData?['name'] ?? 'Admin';
+        final baNo = _currentUserData?['ba_no'] ?? '';
+        if (baNo.isNotEmpty && changes.isNotEmpty) {
+          await FirebaseFirestore.instance
+              .collection('staff_activity_log')
+              .doc(baNo)
+              .collection('logs')
+              .add({
+            'timestamp': FieldValue.serverTimestamp(),
+            'actionType': 'Update Monthly Menu',
+            'message':
+                '$adminName updated monthly menu for "$dateId". Changes: ${changes.join(', ')}',
+            'name': adminName,
+          });
+        }
       } catch (e) {
-        // Dismiss loading dialog
         if (mounted) {
           Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
@@ -431,10 +468,8 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
         ],
       ),
     );
-
     if (confirm == true) {
       try {
-        // Show loading indicator
         if (mounted) {
           showDialog(
             context: context,
@@ -444,25 +479,19 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                 children: [
                   const CircularProgressIndicator(),
                   const SizedBox(width: 16),
-                  Text(AppLocalizations.of(context)!.deletingMenu),
+                  Text('Deleting menu...'),
                 ],
               ),
             ),
           );
         }
-
         final dateId = menuData[index]['date'] as String;
         final firestore = FirebaseFirestore.instance;
-
-        // Delete from Firestore
+        final deletedEntry = Map<String, dynamic>.from(menuData[index]);
         await firestore.collection('monthly_menu').doc(dateId).delete();
-
-        // Update local data
         setState(() {
           menuData.removeAt(index);
         });
-
-        // Dismiss loading dialog
         if (mounted) {
           Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
@@ -471,8 +500,23 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                     AppLocalizations.of(context)!.menuItemDeletedSuccessfully)),
           );
         }
+        // Activity log for delete
+        final adminName = _currentUserData?['name'] ?? 'Admin';
+        final baNo = _currentUserData?['ba_no'] ?? '';
+        if (baNo.isNotEmpty) {
+          await FirebaseFirestore.instance
+              .collection('staff_activity_log')
+              .doc(baNo)
+              .collection('logs')
+              .add({
+            'timestamp': FieldValue.serverTimestamp(),
+            'actionType': 'Delete Monthly Menu',
+            'message':
+                '$adminName deleted monthly menu for "$dateId". Entry: ${deletedEntry.toString()}',
+            'name': adminName,
+          });
+        }
       } catch (e) {
-        // Dismiss loading dialog
         if (mounted) {
           Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
@@ -865,29 +909,88 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                           ],
                         ),
                         child: TextField(
+                          controller: _searchController,
+                          onChanged: (_) => setState(() {}),
                           decoration: InputDecoration(
                             hintText: AppLocalizations.of(context)!.search,
                             prefixIcon: const Icon(Icons.search),
                             border: InputBorder.none,
                             hintStyle: TextStyle(color: Colors.grey[400]),
+                            suffixIcon: _searchController.text.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      setState(() {});
+                                    },
+                                  )
+                                : null,
                           ),
                         ),
                       ),
                     ),
                     const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: () {},
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.date_range, color: Colors.white),
+                      label: const Text('From',
+                          style: TextStyle(color: Colors.white)),
+                      onPressed: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: _filterFromDate ?? DateTime.now(),
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime(2100),
+                        );
+                        if (picked != null) {
+                          setState(() {
+                            _filterFromDate = picked;
+                            _filterToDate = null;
+                          });
+                        }
+                      },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1A4D8F),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
+                        backgroundColor: _filterFromDate != null
+                            ? Colors.blue
+                            : const Color(0xFF1A4D8F),
                       ),
-                      child: Text(AppLocalizations.of(context)!.go,
-                          style: const TextStyle(color: Colors.white)),
                     ),
+                    const SizedBox(width: 4),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.date_range, color: Colors.white),
+                      label: const Text('To',
+                          style: TextStyle(color: Colors.white)),
+                      onPressed: _filterFromDate == null
+                          ? null
+                          : () async {
+                              final picked = await showDatePicker(
+                                context: context,
+                                initialDate: _filterToDate ?? _filterFromDate!,
+                                firstDate: _filterFromDate!,
+                                lastDate: DateTime(2100),
+                              );
+                              if (picked != null) {
+                                setState(() {
+                                  _filterToDate = picked;
+                                });
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _filterToDate != null
+                            ? Colors.blue
+                            : const Color(0xFF1A4D8F),
+                      ),
+                    ),
+                    if (_filterFromDate != null)
+                      IconButton(
+                        icon: const Icon(Icons.clear),
+                        tooltip: 'Clear date filter',
+                        onPressed: () {
+                          setState(() {
+                            _filterFromDate = null;
+                            _filterToDate = null;
+                          });
+                        },
+                      ),
                     const SizedBox(width: 8),
                     ElevatedButton(
                       onPressed: () async {
@@ -897,8 +1000,6 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                             builder: (context) => const AddMenuListScreen(),
                           ),
                         );
-
-                        // Refresh menu data if a new item was added
                         if (result == true) {
                           fetchMenu();
                         }
@@ -987,7 +1088,7 @@ class _EditMenuScreenState extends State<EditMenuScreen> {
                                     ),
                                   ),
                                 ],
-                                rows: menuData.map((item) {
+                                rows: filteredMenuData.map((item) {
                                   return DataRow(
                                     cells: [
                                       DataCell(Text(item['date'])),

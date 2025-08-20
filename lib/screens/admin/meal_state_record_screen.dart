@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
+import '../../services/admin_auth_service.dart';
 
 class MealStateRecordScreen extends StatefulWidget {
   const MealStateRecordScreen({super.key});
@@ -10,6 +11,10 @@ class MealStateRecordScreen extends StatefulWidget {
 }
 
 class _MealStateRecordScreenState extends State<MealStateRecordScreen> {
+  final AdminAuthService _adminAuthService = AdminAuthService();
+  Map<String, dynamic>? _currentUserData;
+
+  // (removed duplicate _fetchCurrentAdminData)
   final TextEditingController _searchController = TextEditingController();
   DateTime? selectedDate = DateTime.now();
   List<Map<String, dynamic>> filteredRecords = [];
@@ -26,9 +31,19 @@ class _MealStateRecordScreenState extends State<MealStateRecordScreen> {
   DateTime? _disposalFromDate;
   DateTime? _disposalToDate;
 
+  void _fetchCurrentAdminData() async {
+    final data = await _adminAuthService.getCurrentAdminData();
+    if (mounted) {
+      setState(() {
+        _currentUserData = data;
+      });
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    _fetchCurrentAdminData();
     _fetchAllMealRecords();
   }
 
@@ -228,7 +243,19 @@ class _MealStateRecordScreenState extends State<MealStateRecordScreen> {
         final dateStr = record['Date'];
         final baNo = record['BA No'];
 
-        // Format remarks - auto convert to N/A if empty or variations of n/a
+        // Old values
+        final oldBreakfast = record['Breakfast'];
+        final oldLunch = record['Lunch'];
+        final oldDinner = record['Dinner'];
+        final oldDisposalType = record['Disposals'];
+        final oldRemarks = record['Remarks'];
+        final oldDisposalDates = record['Disposal Dates'];
+
+        // New values
+        final newBreakfast = _breakfastController.text;
+        final newLunch = _lunchController.text;
+        final newDinner = _dinnerController.text;
+        final newDisposalType = _disposalTypeController.text;
         String finalRemarks = _remarksController.text.trim();
         if (finalRemarks.isEmpty ||
             finalRemarks.toLowerCase() == 'n/a' ||
@@ -245,25 +272,69 @@ class _MealStateRecordScreenState extends State<MealStateRecordScreen> {
           disposalFrom = _formatDateForFirestore(_disposalFromDate!);
           disposalTo = _formatDateForFirestore(_disposalToDate!);
         }
+        String newDisposalDates = '';
+        if (disposalFrom.isNotEmpty && disposalTo.isNotEmpty) {
+          newDisposalDates = '$disposalFrom - $disposalTo';
+        }
 
         // Update Firebase
         await FirebaseFirestore.instance
             .collection('user_meal_state')
             .doc(dateStr)
             .update({
-          '$baNo.breakfast': _breakfastController.text == 'Yes',
-          '$baNo.lunch': _lunchController.text == 'Yes',
-          '$baNo.dinner': _dinnerController.text == 'Yes',
-          '$baNo.disposal': _disposalTypeController.text != 'N/A',
-          '$baNo.disposal_type': _disposalTypeController.text == 'N/A'
-              ? ''
-              : _disposalTypeController.text,
+          '$baNo.breakfast': newBreakfast == 'Yes',
+          '$baNo.lunch': newLunch == 'Yes',
+          '$baNo.dinner': newDinner == 'Yes',
+          '$baNo.disposal': newDisposalType != 'N/A',
+          '$baNo.disposal_type':
+              newDisposalType == 'N/A' ? '' : newDisposalType,
           '$baNo.disposal_from': disposalFrom,
           '$baNo.disposal_to': disposalTo,
           '$baNo.remarks': finalRemarks,
           '$baNo.timestamp': FieldValue.serverTimestamp(),
           '$baNo.admin_generated': false, // Mark as manually edited
         });
+
+        // Build change details
+        List<String> changes = [];
+        if (oldBreakfast != newBreakfast) {
+          changes.add('Breakfast: $oldBreakfast → $newBreakfast');
+        }
+        if (oldLunch != newLunch) {
+          changes.add('Lunch: $oldLunch → $newLunch');
+        }
+        if (oldDinner != newDinner) {
+          changes.add('Dinner: $oldDinner → $newDinner');
+        }
+        if (oldDisposalType != newDisposalType) {
+          changes.add('Disposal Type: $oldDisposalType → $newDisposalType');
+        }
+        if (oldRemarks != finalRemarks) {
+          changes.add('Remarks: $oldRemarks → $finalRemarks');
+        }
+        if (oldDisposalDates != newDisposalDates) {
+          changes.add('Disposal Dates: $oldDisposalDates → $newDisposalDates');
+        }
+
+        // Log activity for edit
+        final adminName = _currentUserData?['name'] ?? 'Admin';
+        final adminBaNo = _currentUserData?['ba_no'] ?? '';
+        if (adminBaNo.isNotEmpty) {
+          final details = 'Meal state edited for $baNo on $dateStr. ' +
+              (changes.isNotEmpty
+                  ? 'Changes: ' + changes.join('; ')
+                  : 'No field changed.');
+          await FirebaseFirestore.instance
+              .collection('staff_activity_log')
+              .doc(adminBaNo)
+              .collection('logs')
+              .add({
+            'timestamp': FieldValue.serverTimestamp(),
+            'actionType': 'Edit Meal State',
+            'message': '$adminName edited meal state. $details',
+            'name': adminName,
+          });
+        }
 
         // Refresh data
         await _fetchAllMealRecords();
@@ -349,6 +420,23 @@ class _MealStateRecordScreenState extends State<MealStateRecordScreen> {
             .update({
           baNo: FieldValue.delete(),
         });
+
+        // Log activity for delete
+        final adminName = _currentUserData?['name'] ?? 'Admin';
+        final adminBaNo = _currentUserData?['ba_no'] ?? '';
+        if (adminBaNo.isNotEmpty) {
+          final details = 'Meal state deleted for $baNo on $dateStr';
+          await FirebaseFirestore.instance
+              .collection('staff_activity_log')
+              .doc(adminBaNo)
+              .collection('logs')
+              .add({
+            'timestamp': FieldValue.serverTimestamp(),
+            'actionType': 'Delete Meal State',
+            'message': '$adminName deleted meal state. $details',
+            'name': adminName,
+          });
+        }
 
         // Refresh data
         await _fetchAllMealRecords();
@@ -1355,6 +1443,11 @@ class DetailedMealEntryScreen extends StatefulWidget {
 }
 
 class _DetailedMealEntryScreenState extends State<DetailedMealEntryScreen> {
+  Future<Map<String, dynamic>?> _getCurrentAdminData() async {
+    final adminAuthService = AdminAuthService();
+    return await adminAuthService.getCurrentAdminData();
+  }
+
   // Meal selections
   bool breakfastSelected = false;
   bool lunchSelected = false;
@@ -1639,6 +1732,7 @@ class _DetailedMealEntryScreenState extends State<DetailedMealEntryScreen> {
   }
 
   Future<void> _submitManualOverride() async {
+    final adminData = await _getCurrentAdminData();
     setState(() {
       isSubmitting = true;
     });
@@ -1669,6 +1763,32 @@ class _DetailedMealEntryScreenState extends State<DetailedMealEntryScreen> {
         'auto_loop_generated': false,
         'manual_override': true, // Mark as manual override
       };
+
+      // Activity log for create (manual override)
+      if (adminData != null && adminData['ba_no'] != null) {
+        final adminName = adminData['name'] ?? 'Admin';
+        final adminBaNo = adminData['ba_no'] ?? '';
+        final details =
+            'Created meal state for $userName ($baNo) on ${widget.dateStr}. '
+            'Breakfast: ${breakfastSelected ? 'Yes' : 'No'}, '
+            'Lunch: ${lunchSelected ? 'Yes' : 'No'}, '
+            'Dinner: ${dinnerSelected ? 'Yes' : 'No'}, '
+            'Disposal: ${disposalEnabled ? disposalType : 'N/A'}, '
+            'Disposal Dates: '
+            '${disposalFromDate != null ? _formatDateForFirestore(disposalFromDate!) : 'N/A'} - '
+            '${disposalToDate != null ? _formatDateForFirestore(disposalToDate!) : 'N/A'}, '
+            'Remarks: ${remarksController.text.trim().isEmpty ? 'N/A' : remarksController.text.trim()}';
+        await FirebaseFirestore.instance
+            .collection('staff_activity_log')
+            .doc(adminBaNo)
+            .collection('logs')
+            .add({
+          'timestamp': FieldValue.serverTimestamp(),
+          'actionType': 'Create Meal State',
+          'message': '$adminName created meal state. $details',
+          'name': adminName,
+        });
+      }
 
       print('DEBUG: Starting Firestore operation for Manual Override');
       print('DEBUG: dateStr = ${widget.dateStr}');
@@ -1721,6 +1841,7 @@ class _DetailedMealEntryScreenState extends State<DetailedMealEntryScreen> {
   }
 
   Future<void> _submitAutoLoop() async {
+    final adminData = await _getCurrentAdminData();
     // Validate disposal dates if disposal is enabled
     if (disposalEnabled &&
         (disposalFromDate == null ||
@@ -1826,6 +1947,32 @@ class _DetailedMealEntryScreenState extends State<DetailedMealEntryScreen> {
         'auto_loop_generated': false,
       };
 
+      // Activity log for create (auto loop)
+      if (adminData != null && adminData['ba_no'] != null) {
+        final adminName = adminData['name'] ?? 'Admin';
+        final adminBaNo = adminData['ba_no'] ?? '';
+        final details =
+            'Created meal state (Auto Loop) for $userName ($baNo) on ${widget.dateStr}. '
+            'Breakfast: ${breakfastSelected ? 'Yes' : 'No'}, '
+            'Lunch: ${lunchSelected ? 'Yes' : 'No'}, '
+            'Dinner: ${dinnerSelected ? 'Yes' : 'No'}, '
+            'Disposal: ${disposalEnabled ? disposalType : 'N/A'}, '
+            'Disposal Dates: '
+            '${disposalFromDate != null ? _formatDateForFirestore(disposalFromDate!) : 'N/A'} - '
+            '${disposalToDate != null ? _formatDateForFirestore(disposalToDate!) : 'N/A'}, '
+            'Remarks: ${remarksController.text.trim().isEmpty ? 'N/A' : remarksController.text.trim()}';
+        await FirebaseFirestore.instance
+            .collection('staff_activity_log')
+            .doc(adminBaNo)
+            .collection('logs')
+            .add({
+          'timestamp': FieldValue.serverTimestamp(),
+          'actionType': 'Create Meal State',
+          'message': '$adminName created meal state. $details',
+          'name': adminName,
+        });
+      }
+
       print('DEBUG: Starting Firestore operation for Auto Loop');
       print('DEBUG: dateStr = ${widget.dateStr}');
       print('DEBUG: baNo = $baNo');
@@ -1878,6 +2025,7 @@ class _DetailedMealEntryScreenState extends State<DetailedMealEntryScreen> {
   }
 
   Future<void> _submitRegular() async {
+    final adminData = await _getCurrentAdminData();
     setState(() {
       isSubmitting = true;
     });
@@ -1936,6 +2084,32 @@ class _DetailedMealEntryScreenState extends State<DetailedMealEntryScreen> {
           'admin_generated': true, // Admin created
         }
       };
+
+      // Activity log for create (regular)
+      if (adminData != null && adminData['ba_no'] != null) {
+        final adminName = adminData['name'] ?? 'Admin';
+        final adminBaNo = adminData['ba_no'] ?? '';
+        final details =
+            'Created meal state for ${widget.selectedUser['name']} ($baNo) on ${widget.dateStr}. '
+            'Breakfast: ${breakfastSelected ? 'Yes' : 'No'}, '
+            'Lunch: ${lunchSelected ? 'Yes' : 'No'}, '
+            'Dinner: ${dinnerSelected ? 'Yes' : 'No'}, '
+            'Disposal: ${disposalEnabled ? disposalType : 'N/A'}, '
+            'Disposal Dates: '
+            '${disposalFromDate != null ? _formatDateForFirestore(disposalFromDate!) : 'N/A'} - '
+            '${disposalToDate != null ? _formatDateForFirestore(disposalToDate!) : 'N/A'}, '
+            'Remarks: ${remarksController.text.trim().isEmpty ? 'N/A' : remarksController.text.trim()}';
+        await FirebaseFirestore.instance
+            .collection('staff_activity_log')
+            .doc(adminBaNo)
+            .collection('logs')
+            .add({
+          'timestamp': FieldValue.serverTimestamp(),
+          'actionType': 'Create Meal State',
+          'message': '$adminName created meal state. $details',
+          'name': adminName,
+        });
+      }
 
       print('DEBUG: Starting Firestore operation for Regular Submit');
       print('DEBUG: dateStr = ${widget.dateStr}');

@@ -1,3 +1,4 @@
+import '../../services/admin_auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -157,19 +158,41 @@ class _AddMiscEntryScreenState extends State<AddMiscEntryScreen> {
 
         final firestore = FirebaseFirestore.instance;
         final batch = firestore.batch();
+        final adminData = await AdminAuthService().getCurrentAdminData();
+        final adminBaNo = adminData?['ba_no'] ?? '';
+        final adminName = adminData?['name'] ?? 'Unknown';
+        final List<String> logMessages = [];
 
-        // Save data for each section
+        // Fetch old data for all sections
+        Map<String, Map<String, dynamic>> oldData = {};
+        for (String section in _dynamicFields.keys) {
+          final doc =
+              await firestore.collection('misc_entry').doc(section).get();
+          oldData[section] =
+              doc.exists ? (doc.data() as Map<String, dynamic>) : {};
+        }
+
+        // Save data for each section and compare for changes
         for (String section in _dynamicFields.keys) {
           Map<String, dynamic> sectionData = {};
+          final oldSection = oldData[section] ?? {};
 
-          // Collect all field data
           _dynamicFields[section]!.forEach((fieldKey, controller) {
-            sectionData[fieldKey] = double.tryParse(controller.text) ?? 0.0;
+            final newValue = double.tryParse(controller.text) ?? 0.0;
+            sectionData[fieldKey] = newValue;
+            final oldValue = oldSection[fieldKey] is num
+                ? oldSection[fieldKey].toDouble()
+                : double.tryParse((oldSection[fieldKey] ?? '0').toString()) ??
+                    0.0;
+            if (oldSection.containsKey(fieldKey) && oldValue != newValue) {
+              // Log only changed fields
+              logMessages.add(
+                '$adminName changed the ${_getFieldLabel(section, fieldKey)} from ${oldValue.toStringAsFixed(2)} to ${newValue.toStringAsFixed(2)}.',
+              );
+            }
           });
 
           sectionData['last_updated'] = FieldValue.serverTimestamp();
-
-          // Add to batch
           batch.set(
             firestore.collection('misc_entry').doc(section),
             sectionData,
@@ -179,6 +202,23 @@ class _AddMiscEntryScreenState extends State<AddMiscEntryScreen> {
 
         // Commit the batch
         await batch.commit();
+
+        // Log activity for changed fields only
+        if (adminBaNo.isNotEmpty) {
+          for (final msg in logMessages) {
+            await firestore
+                .collection('staff_activity_log')
+                .doc(adminBaNo)
+                .collection('logs')
+                .add({
+              'timestamp': FieldValue.serverTimestamp(),
+              'actionType': 'Edit Misc Entry',
+              'message': msg,
+              'admin_id': adminData?['uid'] ?? '',
+              'admin_name': adminName,
+            });
+          }
+        }
 
         // Close loading dialog
         if (mounted) Navigator.pop(context);
@@ -279,6 +319,25 @@ class _AddMiscEntryScreenState extends State<AddMiscEntryScreen> {
         _dynamicFields[section]![fieldKey] = TextEditingController(text: '0');
       });
 
+      // Log activity for add field
+      final adminData = await AdminAuthService().getCurrentAdminData();
+      final adminBaNo = adminData?['ba_no'] ?? '';
+      final adminName = adminData?['name'] ?? 'Unknown';
+      if (adminBaNo.isNotEmpty) {
+        await FirebaseFirestore.instance
+            .collection('staff_activity_log')
+            .doc(adminBaNo)
+            .collection('logs')
+            .add({
+          'timestamp': FieldValue.serverTimestamp(),
+          'actionType': 'Add Misc Field',
+          'message':
+              'Admin $adminName added new field "$fieldName" ($fieldKey) to $section.',
+          'admin_id': adminData?['uid'] ?? '',
+          'admin_name': adminName,
+        });
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -336,6 +395,25 @@ class _AddMiscEntryScreenState extends State<AddMiscEntryScreen> {
             .collection('misc_entry')
             .doc(section)
             .update({fieldKey: FieldValue.delete()});
+
+        // Log activity for delete field
+        final adminData = await AdminAuthService().getCurrentAdminData();
+        final adminBaNo = adminData?['ba_no'] ?? '';
+        final adminName = adminData?['name'] ?? 'Unknown';
+        if (adminBaNo.isNotEmpty) {
+          await FirebaseFirestore.instance
+              .collection('staff_activity_log')
+              .doc(adminBaNo)
+              .collection('logs')
+              .add({
+            'timestamp': FieldValue.serverTimestamp(),
+            'actionType': 'Delete Misc Field',
+            'message':
+                'Admin $adminName deleted field "$fieldLabel" ($fieldKey) from $section.',
+            'admin_id': adminData?['uid'] ?? '',
+            'admin_name': adminName,
+          });
+        }
 
         // Remove from local state
         setState(() {

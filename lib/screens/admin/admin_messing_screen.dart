@@ -1,3 +1,4 @@
+import '../../services/admin_auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
@@ -21,7 +22,6 @@ import 'add_indl_entry.dart';
 import 'add_misc_entry.dart';
 import 'add_messing.dart';
 import 'admin_login_screen.dart';
-import '../../services/admin_auth_service.dart';
 
 class AdminMessingScreen extends StatefulWidget {
   const AdminMessingScreen({super.key});
@@ -985,6 +985,27 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
           '${entryId}_price_per_member': pricePerMember,
         });
 
+        // Log activity for edit
+        final adminData = await AdminAuthService().getCurrentAdminData();
+        final adminBaNo = adminData?['ba_no'] ?? '';
+        final adminName = adminData?['name'] ?? 'Unknown';
+        if (adminBaNo.isNotEmpty) {
+          final msg =
+              '$adminName edited Breakfast entry on $dateStr: Product: $productName, Unit Price: $unitPrice, Amount Used: $amountUsed, Dining Members: $diningMembers, Price Expended: $priceExpended, Price Per Member: $pricePerMember.';
+          await FirebaseFirestore.instance
+              .collection('staff_activity_log')
+              .doc(adminBaNo)
+              .collection('logs')
+              .add({
+            'timestamp': FieldValue.serverTimestamp(),
+            'actionType': 'Edit Breakfast Entry',
+            'message': msg,
+            'admin_id': adminData?['uid'] ?? '',
+            'admin_name': adminName,
+            'date': dateStr,
+          });
+        }
+
         // Reload data
         await _loadMessingData();
 
@@ -1068,6 +1089,27 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
           '${entryId}_price_per_member': pricePerMember,
         });
 
+        // Log activity for edit
+        final adminData = await AdminAuthService().getCurrentAdminData();
+        final adminBaNo = adminData?['ba_no'] ?? '';
+        final adminName = adminData?['name'] ?? 'Unknown';
+        if (adminBaNo.isNotEmpty) {
+          final msg =
+              '$adminName edited Lunch entry on $dateStr: Product: $productName, Unit Price: $unitPrice, Amount Used: $amountUsed, Dining Members: $diningMembers, Price Expended: $priceExpended, Price Per Member: $pricePerMember.';
+          await FirebaseFirestore.instance
+              .collection('staff_activity_log')
+              .doc(adminBaNo)
+              .collection('logs')
+              .add({
+            'timestamp': FieldValue.serverTimestamp(),
+            'actionType': 'Edit Lunch Entry',
+            'message': msg,
+            'admin_id': adminData?['uid'] ?? '',
+            'admin_name': adminName,
+            'date': dateStr,
+          });
+        }
+
         // Reload data
         await _loadMessingData();
 
@@ -1149,6 +1191,27 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
           '${entryId}_price_expended': priceExpended,
           '${entryId}_price_per_member': pricePerMember,
         });
+
+        // Log activity for edit
+        final adminData = await AdminAuthService().getCurrentAdminData();
+        final adminBaNo = adminData?['ba_no'] ?? '';
+        final adminName = adminData?['name'] ?? 'Unknown';
+        if (adminBaNo.isNotEmpty) {
+          final msg =
+              '$adminName edited Dinner entry on $dateStr: Product: $productName, Unit Price: $unitPrice, Amount Used: $amountUsed, Dining Members: $diningMembers, Price Expended: $priceExpended, Price Per Member: $pricePerMember.';
+          await FirebaseFirestore.instance
+              .collection('staff_activity_log')
+              .doc(adminBaNo)
+              .collection('logs')
+              .add({
+            'timestamp': FieldValue.serverTimestamp(),
+            'actionType': 'Edit Dinner Entry',
+            'message': msg,
+            'admin_id': adminData?['uid'] ?? '',
+            'admin_name': adminName,
+            'date': dateStr,
+          });
+        }
 
         // Reload data
         await _loadMessingData();
@@ -1331,6 +1394,27 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
             .doc(dateStr)
             .update(fieldsToDelete);
 
+        // Log activity for delete
+        final adminData = await AdminAuthService().getCurrentAdminData();
+        final adminBaNo = adminData?['ba_no'] ?? '';
+        final adminName = adminData?['name'] ?? 'Unknown';
+        if (adminBaNo.isNotEmpty) {
+          final msg =
+              '$adminName deleted Breakfast entry on $dateStr: Product: ${entry['product_name']}, Unit Price: ${entry['unit_price']}, Amount Used: ${entry['amount']}, Dining Members: ${entry['members']}, Price Expended: ${entry['price_expended']}, Price Per Member: ${entry['price_per_member']}.';
+          await FirebaseFirestore.instance
+              .collection('staff_activity_log')
+              .doc(adminBaNo)
+              .collection('logs')
+              .add({
+            'timestamp': FieldValue.serverTimestamp(),
+            'actionType': 'Delete Breakfast Entry',
+            'message': msg,
+            'admin_id': adminData?['uid'] ?? '',
+            'admin_name': adminName,
+            'date': dateStr,
+          });
+        }
+
         // Reload data
         await _loadMessingData();
 
@@ -1404,6 +1488,27 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
             .doc(dateStr)
             .update(fieldsToDelete);
 
+        // Log activity for delete
+        final adminData = await AdminAuthService().getCurrentAdminData();
+        final adminBaNo = adminData?['ba_no'] ?? '';
+        final adminName = adminData?['name'] ?? 'Unknown';
+        if (adminBaNo.isNotEmpty) {
+          final msg =
+              '$adminName deleted Lunch entry on $dateStr: Product: ${entry['product_name']}, Unit Price: ${entry['unit_price']}, Amount Used: ${entry['amount']}, Dining Members: ${entry['members']}, Price Expended: ${entry['price_expended']}, Price Per Member: ${entry['price_per_member']}.';
+          await FirebaseFirestore.instance
+              .collection('staff_activity_log')
+              .doc(adminBaNo)
+              .collection('logs')
+              .add({
+            'timestamp': FieldValue.serverTimestamp(),
+            'actionType': 'Delete Lunch Entry',
+            'message': msg,
+            'admin_id': adminData?['uid'] ?? '',
+            'admin_name': adminName,
+            'date': dateStr,
+          });
+        }
+
         // Reload data
         await _loadMessingData();
 
@@ -1476,6 +1581,27 @@ class _AdminMessingScreenState extends State<AdminMessingScreen> {
             .collection('messing_data')
             .doc(dateStr)
             .update(fieldsToDelete);
+
+        // Log activity for delete
+        final adminData = await AdminAuthService().getCurrentAdminData();
+        final adminBaNo = adminData?['ba_no'] ?? '';
+        final adminName = adminData?['name'] ?? 'Unknown';
+        if (adminBaNo.isNotEmpty) {
+          final msg =
+              '$adminName deleted Dinner entry on $dateStr: Product: ${entry['product_name']}, Unit Price: ${entry['unit_price']}, Amount Used: ${entry['amount']}, Dining Members: ${entry['members']}, Price Expended: ${entry['price_expended']}, Price Per Member: ${entry['price_per_member']}.';
+          await FirebaseFirestore.instance
+              .collection('staff_activity_log')
+              .doc(adminBaNo)
+              .collection('logs')
+              .add({
+            'timestamp': FieldValue.serverTimestamp(),
+            'actionType': 'Delete Dinner Entry',
+            'message': msg,
+            'admin_id': adminData?['uid'] ?? '',
+            'admin_name': adminName,
+            'date': dateStr,
+          });
+        }
 
         // Reload data
         await _loadMessingData();

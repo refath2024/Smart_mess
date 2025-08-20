@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../services/admin_auth_service.dart';
+
+final AdminAuthService _adminAuthService = AdminAuthService();
+Map<String, dynamic>? _currentUserData;
 
 class AddMenuListScreen extends StatefulWidget {
   const AddMenuListScreen({super.key});
@@ -42,6 +46,17 @@ class _AddMenuListScreenState extends State<AddMenuListScreen>
     );
 
     _animationController.forward();
+
+    _loadAdminData();
+  }
+
+  Future<void> _loadAdminData() async {
+    final data = await _adminAuthService.getCurrentAdminData();
+    if (mounted) {
+      setState(() {
+        _currentUserData = data;
+      });
+    }
   }
 
   @override
@@ -58,87 +73,6 @@ class _AddMenuListScreenState extends State<AddMenuListScreen>
 
   bool _isLoading = false;
   bool _isLoadingExistingData = false;
-
-  Future<void> _loadExistingMenuData(DateTime date) async {
-    setState(() {
-      _isLoadingExistingData = true;
-    });
-
-    try {
-      final firestore = FirebaseFirestore.instance;
-      final String dateId =
-          '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-
-      final docSnapshot =
-          await firestore.collection('monthly_menu').doc(dateId).get();
-
-      if (docSnapshot.exists) {
-        final data = docSnapshot.data()!;
-
-        // Pre-fill breakfast data
-        if (data['breakfast'] != null) {
-          _breakfastItemController.text = data['breakfast']['item'] ?? '';
-          _breakfastPriceController.text =
-              data['breakfast']['price']?.toString() ?? '';
-        } else {
-          _breakfastItemController.clear();
-          _breakfastPriceController.clear();
-        }
-
-        // Pre-fill lunch data
-        if (data['lunch'] != null) {
-          _lunchItemController.text = data['lunch']['item'] ?? '';
-          _lunchPriceController.text = data['lunch']['price']?.toString() ?? '';
-        } else {
-          _lunchItemController.clear();
-          _lunchPriceController.clear();
-        }
-
-        // Pre-fill dinner data
-        if (data['dinner'] != null) {
-          _dinnerItemController.text = data['dinner']['item'] ?? '';
-          _dinnerPriceController.text =
-              data['dinner']['price']?.toString() ?? '';
-        } else {
-          _dinnerItemController.clear();
-          _dinnerPriceController.clear();
-        }
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                  'Loaded existing menu for ${date.day}/${date.month}/${date.year}'),
-              backgroundColor: Colors.blue,
-            ),
-          );
-        }
-      } else {
-        // No existing data - clear all fields
-        _breakfastItemController.clear();
-        _breakfastPriceController.clear();
-        _lunchItemController.clear();
-        _lunchPriceController.clear();
-        _dinnerItemController.clear();
-        _dinnerPriceController.clear();
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error loading existing data: $e'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoadingExistingData = false;
-        });
-      }
-    }
-  }
 
   Future<void> _handleSave() async {
     if (_formKey.currentState!.validate()) {
@@ -209,6 +143,23 @@ class _AddMenuListScreenState extends State<AddMenuListScreen>
         if (docSnapshot.exists) {
           // Document exists - merge with existing data (smart update)
           await docRef.update(menuData);
+          // Log update activity
+          final adminName = _currentUserData?['name'] ?? 'Admin';
+          final baNo = _currentUserData?['ba_no'] ?? '';
+          if (baNo.isNotEmpty) {
+            final details =
+                'Breakfast: \\${menuData['breakfast'] ?? {}}; Lunch: \\${menuData['lunch'] ?? {}}; Dinner: \\${menuData['dinner'] ?? {}}; Date: $dateId';
+            await firestore
+                .collection('staff_activity_log')
+                .doc(baNo)
+                .collection('logs')
+                .add({
+              'timestamp': FieldValue.serverTimestamp(),
+              'actionType': 'Update Menu Entry',
+              'message': '$adminName updated menu entry. Details: $details',
+              'name': adminName,
+            });
+          }
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Menu updated successfully!')),
@@ -216,6 +167,23 @@ class _AddMenuListScreenState extends State<AddMenuListScreen>
         } else {
           // Document doesn't exist - create new
           await docRef.set(menuData);
+          // Log create activity
+          final adminName = _currentUserData?['name'] ?? 'Admin';
+          final baNo = _currentUserData?['ba_no'] ?? '';
+          if (baNo.isNotEmpty) {
+            final details =
+                'Breakfast: \\${menuData['breakfast'] ?? {}}; Lunch: \\${menuData['lunch'] ?? {}}; Dinner: \\${menuData['dinner'] ?? {}}; Date: $dateId';
+            await firestore
+                .collection('staff_activity_log')
+                .doc(baNo)
+                .collection('logs')
+                .add({
+              'timestamp': FieldValue.serverTimestamp(),
+              'actionType': 'Add Menu Entry',
+              'message': '$adminName added menu entry. Details: $details',
+              'name': adminName,
+            });
+          }
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Menu created successfully!')),
@@ -408,7 +376,7 @@ class _AddMenuListScreenState extends State<AddMenuListScreen>
                                       context: context,
                                       initialDate:
                                           _selectedDate ?? DateTime.now(),
-                                      firstDate: DateTime.now(),
+                                      firstDate: DateTime(2020, 1, 1),
                                       lastDate: DateTime.now()
                                           .add(const Duration(days: 365)),
                                     );
@@ -416,8 +384,121 @@ class _AddMenuListScreenState extends State<AddMenuListScreen>
                                       setState(() {
                                         _selectedDate = picked;
                                       });
-                                      // Load existing menu data for the selected date
-                                      await _loadExistingMenuData(picked);
+                                      // Check if menu exists for picked date
+                                      final firestore =
+                                          FirebaseFirestore.instance;
+                                      final String dateId =
+                                          '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+                                      final docSnapshot = await firestore
+                                          .collection('monthly_menu')
+                                          .doc(dateId)
+                                          .get();
+                                      if (docSnapshot.exists) {
+                                        final data = docSnapshot.data()!;
+                                        // Show dialog with current data and update option
+                                        await showDialog(
+                                          context: context,
+                                          builder: (context) {
+                                            return AlertDialog(
+                                              title: Text(
+                                                  'Menu already exists for this date'),
+                                              content: SingleChildScrollView(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    if (data['breakfast'] !=
+                                                        null)
+                                                      Text(
+                                                          'Breakfast: \\nItem: \\${data['breakfast']['item'] ?? ''} \\nPrice: \\${data['breakfast']['price'] ?? ''}'),
+                                                    if (data['lunch'] != null)
+                                                      Text(
+                                                          'Lunch: \\nItem: \\${data['lunch']['item'] ?? ''} \\nPrice: \\${data['lunch']['price'] ?? ''}'),
+                                                    if (data['dinner'] != null)
+                                                      Text(
+                                                          'Dinner: \\nItem: \\${data['dinner']['item'] ?? ''} \\nPrice: \\${data['dinner']['price'] ?? ''}'),
+                                                  ],
+                                                ),
+                                              ),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () {
+                                                    // Pre-fill form fields for update
+                                                    if (data['breakfast'] !=
+                                                        null) {
+                                                      _breakfastItemController
+                                                              .text =
+                                                          data['breakfast']
+                                                                  ['item'] ??
+                                                              '';
+                                                      _breakfastPriceController
+                                                              .text =
+                                                          data['breakfast']
+                                                                      ['price']
+                                                                  ?.toString() ??
+                                                              '';
+                                                    } else {
+                                                      _breakfastItemController
+                                                          .clear();
+                                                      _breakfastPriceController
+                                                          .clear();
+                                                    }
+                                                    if (data['lunch'] != null) {
+                                                      _lunchItemController
+                                                          .text = data['lunch']
+                                                              ['item'] ??
+                                                          '';
+                                                      _lunchPriceController
+                                                          .text = data['lunch']
+                                                                  ['price']
+                                                              ?.toString() ??
+                                                          '';
+                                                    } else {
+                                                      _lunchItemController
+                                                          .clear();
+                                                      _lunchPriceController
+                                                          .clear();
+                                                    }
+                                                    if (data['dinner'] !=
+                                                        null) {
+                                                      _dinnerItemController
+                                                          .text = data['dinner']
+                                                              ['item'] ??
+                                                          '';
+                                                      _dinnerPriceController
+                                                          .text = data['dinner']
+                                                                  ['price']
+                                                              ?.toString() ??
+                                                          '';
+                                                    } else {
+                                                      _dinnerItemController
+                                                          .clear();
+                                                      _dinnerPriceController
+                                                          .clear();
+                                                    }
+                                                    Navigator.of(context).pop();
+                                                  },
+                                                  child: const Text('Update'),
+                                                ),
+                                                TextButton(
+                                                  onPressed: () =>
+                                                      Navigator.of(context)
+                                                          .pop(),
+                                                  child: const Text('Cancel'),
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                        );
+                                      } else {
+                                        // No existing data - clear all fields
+                                        _breakfastItemController.clear();
+                                        _breakfastPriceController.clear();
+                                        _lunchItemController.clear();
+                                        _lunchPriceController.clear();
+                                        _dinnerItemController.clear();
+                                        _dinnerPriceController.clear();
+                                      }
                                     }
                                   },
                                   child: Container(
