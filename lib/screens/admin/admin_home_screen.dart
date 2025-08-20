@@ -18,6 +18,7 @@ import 'admin_monthly_menu_screen.dart';
 import 'admin_menu_vote_screen.dart';
 import 'admin_notification_screen.dart';
 import 'admin_notification_history_screen.dart';
+import 'admin_staff_login_sessions_screen.dart';
 import '../../services/admin_auth_service.dart';
 import '../../providers/language_provider.dart';
 import '../../l10n/app_localizations.dart';
@@ -930,6 +931,29 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 _buildNotificationSection(),
                 const SizedBox(height: 16),
                 _buildOwnActivityLogButton(context),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.login),
+                  label: const Text('My Login Sessions'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue.shade900,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size.fromHeight(50),
+                    textStyle: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            const AdminStaffLoginSessionsScreen(),
+                      ),
+                    );
+                  },
+                ),
                 const SizedBox(height: 16),
 
                 _buildMenuCard(

@@ -11,283 +11,353 @@ class AdminAllLoginSessionsScreen extends StatefulWidget {
 
 class _AdminAllLoginSessionsScreenState
     extends State<AdminAllLoginSessionsScreen> {
-  String _searchQuery = '';
+  String? _selectedStaff;
   DateTimeRange? _dateRange;
+  String _searchQuery = '';
+  List<Map<String, dynamic>> _allSessions = [];
+  List<Map<String, dynamic>> _filteredSessions = [];
+  List<Map<String, String>> _staffList = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStaffAndSessions();
+  }
+
+  Future<void> _loadStaffAndSessions() async {
+    setState(() {
+      _loading = true;
+    });
+    final staffSnap =
+        await FirebaseFirestore.instance.collection('staff_state').get();
+    _staffList = staffSnap.docs
+        .map((doc) => {
+              'ba_no': doc.data()['ba_no']?.toString() ?? '',
+              'name': doc.data()['name']?.toString() ?? '',
+            })
+        .toList();
+    List<Map<String, dynamic>> sessions = [];
+    for (final staff in _staffList) {
+      final baNo = staff['ba_no']!;
+      final name = staff['name']!;
+      final sessionSnap = await FirebaseFirestore.instance
+          .collection('staff_login_sessions')
+          .doc(baNo)
+          .collection('sessions')
+          .get();
+      for (final doc in sessionSnap.docs) {
+        final data = doc.data();
+        sessions.add({
+          ...data,
+          'ba_no': baNo,
+          'staff_name': name,
+          'session_id': doc.id,
+        });
+      }
+    }
+    _allSessions = sessions;
+    _filteredSessions = List.from(_allSessions);
+    setState(() {
+      _loading = false;
+    });
+  }
+
+  void _applyFilters() {
+    setState(() {
+      _filteredSessions = _allSessions.where((session) {
+        final matchesStaff =
+            _selectedStaff == null || session['ba_no'] == _selectedStaff;
+        final matchesDate = _dateRange == null ||
+            (session['timestamp'] != null &&
+                session['timestamp'] is Timestamp &&
+                (session['timestamp'] as Timestamp).toDate().isAfter(
+                    _dateRange!.start.subtract(const Duration(days: 1))) &&
+                (session['timestamp'] as Timestamp)
+                    .toDate()
+                    .isBefore(_dateRange!.end.add(const Duration(days: 1))));
+        final q = _searchQuery.toLowerCase();
+        final baNo = (session['ba_no'] ?? '').toString().toLowerCase();
+        final name = (session['staff_name'] ?? '').toString().toLowerCase();
+        return matchesStaff &&
+            matchesDate &&
+            (baNo.contains(q) || name.contains(q));
+      }).toList();
+    });
+  }
+
+  Future<void> _deleteSession(
+      BuildContext context, String baNo, String sessionId) async {
+    await FirebaseFirestore.instance
+        .collection('staff_login_sessions')
+        .doc(baNo)
+        .collection('sessions')
+        .doc(sessionId)
+        .delete();
+    setState(() {
+      _allSessions.removeWhere(
+          (s) => s['ba_no'] == baNo && s['session_id'] == sessionId);
+      _filteredSessions.removeWhere(
+          (s) => s['ba_no'] == baNo && s['session_id'] == sessionId);
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Login session deleted.')),
+    );
+  }
+
+  Future<void> _deleteAllFilteredSessions(BuildContext context) async {
+    final batch = FirebaseFirestore.instance.batch();
+    for (final session in _filteredSessions) {
+      final baNo = session['ba_no'];
+      final sessionId = session['session_id'];
+      final ref = FirebaseFirestore.instance
+          .collection('staff_login_sessions')
+          .doc(baNo)
+          .collection('sessions')
+          .doc(sessionId);
+      batch.delete(ref);
+    }
+    await batch.commit();
+    setState(() {
+      _allSessions.removeWhere((s) => _filteredSessions.contains(s));
+      _filteredSessions.clear();
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('All filtered login sessions deleted.')),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('All User Login Sessions'),
+        title: const Text('All Staff Login Sessions'),
         backgroundColor: const Color(0xFF002B5B),
         foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.date_range),
-            tooltip: 'Filter by Date',
-            onPressed: () async {
-              final picked = await showDateRangePicker(
-                context: context,
-                firstDate: DateTime(2023, 1, 1),
-                lastDate: DateTime.now().add(const Duration(days: 1)),
-                initialDateRange: _dateRange,
-              );
-              if (picked != null) {
-                setState(() => _dateRange = picked);
-              }
-            },
-          ),
-        ],
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Search by BA No, Name, or Email',
-                prefixIcon: const Icon(Icons.search),
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              onChanged: (val) => setState(() => _searchQuery = val.trim()),
-            ),
-          ),
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('user_requests')
-                  .snapshots(),
-              builder: (context, userSnap) {
-                if (userSnap.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (!userSnap.hasData || userSnap.data!.docs.isEmpty) {
-                  return const Center(child: Text('No users found.'));
-                }
-                final users = userSnap.data!.docs.where((doc) {
-                  final data = doc.data() as Map<String, dynamic>;
-                  final baNo = data['ba_no']?.toString() ?? '';
-                  final name = data['name']?.toString() ?? '';
-                  final email = data['email']?.toString() ?? '';
-                  final q = _searchQuery.toLowerCase();
-                  return baNo.toLowerCase().contains(q) ||
-                      name.toLowerCase().contains(q) ||
-                      email.toLowerCase().contains(q);
-                }).toList();
-                if (users.isEmpty) {
-                  return const Center(
-                      child: Text('No users match your search.'));
-                }
-                return ListView.separated(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                  itemCount: users.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
-                  itemBuilder: (context, idx) {
-                    final user = users[idx];
-                    final data = user.data() as Map<String, dynamic>;
-                    final baNo = data['ba_no']?.toString() ?? '';
-                    final name = data['name']?.toString() ?? '';
-                    final email = data['email']?.toString() ?? '';
-                    return ExpansionTile(
-                      leading: const Icon(Icons.person, color: Colors.blue),
-                      title: Text('$name ($baNo)',
-                          style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Text(email),
-                      children: [
-                        StreamBuilder<QuerySnapshot>(
-                          stream: FirebaseFirestore.instance
-                              .collection('login_sessions')
-                              .doc(baNo)
-                              .collection('sessions')
-                              .orderBy('timestamp', descending: true)
-                              .snapshots(),
-                          builder: (context, sessionSnap) {
-                            if (sessionSnap.connectionState ==
-                                ConnectionState.waiting) {
-                              return const Center(
-                                  child: Padding(
-                                padding: EdgeInsets.all(8.0),
-                                child: CircularProgressIndicator(),
-                              ));
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: _selectedStaff,
+                          isExpanded: true,
+                          decoration: const InputDecoration(
+                            labelText: 'Filter by Staff',
+                            border: OutlineInputBorder(),
+                          ),
+                          items: [
+                            const DropdownMenuItem<String>(
+                              value: null,
+                              child: Text('All Staff'),
+                            ),
+                            ..._staffList
+                                .map((staff) => DropdownMenuItem<String>(
+                                      value: staff['ba_no'],
+                                      child: Text(
+                                          '${staff['name']} (${staff['ba_no']})'),
+                                    )),
+                          ],
+                          onChanged: (val) {
+                            setState(() {
+                              _selectedStaff = val;
+                            });
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: InkWell(
+                          onTap: () async {
+                            final picked = await showDateRangePicker(
+                              context: context,
+                              initialDateRange: _dateRange,
+                              firstDate: DateTime(2020),
+                              lastDate: DateTime.now(),
+                            );
+                            if (picked != null) {
+                              setState(() {
+                                _dateRange = picked;
+                              });
                             }
-                            if (!sessionSnap.hasData ||
-                                sessionSnap.data!.docs.isEmpty) {
-                              return const Padding(
-                                padding: EdgeInsets.all(8.0),
-                                child: Text('No login sessions.'),
+                          },
+                          child: InputDecorator(
+                            decoration: const InputDecoration(
+                              labelText: 'Filter by Date',
+                              border: OutlineInputBorder(),
+                            ),
+                            child: Text(_dateRange == null
+                                ? 'All Dates'
+                                : '${_dateRange!.start.year}-${_dateRange!.start.month.toString().padLeft(2, '0')}-${_dateRange!.start.day.toString().padLeft(2, '0')} to ${_dateRange!.end.year}-${_dateRange!.end.month.toString().padLeft(2, '0')}-${_dateRange!.end.day.toString().padLeft(2, '0')}'),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.search),
+                        label: const Text('Search'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: _applyFilters,
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: TextField(
+                    decoration: const InputDecoration(
+                      hintText: 'Search by BA No or Name',
+                      prefixIcon: Icon(Icons.search),
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (val) => setState(() {
+                      _searchQuery = val.trim().toLowerCase();
+                    }),
+                  ),
+                ),
+                // --- Delete All Filtered Button ---
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8.0, vertical: 4.0),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.delete_forever),
+                      label: const Text('Delete All Filtered'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: _filteredSessions.isEmpty
+                          ? null
+                          : () async {
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text(
+                                      'Delete All Filtered Login Sessions?'),
+                                  content: const Text(
+                                      'Are you sure you want to delete all filtered login sessions? This action cannot be undone.'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context, false),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context, true),
+                                      style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.red),
+                                      child: const Text('Delete All'),
+                                    ),
+                                  ],
+                                ),
                               );
-                            }
-                            final sessions =
-                                sessionSnap.data!.docs.where((doc) {
-                              if (_dateRange == null) return true;
-                              final ts =
-                                  (doc['timestamp'] as Timestamp?)?.toDate();
-                              if (ts == null) return false;
-                              return ts.isAfter(_dateRange!.start
-                                      .subtract(const Duration(days: 1))) &&
-                                  ts.isBefore(_dateRange!.end
-                                      .add(const Duration(days: 1)));
-                            }).toList();
-                            if (sessions.isEmpty) {
-                              return const Padding(
-                                padding: EdgeInsets.all(8.0),
-                                child: Text(
-                                    'No login sessions in selected date range.'),
-                              );
-                            }
-                            // --- Delete All Button ---
-                            return Column(
-                              children: [
-                                Align(
-                                  alignment: Alignment.centerRight,
-                                  child: TextButton.icon(
-                                    icon: const Icon(Icons.delete_forever,
-                                        color: Colors.red),
-                                    label: const Text('Delete All',
-                                        style: TextStyle(color: Colors.red)),
-                                    onPressed: () async {
-                                      final confirm = await showDialog(
-                                        context: context,
-                                        builder: (ctx) => AlertDialog(
-                                          title: const Text(
-                                              'Delete All Sessions?'),
-                                          content: const Text(
-                                              'Are you sure you want to delete all login sessions for this user?'),
-                                          actions: [
-                                            TextButton(
-                                                onPressed: () =>
-                                                    Navigator.of(ctx)
-                                                        .pop(false),
-                                                child: const Text('Cancel')),
-                                            TextButton(
-                                                onPressed: () =>
-                                                    Navigator.of(ctx).pop(true),
-                                                child: const Text('Delete',
-                                                    style: TextStyle(
-                                                        color: Colors.red))),
-                                          ],
-                                        ),
-                                      );
-                                      if (confirm == true) {
-                                        final batch =
-                                            FirebaseFirestore.instance.batch();
-                                        for (var doc in sessions) {
-                                          batch.delete(
-                                            FirebaseFirestore.instance
-                                                .collection('login_sessions')
-                                                .doc(baNo)
-                                                .collection('sessions')
-                                                .doc(doc.id),
-                                          );
-                                        }
-                                        await batch.commit();
-                                      }
-                                    },
+                              if (confirm == true) {
+                                await _deleteAllFilteredSessions(context);
+                              }
+                            },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: _filteredSessions.isEmpty
+                      ? const Center(child: Text('No login sessions found.'))
+                      : ListView.separated(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 12, horizontal: 8),
+                          itemCount: _filteredSessions.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 8),
+                          itemBuilder: (context, idx) {
+                            final session = _filteredSessions[idx];
+                            final ts =
+                                (session['timestamp'] as Timestamp?)?.toDate();
+                            return Dismissible(
+                              key: ValueKey(
+                                  session['ba_no'] + session['session_id']),
+                              direction: DismissDirection.endToStart,
+                              background: Container(
+                                alignment: Alignment.centerRight,
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 24),
+                                color: Colors.red.shade400,
+                                child: const Icon(Icons.delete,
+                                    color: Colors.white, size: 32),
+                              ),
+                              confirmDismiss: (_) async {
+                                final confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: const Text('Delete Login Session?'),
+                                    content: const Text(
+                                        'Are you sure you want to delete this login session?'),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(context, false),
+                                        child: const Text('Cancel'),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () =>
+                                            Navigator.pop(context, true),
+                                        style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.red),
+                                        child: const Text('Delete'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                return confirm == true;
+                              },
+                              onDismissed: (_) => _deleteSession(context,
+                                  session['ba_no'], session['session_id']),
+                              child: Card(
+                                elevation: 2,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
+                                child: ListTile(
+                                  leading: const Icon(Icons.login,
+                                      color: Colors.blue),
+                                  title: Text(ts != null
+                                      ? '${ts.year}-${ts.month.toString().padLeft(2, '0')}-${ts.day.toString().padLeft(2, '0')}  ${ts.hour.toString().padLeft(2, '0')}:${ts.minute.toString().padLeft(2, '0')}'
+                                      : 'Unknown'),
+                                  subtitle: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                          'Staff: ${session['staff_name']} (${session['ba_no']})',
+                                          style: const TextStyle(fontSize: 13)),
+                                      if (session['device'] != null)
+                                        Text('Device: ${session['device']}',
+                                            style:
+                                                const TextStyle(fontSize: 13)),
+                                      if (session['location'] != null)
+                                        Text('Location: ${session['location']}',
+                                            style:
+                                                const TextStyle(fontSize: 13)),
+                                    ],
                                   ),
                                 ),
-                                ListView.separated(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: sessions.length,
-                                  separatorBuilder: (_, __) =>
-                                      const SizedBox(height: 4),
-                                  itemBuilder: (context, sidx) {
-                                    final session = sessions[sidx].data()
-                                        as Map<String, dynamic>;
-                                    final ts =
-                                        (session['timestamp'] as Timestamp?)
-                                            ?.toDate();
-                                    return Dismissible(
-                                      key: ValueKey(sessions[sidx].id),
-                                      direction: DismissDirection.endToStart,
-                                      background: Container(
-                                        color: Colors.red,
-                                        alignment: Alignment.centerRight,
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 20),
-                                        child: const Icon(Icons.delete,
-                                            color: Colors.white),
-                                      ),
-                                      confirmDismiss: (direction) async {
-                                        return await showDialog(
-                                          context: context,
-                                          builder: (ctx) => AlertDialog(
-                                            title:
-                                                const Text('Delete Session?'),
-                                            content: const Text(
-                                                'Are you sure you want to delete this login session?'),
-                                            actions: [
-                                              TextButton(
-                                                  onPressed: () =>
-                                                      Navigator.of(ctx)
-                                                          .pop(false),
-                                                  child: const Text('Cancel')),
-                                              TextButton(
-                                                  onPressed: () =>
-                                                      Navigator.of(ctx)
-                                                          .pop(true),
-                                                  child: const Text('Delete',
-                                                      style: TextStyle(
-                                                          color: Colors.red))),
-                                            ],
-                                          ),
-                                        );
-                                      },
-                                      onDismissed: (_) async {
-                                        await FirebaseFirestore.instance
-                                            .collection('login_sessions')
-                                            .doc(baNo)
-                                            .collection('sessions')
-                                            .doc(sessions[sidx].id)
-                                            .delete();
-                                      },
-                                      child: Card(
-                                        elevation: 1,
-                                        shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(8)),
-                                        child: ListTile(
-                                          leading: const Icon(Icons.login,
-                                              color: Colors.blue),
-                                          title: Text(ts != null
-                                              ? '${ts.year}-${ts.month.toString().padLeft(2, '0')}-${ts.day.toString().padLeft(2, '0')}  ${ts.hour.toString().padLeft(2, '0')}:${ts.minute.toString().padLeft(2, '0')}'
-                                              : 'Unknown'),
-                                          subtitle: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              if (session['device'] != null)
-                                                Text(
-                                                    'Device: ${session['device']}',
-                                                    style: const TextStyle(
-                                                        fontSize: 13)),
-                                              if (session['location'] != null)
-                                                Text(
-                                                    'Location: ${session['location']}',
-                                                    style: const TextStyle(
-                                                        fontSize: 13)),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ],
+                              ),
                             );
                           },
                         ),
-                      ],
-                    );
-                  },
-                );
-              },
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
+// ...existing code...
     );
   }
 }

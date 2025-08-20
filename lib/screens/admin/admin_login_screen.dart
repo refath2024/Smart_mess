@@ -4,6 +4,7 @@ import '../login_screen.dart';
 import 'admin_home_screen.dart';
 import 'admin_forgot_password_screen.dart';
 import '../../services/admin_auth_service.dart';
+import '../../services/staff_login_session_service.dart';
 
 class AdminLoginScreen extends StatefulWidget {
   const AdminLoginScreen({super.key});
@@ -125,6 +126,8 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
       if (result != null && result['success'] == true) {
         // Save admin email to history on successful login
         await _saveAdminEmailToHistory(email);
+        // Log staff login session
+        await StaffLoginSessionService.logSession();
 
         if (mounted) {
           Navigator.pushReplacement(
