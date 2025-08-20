@@ -927,7 +927,30 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // Notification Section
+                // Show today's and tomorrow's meal cards first
+                _buildMenuCard(
+                  AppLocalizations.of(context)!.todaysMenu,
+                  _todaysMenu.isNotEmpty
+                      ? _todaysMenu
+                      : {
+                          "breakfast": AppLocalizations.of(context)!.notSet,
+                          "lunch": AppLocalizations.of(context)!.notSet,
+                          "dinner": AppLocalizations.of(context)!.notSet,
+                        },
+                ),
+                _buildMenuCard(
+                  AppLocalizations.of(context)!.tomorrowsMenu,
+                  _tomorrowsMenu.isNotEmpty
+                      ? _tomorrowsMenu
+                      : {
+                          "breakfast": AppLocalizations.of(context)!.notSet,
+                          "lunch": AppLocalizations.of(context)!.notSet,
+                          "dinner": AppLocalizations.of(context)!.notSet,
+                        },
+                ),
+                const SizedBox(height: 16),
+
+                // Notification, activity log, and login sessions at the end
                 _buildNotificationSection(),
                 const SizedBox(height: 16),
                 _buildOwnActivityLogButton(context),
@@ -953,28 +976,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                       ),
                     );
                   },
-                ),
-                const SizedBox(height: 16),
-
-                _buildMenuCard(
-                  AppLocalizations.of(context)!.todaysMenu,
-                  _todaysMenu.isNotEmpty
-                      ? _todaysMenu
-                      : {
-                          "breakfast": AppLocalizations.of(context)!.notSet,
-                          "lunch": AppLocalizations.of(context)!.notSet,
-                          "dinner": AppLocalizations.of(context)!.notSet,
-                        },
-                ),
-                _buildMenuCard(
-                  AppLocalizations.of(context)!.tomorrowsMenu,
-                  _tomorrowsMenu.isNotEmpty
-                      ? _tomorrowsMenu
-                      : {
-                          "breakfast": AppLocalizations.of(context)!.notSet,
-                          "lunch": AppLocalizations.of(context)!.notSet,
-                          "dinner": AppLocalizations.of(context)!.notSet,
-                        },
                 ),
               ],
             ),
