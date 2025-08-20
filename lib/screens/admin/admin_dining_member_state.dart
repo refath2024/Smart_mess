@@ -19,7 +19,7 @@ import 'admin_bill_screen.dart';
 import 'add_dining_member.dart';
 import 'admin_login_screen.dart';
 import '../../services/admin_auth_service.dart';
-import 'admin_all_login_sessions_screen.dart';
+import 'admin_all_user_login_sessions_screen.dart';
 import 'admin_all_user_activity_log_screen.dart';
 
 class DiningMemberStatePage extends StatefulWidget {
@@ -741,7 +741,7 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) =>
-                                          const AdminAllLoginSessionsScreen(),
+                                          const AdminAllUserLoginSessionsScreen(),
                                     ),
                                   );
                                 },

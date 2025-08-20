@@ -20,6 +20,7 @@ class _AdminNotificationHistoryScreenBodyState
     extends State<_AdminNotificationHistoryScreenBody> {
   bool _isDeletingAll = false;
   Set<String> _deletingIds = {};
+  DateTimeRange? _dateRange;
 
   @override
   Widget build(BuildContext context) {
@@ -57,8 +58,52 @@ class _AdminNotificationHistoryScreenBodyState
               filtered.add(doc);
             }
           }
+          // Date filter
+          List<QueryDocumentSnapshot> dateFiltered = filtered;
+          if (_dateRange != null) {
+            dateFiltered = filtered.where((doc) {
+              final ts = (doc['created_at'] as Timestamp?)?.toDate();
+              if (ts == null) return false;
+              return ts.isAfter(
+                      _dateRange!.start.subtract(const Duration(days: 1))) &&
+                  ts.isBefore(_dateRange!.end.add(const Duration(days: 1)));
+            }).toList();
+          }
           return Column(
             children: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: () async {
+                          final picked = await showDateRangePicker(
+                            context: context,
+                            initialDateRange: _dateRange,
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime.now(),
+                          );
+                          if (picked != null) {
+                            setState(() {
+                              _dateRange = picked;
+                            });
+                          }
+                        },
+                        child: InputDecorator(
+                          decoration: const InputDecoration(
+                            labelText: 'Filter by Date',
+                            border: OutlineInputBorder(),
+                          ),
+                          child: Text(_dateRange == null
+                              ? 'All Dates'
+                              : '${_dateRange!.start.year}-${_dateRange!.start.month.toString().padLeft(2, '0')}-${_dateRange!.start.day.toString().padLeft(2, '0')} to ${_dateRange!.end.year}-${_dateRange!.end.month.toString().padLeft(2, '0')}-${_dateRange!.end.day.toString().padLeft(2, '0')}'),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               Align(
                 alignment: Alignment.centerRight,
                 child: OutlinedButton.icon(
@@ -116,15 +161,15 @@ class _AdminNotificationHistoryScreenBodyState
                 Expanded(
                   child: ListView.separated(
                     padding: const EdgeInsets.all(0),
-                    itemCount: filtered.length,
+                    itemCount: dateFiltered.length,
                     separatorBuilder: (_, __) => const Divider(),
                     itemBuilder: (context, idx) {
                       final notif =
-                          filtered[idx].data() as Map<String, dynamic>;
+                          dateFiltered[idx].data() as Map<String, dynamic>;
                       final ts = (notif['created_at'] as Timestamp?)?.toDate();
                       String trailingText = '';
                       final isDeleting =
-                          _deletingIds.contains(filtered[idx].id);
+                          _deletingIds.contains(dateFiltered[idx].id);
                       if (notif['target_type'] == 'all') {
                         trailingText = 'All Officers';
                         return FutureBuilder<DocumentSnapshot>(
@@ -157,7 +202,7 @@ class _AdminNotificationHistoryScreenBodyState
                               );
                             }
                             return Dismissible(
-                              key: ValueKey(filtered[idx].id),
+                              key: ValueKey(dateFiltered[idx].id),
                               direction: DismissDirection.endToStart,
                               background: Container(
                                 alignment: Alignment.centerRight,
@@ -191,8 +236,8 @@ class _AdminNotificationHistoryScreenBodyState
                                   ),
                                 );
                                 if (confirm == true) {
-                                  setState(
-                                      () => _deletingIds.add(filtered[idx].id));
+                                  setState(() =>
+                                      _deletingIds.add(dateFiltered[idx].id));
                                   final allDocsSnapshot =
                                       await FirebaseFirestore.instance
                                           .collection('notifications')
