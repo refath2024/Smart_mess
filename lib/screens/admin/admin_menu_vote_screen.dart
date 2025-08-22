@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../l10n/app_localizations.dart';
@@ -40,7 +41,8 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
   void initState() {
     super.initState();
     _checkAuthentication();
-    _filteredMealData = Map.from(mealData); // Initialize filtered data
+   // _filteredMealData = Map.from(mealData); // Initialize filtered data
+    _getData();
     // _updateRemarks will be called in build method when context is available
   }
 
@@ -56,6 +58,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
             (route) => false,
           );
         }
+
         return;
       }
 
@@ -88,132 +91,50 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
       }
     }
   }
-
+  Future<void> _getData() async {
+    // Simulate data fetching delay
+   final date = DateTime.now();
+   final weekIdentifier = "${date.year}-W${_getWeekNumber(date)}";
+   final data = await FirebaseFirestore.instance.collection('voting_records').where((doc) => doc['selectedDay'] == selectedDay && doc['weekIdentifier'] == weekIdentifier).get();
+    final totalvote = data.docs.length; // Assuming each document represents a vote
+    final vote = {
+      
+      'breakfast': {
+        'breakfast_set1': (data.docs.where((doc) => doc['selectedBreakfast'] == 'breakfast_set1').length/totalvote)/100,
+        'breakfast_set2': (data.docs.where((doc) => doc['selectedBreakfast'] == 'breakfast_set2').length/totalvote)/100,
+        'breakfast_set3': (data.docs.where((doc) => doc['selectedBreakfast'] == 'breakfast_set3').length/totalvote)/100,
+      },
+      'lunch': {
+        'lunch_set1': (data.docs.where((doc) => doc['selectedLunch'] == 'lunch_set1').length/totalvote)/100,
+        'lunch_set2': (data.docs.where((doc) => doc['selectedLunch'] == 'lunch_set2').length/totalvote)/100,
+        'lunch_set3': (data.docs.where((doc) => doc['selectedLunch'] == 'lunch_set3').length/totalvote)/100,
+      },
+      'dinner': {
+        'dinner_set1': (data.docs.where((doc) => doc['selectedDinner'] == 'dinner_set1').length/totalvote)/100,
+        'dinner_set2': (data.docs.where((doc) => doc['selectedDinner'] == 'dinner_set2').length/totalvote)/100,
+        'dinner_set3': (data.docs.where((doc) => doc['selectedDinner'] == 'dinner_set3').length/totalvote)/100,
+      },
+    };
+   
+    setState(() {
+      _isLoading = false;
+     mealData = vote;
+    });
+  }
+  int _getWeekNumber(DateTime date) {
+    final firstDayOfYear = DateTime(date.year, 1, 1);
+    final daysSinceFirstDay = date.difference(firstDayOfYear).inDays;
+    return ((daysSinceFirstDay + firstDayOfYear.weekday - 1) / 7).ceil();
+  }
   // Dummy data structure for meal votes
-  Map<String, Map<String, List<Map<String, dynamic>>>> mealData = {
-    'Sunday': {
-      'Breakfast': [
-        {'name': 'Paratha Set', 'percentage': 45},
-        {'name': 'Ruti Set', 'percentage': 35},
-        {'name': 'Naan Set', 'percentage': 20},
-      ],
-      'Lunch': [
-        {'name': 'Chicken Set', 'percentage': 50},
-        {'name': 'Fish Set', 'percentage': 30},
-        {'name': 'Vegetable Set', 'percentage': 20},
-      ],
-      'Dinner': [
-        {'name': 'Biriyani Set', 'percentage': 60},
-        {'name': 'Rice Set', 'percentage': 25},
-        {'name': 'Khichuri Set', 'percentage': 15},
-      ],
-    },
-    'Monday': {
-      'Breakfast': [
-        {'name': 'Egg Toast', 'percentage': 55},
-        {'name': 'Cereal', 'percentage': 25},
-        {'name': 'Fruit Salad', 'percentage': 20},
-      ],
-      'Lunch': [
-        {'name': 'Pasta Bake', 'percentage': 40},
-        {'name': 'Salad Bar', 'percentage': 35},
-        {'name': 'Soup & Bread', 'percentage': 25},
-      ],
-      'Dinner': [
-        {'name': 'Pizza', 'percentage': 70},
-        {'name': 'Sandwich', 'percentage': 15},
-        {'name': 'Stew', 'percentage': 15},
-      ],
-    },
-    'Tuesday': {
-      'Breakfast': [
-        {'name': 'Dosa', 'percentage': 40},
-        {'name': 'Idli', 'percentage': 30},
-        {'name': 'Upma', 'percentage': 30},
-      ],
-      'Lunch': [
-        {'name': 'Dal Makhani', 'percentage': 45},
-        {'name': 'Paneer Butter Masala', 'percentage': 30},
-        {'name': 'Mix Veg Curry', 'percentage': 25},
-      ],
-      'Dinner': [
-        {'name': 'Chicken Curry', 'percentage': 55},
-        {'name': 'Mutton Rogan Josh', 'percentage': 25},
-        {'name': 'Vegetable Pulao', 'percentage': 20},
-      ],
-    },
-    'Wednesday': {
-      'Breakfast': [
-        {'name': 'Pancakes', 'percentage': 60},
-        {'name': 'Waffles', 'percentage': 25},
-        {'name': 'Scrambled Eggs', 'percentage': 15},
-      ],
-      'Lunch': [
-        {'name': 'Fish & Chips', 'percentage': 50},
-        {'name': 'Shepherd\'s Pie', 'percentage': 30},
-        {'name': 'Vegetable Lasagna', 'percentage': 20},
-      ],
-      'Dinner': [
-        {'name': 'Beef Steak', 'percentage': 65},
-        {'name': 'Grilled Salmon', 'percentage': 20},
-        {'name': 'Mushroom Risotto', 'percentage': 15},
-      ],
-    },
-    'Thursday': {
-      'Breakfast': [
-        {'name': 'Oatmeal', 'percentage': 40},
-        {'name': 'Yogurt Parfait', 'percentage': 35},
-        {'name': 'Smoothie', 'percentage': 25},
-      ],
-      'Lunch': [
-        {'name': 'Sushi', 'percentage': 55},
-        {'name': 'Ramen', 'percentage': 30},
-        {'name': 'Tempura', 'percentage': 15},
-      ],
-      'Dinner': [
-        {'name': 'Tacos', 'percentage': 60},
-        {'name': 'Burritos', 'percentage': 25},
-        {'name': 'Quesadillas', 'percentage': 15},
-      ],
-    },
-    'Friday': {
-      'Breakfast': [
-        {'name': 'Croissant', 'percentage': 45},
-        {'name': 'Muffin', 'percentage': 30},
-        {'name': 'Fruit Tart', 'percentage': 25},
-      ],
-      'Lunch': [
-        {'name': 'Pizza Slices', 'percentage': 70},
-        {'name': 'Garlic Bread', 'percentage': 15},
-        {'name': 'Side Salad', 'percentage': 15},
-      ],
-      'Dinner': [
-        {'name': 'BBQ Ribs', 'percentage': 65},
-        {'name': 'Grilled Chicken', 'percentage': 20},
-        {'name': 'Vegetable Skewers', 'percentage': 15},
-      ],
-    },
-    'Saturday': {
-      'Breakfast': [
-        {'name': 'Full English', 'percentage': 50},
-        {'name': 'Continental', 'percentage': 30},
-        {'name': 'Pancakes & Bacon', 'percentage': 20},
-      ],
-      'Lunch': [
-        {'name': 'Burgers', 'percentage': 60},
-        {'name': 'Hot Dogs', 'percentage': 25},
-        {'name': 'Fries', 'percentage': 15},
-      ],
-      'Dinner': [
-        {'name': 'Seafood Boil', 'percentage': 70},
-        {'name': 'Steak Dinner', 'percentage': 20},
-        {'name': 'Vegetarian Delight', 'percentage': 10},
-      ],
-    },
+  Map<String, Map<String, double>> mealData = {
+    'Breakfast': {'breakfast_set1': 0.0, 'breakfast_set2': 0.0, 'breakfast_set3': 0.0},
+      'Lunch': {'lunch_set1': 0.0, 'lunch_set2': 0.0, 'lunch_set3': 0.0},
+      'Dinner': {'dinner_set1': 0.0, 'dinner_set2': 0.0, 'dinner_set3': 0.0}
+    
   };
 
-  // Filtered meal data based on search query
-  Map<String, Map<String, List<Map<String, dynamic>>>> _filteredMealData = {};
+ 
 
   final List<String> days = [
     'Sunday',
@@ -264,24 +185,25 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
   // Method to get localized food item name
   String getLocalizedFoodItem(BuildContext context, String foodItem) {
     switch (foodItem) {
-      case 'Paratha Set':
-        return AppLocalizations.of(context)!.parathaSet;
-      case 'Ruti Set':
-        return AppLocalizations.of(context)!.rutiSet;
-      case 'Naan Set':
-        return AppLocalizations.of(context)!.naanSet;
-      case 'Chicken Set':
-        return AppLocalizations.of(context)!.chickenSet;
-      case 'Fish Set':
-        return AppLocalizations.of(context)!.fishSet;
-      case 'Vegetable Set':
-        return AppLocalizations.of(context)!.vegetableSet;
-      case 'Biriyani Set':
-        return AppLocalizations.of(context)!.biriyaniSet;
-      case 'Rice Set':
-        return AppLocalizations.of(context)!.riceSet;
-      case 'Khichuri Set':
-        return AppLocalizations.of(context)!.khichuriSet;
+      case 'breakfast_set1':
+        return 'Bhuna Khichuri'; // Example localized name
+      case 'breakfast_set2':
+        return 'Luchi with Alur dom'; // Example localized name
+      case 'breakfast_set3':
+        return 'Luchi with curry'; // Example localized name
+      case 'lunch_set1':
+        return 'Bhuna Khichuri'; // Example localized name
+      case 'lunch_set2':
+        return 'Luchi with Alur dom'; // Example localized name
+      case 'lunch_set3':
+        return 'Luchi with curry'; // Example localized name
+      case 'dinner_set1':
+        return 'Bhuna Khichuri'; // Example localized name
+      case 'dinner_set2':
+        return 'Luchi with Alur dom'; // Example localized name
+      case 'dinner_set3':
+        return 'Luchi with curry'; // Example localized name
+     
       default:
         return foodItem;
     }
@@ -291,30 +213,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
   List<String> dynamicRemarks = [];
 
   // Search functionality implementation
-  void _filterRecords(String query) {
-    setState(() {
-      if (query.isEmpty) {
-        _filteredMealData = Map.from(mealData);
-      } else {
-        _filteredMealData = {};
-        mealData.forEach((day, meals) {
-          Map<String, List<Map<String, dynamic>>> filteredMeals = {};
-          meals.forEach((mealTime, mealSets) {
-            final filteredSets = mealSets
-                .where((meal) =>
-                    meal['name'].toLowerCase().contains(query.toLowerCase()))
-                .toList();
-            if (filteredSets.isNotEmpty) {
-              filteredMeals[mealTime] = filteredSets;
-            }
-          });
-          if (filteredMeals.isNotEmpty) {
-            _filteredMealData[day] = filteredMeals;
-          }
-        });
-      }
-    });
-  }
+  
 
   // Method to update dynamic remarks instantly
   void _updateRemarks(BuildContext context) {
@@ -416,21 +315,21 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
   }
 
   // Helper widget to build meal vote list with progress indicators
-  Widget _buildMealVoteList(List<Map<String, dynamic>> meals) {
+  Widget _buildMealVoteList(Map<String, double> meals) {
     // Sort meals by percentage in descending order
-    meals.sort(
-        (a, b) => (b['percentage'] as int).compareTo(a['percentage'] as int));
+    final sortedMeals = meals.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
 
     return Column(
-      children: meals.map((meal) {
-        final double percent = (meal['percentage'] as int) / 100.0;
+      children: sortedMeals.map((meal) {
+        final double percent = meal.value;
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 6.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '${getLocalizedFoodItem(context, meal['name'])} (${meal['percentage']}%)',
+                '${getLocalizedFoodItem(context, meal.key)} (${(meal.value ).toStringAsFixed(1)}%)',
                 style:
                     const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
               ),
@@ -470,7 +369,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
           );
         }
 
-        final displayedMeals = _filteredMealData[selectedDay];
+      
 
         return Scaffold(
       drawer: Drawer(
@@ -794,7 +693,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                     flex: 2,
                     child: TextField(
                       controller: _searchController,
-                      onChanged: _filterRecords,
+                      //onChanged: _filterRecords,
                       decoration: InputDecoration(
                         hintText: AppLocalizations.of(context)!.searchMealSets,
                         prefixIcon: const Icon(Icons.search, size: 20),
@@ -873,8 +772,9 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                             setState(() {
                               selectedDay = newValue;
                               // Re-apply filter based on the new day
-                              _filterRecords(_searchController.text);
+                              //_filterRecords(_searchController.text);
                               _updateRemarks(context); // Update remarks for the new day instantly
+                              _getData(); // Fetch data for the selected day
                             });
                           }
                         },
@@ -885,14 +785,14 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
               ),
               const SizedBox(height: 20),
               // Meal Vote Statistics Section
-              if (displayedMeals != null && displayedMeals.isNotEmpty) ...[
+               ...[
                 Text(AppLocalizations.of(context)!.mealVoteStatistics,
                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 10),
                 // Removed Expanded from here to allow natural scrolling
                 Column(
                   // Use a Column instead of ListView directly if content is not too long, or a ListView with shrinkWrap: true
-                  children: displayedMeals.entries.map((entry) {
+                  children: mealData.entries.map((entry) {
                     return Card(
                       margin: const EdgeInsets.symmetric(vertical: 8),
                       elevation: 4,
@@ -917,16 +817,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                     );
                   }).toList(),
                 ),
-              ] else ...[
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 20.0),
-                    child: Text(
-                        AppLocalizations.of(context)!.noMealVoteData,
-                        style: const TextStyle(fontSize: 16, color: Colors.grey)),
-                  ),
-                ),
-              ],
+              ] ,
               // --- Horizontal Line before Remarks ---
               const SizedBox(height: 20),
               const Divider(), // Added a divider for visual separation
