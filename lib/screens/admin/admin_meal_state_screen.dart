@@ -1141,7 +1141,8 @@ class _AdminMealStateScreenState extends State<AdminMealStateScreen> {
                     // Second row: Buttons
                     Row(
                       children: [
-                        Expanded(
+                        Flexible(
+                          fit: FlexFit.loose,
                           child: ElevatedButton(
                             onPressed: () {
                               Navigator.push(
@@ -1155,12 +1156,11 @@ class _AdminMealStateScreenState extends State<AdminMealStateScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF1A4D8F),
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
-                              ),
+                                  horizontal: 16, vertical: 12),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
+                              minimumSize: const Size(0, 44),
                             ),
                             child: Text(
                               AppLocalizations.of(context)!.seeRecords,
@@ -1168,12 +1168,14 @@ class _AdminMealStateScreenState extends State<AdminMealStateScreen> {
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
                               ),
+                              softWrap: true,
+                              overflow: TextOverflow.visible,
                             ),
                           ),
                         ),
                         const SizedBox(width: 12),
-                        // Auto Loop Users Button
-                        Expanded(
+                        Flexible(
+                          fit: FlexFit.loose,
                           child: ElevatedButton(
                             onPressed: () {
                               Navigator.push(
@@ -1187,12 +1189,11 @@ class _AdminMealStateScreenState extends State<AdminMealStateScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF2E7D32),
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
-                              ),
+                                  horizontal: 16, vertical: 12),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
+                              minimumSize: const Size(0, 44),
                             ),
                             child: const Text(
                               'Auto Loop Users',
@@ -1200,14 +1201,16 @@ class _AdminMealStateScreenState extends State<AdminMealStateScreen> {
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
                               ),
+                              softWrap: true,
+                              overflow: TextOverflow.visible,
                             ),
                           ),
                         ),
                         const SizedBox(width: 12),
-                        // Run Auto Loop Batch Button (now in body)
                         ElevatedButton.icon(
                           icon: const Icon(Icons.autorenew),
-                          label: const Text('Run Auto Loop Batch'),
+                          label: const Text('Run Auto Loop Batch',
+                              softWrap: true, overflow: TextOverflow.visible),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Color(0xFF002B5B),
                             foregroundColor: Colors.white,
@@ -1215,6 +1218,7 @@ class _AdminMealStateScreenState extends State<AdminMealStateScreen> {
                                 horizontal: 16, vertical: 12),
                             textStyle:
                                 const TextStyle(fontWeight: FontWeight.bold),
+                            minimumSize: const Size(0, 44),
                           ),
                           onPressed: _runAutoLoopBatch,
                         ),
@@ -1503,21 +1507,34 @@ class _AdminMealStateScreenState extends State<AdminMealStateScreen> {
                                                             style:
                                                                 const TextStyle(
                                                                     fontSize:
-                                                                        12),
+                                                                        13,
+                                                                    color: Colors
+                                                                        .black),
+                                                            dropdownColor:
+                                                                Colors.white,
                                                             items: const [
                                                               DropdownMenuItem(
                                                                   value: 'N/A',
                                                                   child: Text(
-                                                                      'N/A')),
+                                                                      'N/A',
+                                                                      style: TextStyle(
+                                                                          color:
+                                                                              Colors.black))),
                                                               DropdownMenuItem(
                                                                   value: 'SIQ',
                                                                   child: Text(
-                                                                      'SIQ')),
+                                                                      'SIQ',
+                                                                      style: TextStyle(
+                                                                          color:
+                                                                              Colors.black))),
                                                               DropdownMenuItem(
                                                                   value:
                                                                       'Leave',
                                                                   child: Text(
-                                                                      'Leave')),
+                                                                      'Leave',
+                                                                      style: TextStyle(
+                                                                          color:
+                                                                              Colors.black))),
                                                             ],
                                                             onChanged: (value) {
                                                               setState(() {

@@ -815,95 +815,159 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       children: [
-                        // Top row: Activity/Session buttons
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            ElevatedButton.icon(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const AdminAllLoginSessionsScreen(),
+                        // Responsive filter/search/action area using Wrap, compact controls, and visible dropdown
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            double maxWidth = constraints.maxWidth;
+                            double minButtonWidth = 120;
+                            double minFieldWidth = 140;
+                            double spacing = 8;
+                            return Wrap(
+                              spacing: spacing,
+                              runSpacing: 8,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                SizedBox(
+                                  width: minButtonWidth + 30,
+                                  child: ElevatedButton.icon(
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              const AdminAllLoginSessionsScreen(),
+                                        ),
+                                      );
+                                    },
+                                    icon: const Icon(Icons.security, size: 16),
+                                    label: const Text('Login Sessions',
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(fontSize: 13)),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF0052CC),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 8),
+                                      textStyle: const TextStyle(fontSize: 13),
+                                      minimumSize: const Size(0, 36),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
                                   ),
-                                );
-                              },
-                              icon: const Icon(Icons.security),
-                              label: const Text('All Staff Login Sessions'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Color(0xFF0052CC),
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 10),
-                                textStyle: const TextStyle(fontSize: 14),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
                                 ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            ElevatedButton.icon(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const AdminAllStaffActivityLogScreen(),
+                                SizedBox(
+                                  width: minButtonWidth + 30,
+                                  child: ElevatedButton.icon(
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              const AdminAllStaffActivityLogScreen(),
+                                        ),
+                                      );
+                                    },
+                                    icon:
+                                        const Icon(Icons.event_note, size: 16),
+                                    label: const Text('User Logs',
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(fontSize: 13)),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF0052CC),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 8),
+                                      textStyle: const TextStyle(fontSize: 13),
+                                      minimumSize: const Size(0, 36),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
                                   ),
-                                );
-                              },
-                              icon: const Icon(Icons.event_note),
-                              label: const Text('All Staff Activity Logs'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Color(0xFF0052CC),
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 10),
-                                textStyle: const TextStyle(fontSize: 14),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
                                 ),
-                              ),
-                            ),
-                          ],
+                                SizedBox(
+                                  width: maxWidth > 700 ? 180 : minFieldWidth,
+                                  child: TextField(
+                                    decoration: const InputDecoration(
+                                      labelText: 'Search All Text Columns',
+                                      border: OutlineInputBorder(),
+                                      prefixIcon: Icon(Icons.search, size: 18),
+                                      contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 6),
+                                      isDense: true,
+                                    ),
+                                    style: const TextStyle(fontSize: 13),
+                                    onChanged: (value) {
+                                      setState(() {
+                                        searchTerm = value.toLowerCase();
+                                      });
+                                    },
+                                  ),
+                                ),
+                                // Status filter dropdown for staff (optional, add if you want to filter by status)
+                                // SizedBox(
+                                //   width: maxWidth > 700 ? 150 : minFieldWidth,
+                                //   child: DropdownButtonFormField<String>(
+                                //     value: statusFilter,
+                                //     decoration: InputDecoration(
+                                //       labelText: 'Filter by Status',
+                                //       border: const OutlineInputBorder(),
+                                //       contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                //       isDense: true,
+                                //     ),
+                                //     style: const TextStyle(fontSize: 13, color: Colors.black),
+                                //     dropdownColor: Colors.white,
+                                //     iconEnabledColor: Colors.black,
+                                //     items: [
+                                //       DropdownMenuItem(
+                                //         value: 'all',
+                                //         child: Text('All', style: TextStyle(fontSize: 13, color: Colors.black)),
+                                //       ),
+                                //       DropdownMenuItem(
+                                //         value: 'active',
+                                //         child: Text('Active', style: TextStyle(fontSize: 13, color: Colors.black)),
+                                //       ),
+                                //       DropdownMenuItem(
+                                //         value: 'inactive',
+                                //         child: Text('Inactive', style: TextStyle(fontSize: 13, color: Colors.black)),
+                                //       ),
+                                //     ],
+                                //     onChanged: (String? newValue) {
+                                //       if (newValue != null) {
+                                //         setState(() {
+                                //           statusFilter = newValue;
+                                //           _applyFilters();
+                                //         });
+                                //       }
+                                //     },
+                                //   ),
+                                // ),
+                                SizedBox(
+                                  width: minButtonWidth + 30,
+                                  child: ElevatedButton.icon(
+                                    onPressed: _navigateToAddStaff,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF0052CC),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 8),
+                                      textStyle: const TextStyle(fontSize: 13),
+                                      minimumSize: const Size(0, 36),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    icon: const Icon(Icons.add, size: 16),
+                                    label: const Text("Add Staff/Admin",
+                                        style: TextStyle(fontSize: 13)),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
                         ),
-                        const SizedBox(height: 16),
-                        // Search and Add button row
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                decoration: const InputDecoration(
-                                  labelText: 'Search All Text Columns',
-                                  border: OutlineInputBorder(),
-                                  prefixIcon: Icon(Icons.search),
-                                ),
-                                onChanged: (value) {
-                                  setState(() {
-                                    searchTerm = value.toLowerCase();
-                                  });
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            ElevatedButton.icon(
-                              onPressed: _navigateToAddStaff,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF0052CC),
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 20, vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              icon: const Icon(Icons.add),
-                              label: const Text("Add Staff/Admin"),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 8),
                         Expanded(
                           child: SingleChildScrollView(
                             scrollDirection: Axis.vertical,

@@ -756,209 +756,147 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                // First row with search and filter
+                // Responsive filter/search/action area using Wrap, but with more compact controls
                 LayoutBuilder(
                   builder: (context, constraints) {
-                    // Check if we have enough space for side-by-side layout
-                    bool isWideScreen = constraints.maxWidth > 600;
-
-                    if (isWideScreen) {
-                      return Row(
-                        children: [
-                          Expanded(
-                            flex: 3,
-                            child: TextField(
-                              controller: _searchController,
-                              onChanged: _search,
-                              decoration: InputDecoration(
-                                labelText: AppLocalizations.of(context)!
-                                    .searchAllTextColumns,
-                                border: const OutlineInputBorder(),
-                                prefixIcon: const Icon(Icons.search),
-                                contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 8),
+                    double maxWidth = constraints.maxWidth;
+                    double minButtonWidth = 120;
+                    double minFieldWidth = 140;
+                    double spacing = 8;
+                    return Wrap(
+                      spacing: spacing,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: minButtonWidth + 30,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const AdminAllUserLoginSessionsScreen(),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.security, size: 16),
+                            label: const Text('Login Sessions',
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 13)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF0052CC),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 8),
+                              textStyle: const TextStyle(fontSize: 13),
+                              minimumSize: const Size(0, 36),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            flex: 2,
-                            child: DropdownButtonFormField<String>(
-                              value: statusFilter,
-                              decoration: InputDecoration(
-                                labelText: AppLocalizations.of(context)!
-                                    .filterByStatus,
-                                border: const OutlineInputBorder(),
-                                contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 8),
+                        ),
+                        SizedBox(
+                          width: minButtonWidth + 30,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const AdminAllUserActivityLogScreen(),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.event_note, size: 16),
+                            label: const Text('User Logs',
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 13)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF0052CC),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 8),
+                              textStyle: const TextStyle(fontSize: 13),
+                              minimumSize: const Size(0, 36),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
                               ),
-                              style: const TextStyle(fontSize: 14),
-                              items: [
-                                DropdownMenuItem(
-                                  value: 'all',
-                                  child: Text(
-                                      AppLocalizations.of(context)!.allStatus,
-                                      style: const TextStyle(fontSize: 14)),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'active',
-                                  child: Text(
-                                      AppLocalizations.of(context)!.activeOnly,
-                                      style: const TextStyle(fontSize: 14)),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'inactive',
-                                  child: Text(
-                                      AppLocalizations.of(context)!
-                                          .inactiveOnly,
-                                      style: const TextStyle(fontSize: 14)),
-                                ),
-                              ],
-                              onChanged: (String? newValue) {
-                                if (newValue != null) {
-                                  setState(() {
-                                    statusFilter = newValue;
-                                    _applyFilters();
-                                  });
-                                }
-                              },
                             ),
                           ),
-                        ],
-                      );
-                    } else {
-                      // Stack vertically on smaller screens, but put search and All Login Sessions button in a Row
-                      return Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: [
-                              ElevatedButton.icon(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          const AdminAllUserLoginSessionsScreen(),
-                                    ),
-                                  );
-                                },
-                                icon: const Icon(Icons.security),
-                                label: const Text('All Login Sessions'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Color(0xFF0052CC),
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 10),
-                                  textStyle: const TextStyle(fontSize: 14),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
+                        ),
+                        SizedBox(
+                          width: maxWidth > 700 ? 180 : minFieldWidth,
+                          child: TextField(
+                            controller: _searchController,
+                            onChanged: _search,
+                            style: const TextStyle(fontSize: 13),
+                            decoration: InputDecoration(
+                              labelText: AppLocalizations.of(context)!
+                                  .searchAllTextColumns,
+                              border: const OutlineInputBorder(),
+                              prefixIcon: const Icon(Icons.search, size: 18),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 6),
+                              isDense: true,
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                          width: maxWidth > 700 ? 150 : minFieldWidth,
+                          child: DropdownButtonFormField<String>(
+                            value: statusFilter,
+                            decoration: InputDecoration(
+                              labelText:
+                                  AppLocalizations.of(context)!.filterByStatus,
+                              border: const OutlineInputBorder(),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 6),
+                              isDense: true,
+                            ),
+                            style: const TextStyle(
+                                fontSize: 13, color: Colors.black),
+                            dropdownColor: Colors.white,
+                            iconEnabledColor: Colors.black,
+                            items: [
+                              DropdownMenuItem(
+                                value: 'all',
+                                child: Text(
+                                  AppLocalizations.of(context)!.allStatus,
+                                  style: const TextStyle(
+                                      fontSize: 13, color: Colors.black),
                                 ),
                               ),
-                              const SizedBox(width: 12),
-                              ElevatedButton.icon(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          const AdminAllUserActivityLogScreen(),
-                                    ),
-                                  );
-                                },
-                                icon: const Icon(Icons.event_note),
-                                label: const Text('All User Activity Logs'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Color(0xFF0052CC),
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 10),
-                                  textStyle: const TextStyle(fontSize: 14),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
+                              DropdownMenuItem(
+                                value: 'active',
+                                child: Text(
+                                  AppLocalizations.of(context)!.activeOnly,
+                                  style: const TextStyle(
+                                      fontSize: 13, color: Colors.black),
+                                ),
+                              ),
+                              DropdownMenuItem(
+                                value: 'inactive',
+                                child: Text(
+                                  AppLocalizations.of(context)!.inactiveOnly,
+                                  style: const TextStyle(
+                                      fontSize: 13, color: Colors.black),
                                 ),
                               ),
                             ],
+                            onChanged: (String? newValue) {
+                              if (newValue != null) {
+                                setState(() {
+                                  statusFilter = newValue;
+                                  _applyFilters();
+                                });
+                              }
+                            },
                           ),
-                          const SizedBox(height: 16),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                flex: 3,
-                                child: Padding(
-                                  padding: const EdgeInsets.only(right: 12.0),
-                                  child: SizedBox(
-                                    height: 48,
-                                    child: TextField(
-                                      controller: _searchController,
-                                      onChanged: _search,
-                                      decoration: InputDecoration(
-                                        labelText: AppLocalizations.of(context)!
-                                            .searchAllTextColumns,
-                                        border: const OutlineInputBorder(),
-                                        prefixIcon: const Icon(Icons.search),
-                                        contentPadding:
-                                            const EdgeInsets.symmetric(
-                                                horizontal: 12, vertical: 8),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                flex: 2,
-                                child: SizedBox(
-                                  height: 48,
-                                  child: DropdownButtonFormField<String>(
-                                    value: statusFilter,
-                                    decoration: InputDecoration(
-                                      labelText: AppLocalizations.of(context)!
-                                          .filterByStatus,
-                                      border: const OutlineInputBorder(),
-                                      contentPadding:
-                                          const EdgeInsets.symmetric(
-                                              horizontal: 12, vertical: 8),
-                                    ),
-                                    items: [
-                                      DropdownMenuItem(
-                                        value: 'all',
-                                        child: Text(
-                                            AppLocalizations.of(context)!
-                                                .allStatus),
-                                      ),
-                                      DropdownMenuItem(
-                                        value: 'active',
-                                        child: Text(
-                                            AppLocalizations.of(context)!
-                                                .activeOnly),
-                                      ),
-                                      DropdownMenuItem(
-                                        value: 'inactive',
-                                        child: Text(
-                                            AppLocalizations.of(context)!
-                                                .inactiveOnly),
-                                      ),
-                                    ],
-                                    onChanged: (String? newValue) {
-                                      if (newValue != null) {
-                                        setState(() {
-                                          statusFilter = newValue;
-                                          _applyFilters();
-                                        });
-                                      }
-                                    },
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-                      );
-                    }
+                        ),
+                      ],
+                    );
                   },
                 ),
                 const SizedBox(height: 8),

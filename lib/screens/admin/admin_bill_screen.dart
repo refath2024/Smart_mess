@@ -828,948 +828,981 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
         }).toList();
 
         return Scaffold(
-          drawer: Drawer(
-            child: Column(
-              children: [
-                DrawerHeader(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Color(0xFF002B5B), Color(0xFF1A4D8F)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+            drawer: Drawer(
+              child: Column(
+                children: [
+                  DrawerHeader(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Color(0xFF002B5B), Color(0xFF1A4D8F)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const CircleAvatar(
+                          backgroundImage: AssetImage('assets/me.png'),
+                          radius: 30,
+                        ),
+                        const SizedBox(width: 10),
+                        Flexible(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                _currentUserName,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              if (_currentUserData != null) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  _currentUserData!['role'] ?? '',
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                Text(
+                                  'BA: ${_currentUserData!['ba_no'] ?? ''}',
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ], // closes if
+                            ], // closes children of Column
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  child: Row(
-                    children: [
-                      const CircleAvatar(
-                        backgroundImage: AssetImage('assets/me.png'),
-                        radius: 30,
+                  Expanded(
+                    child: ListView(
+                      padding: EdgeInsets.zero,
+                      children: [
+                        _buildSidebarTile(
+                          icon: Icons.dashboard,
+                          title: AppLocalizations.of(context)!.home,
+                          onTap: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const AdminHomeScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        _buildSidebarTile(
+                          icon: Icons.people,
+                          title: AppLocalizations.of(context)!.users,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const AdminUsersScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        _buildSidebarTile(
+                          icon: Icons.pending,
+                          title: AppLocalizations.of(context)!.pendingIds,
+                          onTap: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const AdminPendingIdsScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        _buildSidebarTile(
+                          icon: Icons.history,
+                          title: AppLocalizations.of(context)!.shoppingHistory,
+                          onTap: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const AdminShoppingHistoryScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        _buildSidebarTile(
+                          icon: Icons.receipt,
+                          title: AppLocalizations.of(context)!.voucherList,
+                          onTap: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const AdminVoucherScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        _buildSidebarTile(
+                          icon: Icons.storage,
+                          title: AppLocalizations.of(context)!.inventory,
+                          onTap: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const AdminInventoryScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        _buildSidebarTile(
+                          icon: Icons.food_bank,
+                          title: AppLocalizations.of(context)!.messing,
+                          onTap: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const AdminMessingScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        _buildSidebarTile(
+                          icon: Icons.menu_book,
+                          title: AppLocalizations.of(context)!.monthlyMenu,
+                          onTap: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const EditMenuScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        _buildSidebarTile(
+                          icon: Icons.analytics,
+                          title: AppLocalizations.of(context)!.mealState,
+                          onTap: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const AdminMealStateScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        _buildSidebarTile(
+                          icon: Icons.thumb_up,
+                          title: AppLocalizations.of(context)!.menuVote,
+                          onTap: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const MenuVoteScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        _buildSidebarTile(
+                          icon: Icons.receipt_long,
+                          title: AppLocalizations.of(context)!.bills,
+                          selected: true,
+                          onTap: () => Navigator.pop(context),
+                        ),
+                        _buildSidebarTile(
+                          icon: Icons.payment,
+                          title: AppLocalizations.of(context)!.payments,
+                          onTap: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const PaymentsDashboard(),
+                              ),
+                            );
+                          },
+                        ),
+                        _buildSidebarTile(
+                          icon: Icons.people_alt,
+                          title:
+                              AppLocalizations.of(context)!.diningMemberState,
+                          onTap: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const DiningMemberStatePage(),
+                              ),
+                            );
+                          },
+                        ),
+                        _buildSidebarTile(
+                          icon: Icons.manage_accounts,
+                          title: AppLocalizations.of(context)!.staffState,
+                          onTap: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const AdminStaffStateScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border(
+                        top: BorderSide(color: Colors.grey.shade300),
                       ),
-                      const SizedBox(width: 10),
-                      Flexible(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              _currentUserName,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        bottom: MediaQuery.of(context).padding.bottom + 8,
+                        top: 8,
+                      ),
+                      child: _buildSidebarTile(
+                        icon: Icons.logout,
+                        title: AppLocalizations.of(context)!.logout,
+                        onTap: _logout,
+                        color: Colors.red,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            appBar: AppBar(
+              backgroundColor: const Color(0xFF002B5B),
+              iconTheme: const IconThemeData(color: Colors.white),
+              centerTitle: true,
+              title: Text(
+                AppLocalizations.of(context)!.bills,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 18,
+                ),
+              ),
+              actions: [
+                // Notification Icon for Payment Requests
+                Stack(
+                  children: [
+                    IconButton(
+                      icon:
+                          const Icon(Icons.notifications, color: Colors.white),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const PaymentsDashboard(),
+                          ),
+                        );
+                      },
+                    ),
+                    if (_pendingPaymentRequests > 0)
+                      Positioned(
+                        right: 8,
+                        top: 8,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 16,
+                            minHeight: 16,
+                          ),
+                          child: Text(
+                            '$_pendingPaymentRequests',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
                             ),
-                            if (_currentUserData != null) ...[
-                              const SizedBox(height: 4),
-                              Text(
-                                _currentUserData!['role'] ?? '',
-                                style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 12,
-                                ),
-                              ),
-                              Text(
-                                'BA: ${_currentUserData!['ba_no'] ?? ''}',
-                                style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ], // closes if
-                          ], // closes children of Column
+                            textAlign: TextAlign.center,
+                          ),
                         ),
                       ),
-                    ],
-                  ),
+                  ],
                 ),
-                Expanded(
-                  child: ListView(
-                    padding: EdgeInsets.zero,
-                    children: [
-                      _buildSidebarTile(
-                        icon: Icons.dashboard,
-                        title: AppLocalizations.of(context)!.home,
-                        onTap: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const AdminHomeScreen(),
-                            ),
-                          );
-                        },
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.language, color: Colors.white),
+                  onSelected: (String value) {
+                    if (value == 'english') {
+                      Provider.of<LanguageProvider>(context, listen: false)
+                          .changeLanguage(const Locale('en'));
+                    } else if (value == 'bangla') {
+                      Provider.of<LanguageProvider>(context, listen: false)
+                          .changeLanguage(const Locale('bn'));
+                    }
+                  },
+                  itemBuilder: (BuildContext context) => [
+                    PopupMenuItem<String>(
+                      value: 'english',
+                      child: Row(
+                        children: [
+                          Text('🇺🇸'),
+                          const SizedBox(width: 8),
+                          Text('English'),
+                        ],
                       ),
-                      _buildSidebarTile(
-                        icon: Icons.people,
-                        title: AppLocalizations.of(context)!.users,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const AdminUsersScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                      _buildSidebarTile(
-                        icon: Icons.pending,
-                        title: AppLocalizations.of(context)!.pendingIds,
-                        onTap: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const AdminPendingIdsScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                      _buildSidebarTile(
-                        icon: Icons.history,
-                        title: AppLocalizations.of(context)!.shoppingHistory,
-                        onTap: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const AdminShoppingHistoryScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                      _buildSidebarTile(
-                        icon: Icons.receipt,
-                        title: AppLocalizations.of(context)!.voucherList,
-                        onTap: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const AdminVoucherScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                      _buildSidebarTile(
-                        icon: Icons.storage,
-                        title: AppLocalizations.of(context)!.inventory,
-                        onTap: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const AdminInventoryScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                      _buildSidebarTile(
-                        icon: Icons.food_bank,
-                        title: AppLocalizations.of(context)!.messing,
-                        onTap: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const AdminMessingScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                      _buildSidebarTile(
-                        icon: Icons.menu_book,
-                        title: AppLocalizations.of(context)!.monthlyMenu,
-                        onTap: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const EditMenuScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                      _buildSidebarTile(
-                        icon: Icons.analytics,
-                        title: AppLocalizations.of(context)!.mealState,
-                        onTap: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const AdminMealStateScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                      _buildSidebarTile(
-                        icon: Icons.thumb_up,
-                        title: AppLocalizations.of(context)!.menuVote,
-                        onTap: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const MenuVoteScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                      _buildSidebarTile(
-                        icon: Icons.receipt_long,
-                        title: AppLocalizations.of(context)!.bills,
-                        selected: true,
-                        onTap: () => Navigator.pop(context),
-                      ),
-                      _buildSidebarTile(
-                        icon: Icons.payment,
-                        title: AppLocalizations.of(context)!.payments,
-                        onTap: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const PaymentsDashboard(),
-                            ),
-                          );
-                        },
-                      ),
-                      _buildSidebarTile(
-                        icon: Icons.people_alt,
-                        title: AppLocalizations.of(context)!.diningMemberState,
-                        onTap: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const DiningMemberStatePage(),
-                            ),
-                          );
-                        },
-                      ),
-                      _buildSidebarTile(
-                        icon: Icons.manage_accounts,
-                        title: AppLocalizations.of(context)!.staffState,
-                        onTap: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const AdminStaffStateScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border(
-                      top: BorderSide(color: Colors.grey.shade300),
                     ),
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.only(
-                      bottom: MediaQuery.of(context).padding.bottom + 8,
-                      top: 8,
+                    PopupMenuItem<String>(
+                      value: 'bangla',
+                      child: Row(
+                        children: [
+                          Text('🇧🇩'),
+                          const SizedBox(width: 8),
+                          Text('বাংলা'),
+                        ],
+                      ),
                     ),
-                    child: _buildSidebarTile(
-                      icon: Icons.logout,
-                      title: AppLocalizations.of(context)!.logout,
-                      onTap: _logout,
-                      color: Colors.red,
-                    ),
-                  ),
+                  ],
                 ),
               ],
             ),
-          ),
-          appBar: AppBar(
-            backgroundColor: const Color(0xFF002B5B),
-            iconTheme: const IconThemeData(color: Colors.white),
-            centerTitle: true,
-            title: Text(
-              AppLocalizations.of(context)!.bills,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-                fontSize: 18,
-              ),
-            ),
-            actions: [
-              // Notification Icon for Payment Requests
-              Stack(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.notifications, color: Colors.white),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const PaymentsDashboard(),
-                        ),
-                      );
-                    },
-                  ),
-                  if (_pendingPaymentRequests > 0)
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
-                        ),
-                        child: Text(
-                          '$_pendingPaymentRequests',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
+            body: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: SingleChildScrollView(
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Card(
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          color: Colors.white,
+                          margin: const EdgeInsets.only(bottom: 16),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 18, horizontal: 18),
+                            child: Wrap(
+                              spacing: 24,
+                              runSpacing: 16,
+                              alignment: WrapAlignment.spaceEvenly,
+                              children: [
+                                _buildStatTile(
+                                    'Total Current Bill',
+                                    totalCurrentBill,
+                                    Icons.receipt_long,
+                                    Colors.blue),
+                                _buildStatTile('Total Paid', totalPaid,
+                                    Icons.check_circle, Colors.green),
+                                _buildStatTile('Total Due', totalDue,
+                                    Icons.warning_amber_rounded, Colors.orange),
+                                _buildStatTile(
+                                    'Total Arrear',
+                                    totalArrear,
+                                    Icons.account_balance_wallet,
+                                    Colors.redAccent),
+                              ],
+                            ),
                           ),
-                          textAlign: TextAlign.center,
                         ),
-                      ),
-                    ),
-                ],
-              ),
-              PopupMenuButton<String>(
-                icon: const Icon(Icons.language, color: Colors.white),
-                onSelected: (String value) {
-                  if (value == 'english') {
-                    Provider.of<LanguageProvider>(context, listen: false)
-                        .changeLanguage(const Locale('en'));
-                  } else if (value == 'bangla') {
-                    Provider.of<LanguageProvider>(context, listen: false)
-                        .changeLanguage(const Locale('bn'));
-                  }
-                },
-                itemBuilder: (BuildContext context) => [
-                  PopupMenuItem<String>(
-                    value: 'english',
-                    child: Row(
-                      children: [
-                        Text('🇺🇸'),
-                        const SizedBox(width: 8),
-                        Text('English'),
-                      ],
-                    ),
-                  ),
-                  PopupMenuItem<String>(
-                    value: 'bangla',
-                    child: Row(
-                      children: [
-                        Text('🇧🇩'),
-                        const SizedBox(width: 8),
-                        Text('বাংলা'),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          body: Padding(
-            padding: const EdgeInsets.all(16),
-            child: SingleChildScrollView(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Card(
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      color: Colors.white,
-                      margin: const EdgeInsets.only(bottom: 16),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 18, horizontal: 18),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        // Month/Year selector and Generate button (responsive)
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
-                            _buildStatTile(
-                                'Total Current Bill',
-                                totalCurrentBill,
-                                Icons.receipt_long,
-                                Colors.blue),
-                            _buildStatTile('Total Paid', totalPaid,
-                                Icons.check_circle, Colors.green),
-                            _buildStatTile('Total Due', totalDue,
-                                Icons.warning_amber_rounded, Colors.orange),
-                            _buildStatTile('Total Arrear', totalArrear,
-                                Icons.account_balance_wallet, Colors.redAccent),
-                          ],
-                        ),
-                      ),
-                    ),
-                    // Month/Year selector and Generate button (responsive)
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        DropdownButton<String>(
-                          value: _selectedMonth,
-                          items: _months
-                              .map((m) =>
-                                  DropdownMenuItem(value: m, child: Text(m)))
-                              .toList(),
-                          onChanged: (val) {
-                            if (val != null) {
-                              setState(() => _selectedMonth = val);
-                              _loadBills();
-                            }
-                          },
-                        ),
-                        DropdownButton<int>(
-                          value: _selectedYear,
-                          items:
-                              List.generate(5, (i) => DateTime.now().year - i)
+                            DropdownButton<String>(
+                              value: _selectedMonth,
+                              items: _months
+                                  .map((m) => DropdownMenuItem(
+                                      value: m, child: Text(m)))
+                                  .toList(),
+                              onChanged: (val) {
+                                if (val != null) {
+                                  setState(() => _selectedMonth = val);
+                                  _loadBills();
+                                }
+                              },
+                            ),
+                            DropdownButton<int>(
+                              value: _selectedYear,
+                              items: List.generate(
+                                      5, (i) => DateTime.now().year - i)
                                   .map((y) => DropdownMenuItem(
                                       value: y, child: Text(y.toString())))
                                   .toList(),
-                          onChanged: (val) {
-                            if (val != null) {
-                              setState(() => _selectedYear = val);
-                              _loadBills();
-                            }
-                          },
-                        ),
-                        ElevatedButton(
-                          onPressed: _isGenerating ? null : _generateBills,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF002B5B),
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 14, horizontal: 20),
-                          ),
-                          child: _isGenerating
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white),
-                                  ),
-                                )
-                              : const Text(
-                                  'Generate Bills',
-                                  style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600),
-                                ),
-                        ),
-                        ElevatedButton(
-                          onPressed: _recalculateAllBills,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF4CAF50),
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 14, horizontal: 20),
-                          ),
-                          child: const Text(
-                            'Recalculate',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Paid/Unpaid/All filter
-                    Row(
-                      children: [
-                        const Text('Filter: ',
-                            style: TextStyle(fontWeight: FontWeight.w600)),
-                        ChoiceChip(
-                          label: const Text('All'),
-                          selected: _billStatusFilter == 'All',
-                          onSelected: (selected) {
-                            setState(() => _billStatusFilter = 'All');
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        ChoiceChip(
-                          label: const Text('Paid'),
-                          selected: _billStatusFilter == 'Paid',
-                          onSelected: (selected) {
-                            setState(() => _billStatusFilter = 'Paid');
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        ChoiceChip(
-                          label: const Text('Unpaid'),
-                          selected: _billStatusFilter == 'Unpaid',
-                          onSelected: (selected) {
-                            setState(() => _billStatusFilter = 'Unpaid');
-                          },
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-
-                    // --- Statistics Card ---
-
-                    // Search bar and total bills (responsive)
-                    Wrap(
-                      spacing: 12,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        SizedBox(
-                          width: 300,
-                          child: TextField(
-                            decoration: InputDecoration(
-                              hintText: 'Search',
-                              prefixIcon: const Icon(Icons.search, size: 20),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
+                              onChanged: (val) {
+                                if (val != null) {
+                                  setState(() => _selectedYear = val);
+                                  _loadBills();
+                                }
+                              },
+                            ),
+                            ElevatedButton(
+                              onPressed: _isGenerating ? null : _generateBills,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF002B5B),
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 14, horizontal: 20),
                               ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 8,
+                              child: _isGenerating
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                                Colors.white),
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Generate Bills',
+                                      style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w600),
+                                    ),
+                            ),
+                            ElevatedButton(
+                              onPressed: _recalculateAllBills,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF4CAF50),
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 14, horizontal: 20),
+                              ),
+                              child: const Text(
+                                'Recalculate',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600),
                               ),
                             ),
-                            onChanged: (val) {
-                              setState(() => searchTerm = val);
-                            },
-                          ),
+                          ],
                         ),
-                        Text(
-                          'Total Bills: ${filteredBills.length}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
+                        const SizedBox(height: 16),
 
-                    // Table area: fixed height for 5 rows, horizontally scrollable
-                    Container(
-                      constraints: BoxConstraints(
-                        minHeight: 56.0 + 48.0 * 5, // header + 5 rows
-                        maxHeight: 56.0 + 48.0 * 5,
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: SizedBox(
-                          width: 1130,
-                          child: Column(
-                            children: [
-                              // Fixed Table Header
-                              Container(
-                                height: 56,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFF1A4D8F),
-                                  borderRadius: BorderRadius.only(
-                                    topLeft: Radius.circular(8),
-                                    topRight: Radius.circular(8),
+                        // Paid/Unpaid/All filter
+                        Row(
+                          children: [
+                            const Text('Filter: ',
+                                style: TextStyle(fontWeight: FontWeight.w600)),
+                            ChoiceChip(
+                              label: const Text('All'),
+                              selected: _billStatusFilter == 'All',
+                              onSelected: (selected) {
+                                setState(() => _billStatusFilter = 'All');
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            ChoiceChip(
+                              label: const Text('Paid'),
+                              selected: _billStatusFilter == 'Paid',
+                              onSelected: (selected) {
+                                setState(() => _billStatusFilter = 'Paid');
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            ChoiceChip(
+                              label: const Text('Unpaid'),
+                              selected: _billStatusFilter == 'Unpaid',
+                              onSelected: (selected) {
+                                setState(() => _billStatusFilter = 'Unpaid');
+                              },
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+
+                        // --- Statistics Card ---
+
+                        // Search bar and total bills (responsive)
+                        Wrap(
+                          spacing: 12,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 300,
+                              child: TextField(
+                                decoration: InputDecoration(
+                                  hintText: 'Search',
+                                  prefixIcon:
+                                      const Icon(Icons.search, size: 20),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 8,
                                   ),
                                 ),
-                                child: Row(
-                                  children: const [
-                                    SizedBox(
-                                      width: 100,
-                                      child: Center(
-                                        child: Text(
-                                          'BA No',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: 120,
-                                      child: Center(
-                                        child: Text(
-                                          'Rank',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: 150,
-                                      child: Center(
-                                        child: Text(
-                                          'Name',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: 120,
-                                      child: Center(
-                                        child: Text(
-                                          'Status',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: 120,
-                                      child: Center(
-                                        child: Text(
-                                          'Arrears',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: 120,
-                                      child: Center(
-                                        child: Text(
-                                          'Current Bill',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: 120,
-                                      child: Center(
-                                        child: Text(
-                                          'Paid Amount',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: 120,
-                                      child: Center(
-                                        child: Text(
-                                          'Total Due',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: 100,
-                                      child: Center(
-                                        child: Text(
-                                          'Actions',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                onChanged: (val) {
+                                  setState(() => searchTerm = val);
+                                },
                               ),
-                              // Scrollable Table Body
-                              Expanded(
-                                child: filteredBills.isEmpty
-                                    ? Center(
-                                        child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            Icon(
-                                              Icons.receipt_long,
-                                              size: 64,
-                                              color: Colors.grey[400],
-                                            ),
-                                            const SizedBox(height: 16),
-                                            Text(
-                                              'No bills found',
+                            ),
+                            Text(
+                              'Total Bills: ${filteredBills.length}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Table area: fixed height for 5 rows, horizontally scrollable
+                        Container(
+                          constraints: BoxConstraints(
+                            minHeight: 56.0 + 48.0 * 5, // header + 5 rows
+                            maxHeight: 56.0 + 48.0 * 5,
+                          ),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: SizedBox(
+                              width: 1130,
+                              child: Column(
+                                children: [
+                                  // Fixed Table Header
+                                  Container(
+                                    height: 56,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFF1A4D8F),
+                                      borderRadius: BorderRadius.only(
+                                        topLeft: Radius.circular(8),
+                                        topRight: Radius.circular(8),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: const [
+                                        SizedBox(
+                                          width: 100,
+                                          child: Center(
+                                            child: Text(
+                                              'BA No',
                                               style: TextStyle(
-                                                fontSize: 18,
-                                                color: Colors.grey[600],
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Text(
-                                              'Click "Generate Bills" to create bills for all users',
-                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
                                                 fontSize: 14,
-                                                color: Colors.grey[500],
                                               ),
                                             ),
-                                          ],
+                                          ),
                                         ),
-                                      )
-                                    : SingleChildScrollView(
-                                        child: Column(
-                                          children: List.generate(
-                                              filteredBills.length, (index) {
-                                            final bill = filteredBills[index];
-                                            final isEven = index % 2 == 0;
-                                            return Container(
-                                              height: 60,
-                                              decoration: BoxDecoration(
-                                                color: isEven
-                                                    ? Colors.grey.shade50
-                                                    : Colors.white,
-                                                border: Border(
-                                                  bottom: BorderSide(
-                                                    color: Colors.grey.shade200,
-                                                    width: 1,
+                                        SizedBox(
+                                          width: 120,
+                                          child: Center(
+                                            child: Text(
+                                              'Rank',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        SizedBox(
+                                          width: 150,
+                                          child: Center(
+                                            child: Text(
+                                              'Name',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        SizedBox(
+                                          width: 120,
+                                          child: Center(
+                                            child: Text(
+                                              'Status',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        SizedBox(
+                                          width: 120,
+                                          child: Center(
+                                            child: Text(
+                                              'Arrears',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        SizedBox(
+                                          width: 120,
+                                          child: Center(
+                                            child: Text(
+                                              'Current Bill',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        SizedBox(
+                                          width: 120,
+                                          child: Center(
+                                            child: Text(
+                                              'Paid Amount',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        SizedBox(
+                                          width: 120,
+                                          child: Center(
+                                            child: Text(
+                                              'Total Due',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        SizedBox(
+                                          width: 100,
+                                          child: Center(
+                                            child: Text(
+                                              'Actions',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  // Scrollable Table Body
+                                  Expanded(
+                                    child: filteredBills.isEmpty
+                                        ? Center(
+                                            child: Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                Icon(
+                                                  Icons.receipt_long,
+                                                  size: 64,
+                                                  color: Colors.grey[400],
+                                                ),
+                                                const SizedBox(height: 16),
+                                                Text(
+                                                  'No bills found',
+                                                  style: TextStyle(
+                                                    fontSize: 18,
+                                                    color: Colors.grey[600],
+                                                    fontWeight: FontWeight.w500,
                                                   ),
                                                 ),
-                                              ),
-                                              child: Row(
-                                                children: [
-                                                  SizedBox(
-                                                    width: 100,
-                                                    child: Center(
-                                                      child: Text(
-                                                        bill['ba_no'] ?? '',
-                                                        style: const TextStyle(
-                                                            fontSize: 14),
-                                                        textAlign:
-                                                            TextAlign.center,
+                                                const SizedBox(height: 8),
+                                                Text(
+                                                  'Click "Generate Bills" to create bills for all users',
+                                                  style: TextStyle(
+                                                    fontSize: 14,
+                                                    color: Colors.grey[500],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          )
+                                        : SingleChildScrollView(
+                                            child: Column(
+                                              children: List.generate(
+                                                  filteredBills.length,
+                                                  (index) {
+                                                final bill =
+                                                    filteredBills[index];
+                                                final isEven = index % 2 == 0;
+                                                return Container(
+                                                  height: 60,
+                                                  decoration: BoxDecoration(
+                                                    color: isEven
+                                                        ? Colors.grey.shade50
+                                                        : Colors.white,
+                                                    border: Border(
+                                                      bottom: BorderSide(
+                                                        color: Colors
+                                                            .grey.shade200,
+                                                        width: 1,
                                                       ),
                                                     ),
                                                   ),
-                                                  SizedBox(
-                                                    width: 120,
-                                                    child: Center(
-                                                      child: Text(
-                                                        bill['rank'] ?? '',
-                                                        style: const TextStyle(
-                                                            fontSize: 14),
-                                                        textAlign:
-                                                            TextAlign.center,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  SizedBox(
-                                                    width: 150,
-                                                    child: Center(
-                                                      child: Text(
-                                                        bill['name'] ?? '',
-                                                        style: const TextStyle(
-                                                            fontSize: 14),
-                                                        textAlign:
-                                                            TextAlign.center,
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  SizedBox(
-                                                    width: 120,
-                                                    child: Center(
-                                                      child: Text(
-                                                        () {
-                                                          final currentBill =
-                                                              bill['current_bill']
-                                                                      ?.toDouble() ??
-                                                                  0.0;
-                                                          final arrears = bill[
-                                                                      'arrears']
-                                                                  ?.toDouble() ??
-                                                              0.0;
-                                                          final paidAmount =
-                                                              bill['paid_amount']
-                                                                      ?.toDouble() ??
-                                                                  0.0;
-                                                          final calculatedTotalDue =
-                                                              currentBill +
-                                                                  arrears -
-                                                                  paidAmount;
-                                                          return calculatedTotalDue <=
-                                                                  0
-                                                              ? 'Paid'
-                                                              : 'Unpaid';
-                                                        }(),
-                                                        style: TextStyle(
-                                                          color: () {
-                                                            final currentBill =
-                                                                bill['current_bill']
-                                                                        ?.toDouble() ??
-                                                                    0.0;
-                                                            final arrears = bill[
-                                                                        'arrears']
-                                                                    ?.toDouble() ??
-                                                                0.0;
-                                                            final paidAmount =
-                                                                bill['paid_amount']
-                                                                        ?.toDouble() ??
-                                                                    0.0;
-                                                            final calculatedTotalDue =
-                                                                currentBill +
-                                                                    arrears -
-                                                                    paidAmount;
-                                                            return calculatedTotalDue <=
-                                                                    0
-                                                                ? Colors.green
-                                                                : Colors.red;
-                                                          }(),
-                                                          fontSize: 14,
-                                                          fontWeight:
-                                                              FontWeight.w500,
+                                                  child: Row(
+                                                    children: [
+                                                      SizedBox(
+                                                        width: 100,
+                                                        child: Center(
+                                                          child: Text(
+                                                            bill['ba_no'] ?? '',
+                                                            style:
+                                                                const TextStyle(
+                                                                    fontSize:
+                                                                        14),
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                          ),
                                                         ),
-                                                        textAlign:
-                                                            TextAlign.center,
                                                       ),
-                                                    ),
-                                                  ),
-                                                  SizedBox(
-                                                    width: 120,
-                                                    child: Center(
-                                                      child: Text(
-                                                        '৳${bill['arrears'].toStringAsFixed(2)}',
-                                                        style: const TextStyle(
-                                                            fontSize: 14),
-                                                        textAlign:
-                                                            TextAlign.center,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  SizedBox(
-                                                    width: 120,
-                                                    child: Center(
-                                                      child: Text(
-                                                        '৳${bill['current_bill'].toStringAsFixed(2)}',
-                                                        style: const TextStyle(
-                                                            fontSize: 14),
-                                                        textAlign:
-                                                            TextAlign.center,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  SizedBox(
-                                                    width: 120,
-                                                    child: Center(
-                                                      child: Text(
-                                                        '৳${bill['paid_amount'].toStringAsFixed(2)}',
-                                                        style: const TextStyle(
-                                                            fontSize: 14,
-                                                            fontWeight:
-                                                                FontWeight.w600,
-                                                            color:
-                                                                Colors.green),
-                                                        textAlign:
-                                                            TextAlign.center,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  SizedBox(
-                                                    width: 120,
-                                                    child: Center(
-                                                      child: Text(
-                                                        () {
-                                                          final currentBill =
-                                                              bill['current_bill']
-                                                                      ?.toDouble() ??
-                                                                  0.0;
-                                                          final arrears = bill[
-                                                                      'arrears']
-                                                                  ?.toDouble() ??
-                                                              0.0;
-                                                          final paidAmount =
-                                                              bill['paid_amount']
-                                                                      ?.toDouble() ??
-                                                                  0.0;
-                                                          final calculatedTotalDue =
-                                                              currentBill +
-                                                                  arrears -
-                                                                  paidAmount;
-                                                          return '৳${calculatedTotalDue.toStringAsFixed(2)}';
-                                                        }(),
-                                                        style: TextStyle(
-                                                          fontSize: 14,
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                          color: () {
-                                                            final currentBill =
-                                                                bill['current_bill']
-                                                                        ?.toDouble() ??
-                                                                    0.0;
-                                                            final arrears = bill[
-                                                                        'arrears']
-                                                                    ?.toDouble() ??
-                                                                0.0;
-                                                            final paidAmount =
-                                                                bill['paid_amount']
-                                                                        ?.toDouble() ??
-                                                                    0.0;
-                                                            final calculatedTotalDue =
-                                                                currentBill +
-                                                                    arrears -
-                                                                    paidAmount;
-                                                            return calculatedTotalDue <=
-                                                                    0
-                                                                ? Colors.green
-                                                                : Colors.black;
-                                                          }(),
+                                                      SizedBox(
+                                                        width: 120,
+                                                        child: Center(
+                                                          child: Text(
+                                                            bill['rank'] ?? '',
+                                                            style:
+                                                                const TextStyle(
+                                                                    fontSize:
+                                                                        14),
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                          ),
                                                         ),
-                                                        textAlign:
-                                                            TextAlign.center,
                                                       ),
-                                                    ),
-                                                  ),
-                                                  SizedBox(
-                                                    width: 100,
-                                                    child: Center(
-                                                      child: IconButton(
-                                                        icon: const Icon(
-                                                            Icons
-                                                                .picture_as_pdf,
-                                                            color: Colors.red,
-                                                            size: 20),
-                                                        onPressed: () =>
-                                                            _generateUserBillPdf(
-                                                                bill),
-                                                        tooltip: 'Generate PDF',
+                                                      SizedBox(
+                                                        width: 150,
+                                                        child: Center(
+                                                          child: Text(
+                                                            bill['name'] ?? '',
+                                                            style:
+                                                                const TextStyle(
+                                                                    fontSize:
+                                                                        14),
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
+                                                          ),
+                                                        ),
                                                       ),
-                                                    ),
+                                                      SizedBox(
+                                                        width: 120,
+                                                        child: Center(
+                                                          child: Text(
+                                                            () {
+                                                              final currentBill =
+                                                                  bill['current_bill']
+                                                                          ?.toDouble() ??
+                                                                      0.0;
+                                                              final arrears =
+                                                                  bill['arrears']
+                                                                          ?.toDouble() ??
+                                                                      0.0;
+                                                              final paidAmount =
+                                                                  bill['paid_amount']
+                                                                          ?.toDouble() ??
+                                                                      0.0;
+                                                              final calculatedTotalDue =
+                                                                  currentBill +
+                                                                      arrears -
+                                                                      paidAmount;
+                                                              return calculatedTotalDue <=
+                                                                      0
+                                                                  ? 'Paid'
+                                                                  : 'Unpaid';
+                                                            }(),
+                                                            style: TextStyle(
+                                                              color: () {
+                                                                final currentBill =
+                                                                    bill['current_bill']
+                                                                            ?.toDouble() ??
+                                                                        0.0;
+                                                                final arrears =
+                                                                    bill['arrears']
+                                                                            ?.toDouble() ??
+                                                                        0.0;
+                                                                final paidAmount =
+                                                                    bill['paid_amount']
+                                                                            ?.toDouble() ??
+                                                                        0.0;
+                                                                final calculatedTotalDue =
+                                                                    currentBill +
+                                                                        arrears -
+                                                                        paidAmount;
+                                                                return calculatedTotalDue <= 0
+                                                                    ? Colors
+                                                                        .green
+                                                                    : Colors
+                                                                        .red;
+                                                              }(),
+                                                              fontSize: 14,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w500,
+                                                            ),
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      SizedBox(
+                                                        width: 120,
+                                                        child: Center(
+                                                          child: Text(
+                                                            '৳${bill['arrears'].toStringAsFixed(2)}',
+                                                            style:
+                                                                const TextStyle(
+                                                                    fontSize:
+                                                                        14),
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      SizedBox(
+                                                        width: 120,
+                                                        child: Center(
+                                                          child: Text(
+                                                            '৳${bill['current_bill'].toStringAsFixed(2)}',
+                                                            style:
+                                                                const TextStyle(
+                                                                    fontSize:
+                                                                        14),
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      SizedBox(
+                                                        width: 120,
+                                                        child: Center(
+                                                          child: Text(
+                                                            '৳${bill['paid_amount'].toStringAsFixed(2)}',
+                                                            style: const TextStyle(
+                                                                fontSize: 14,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w600,
+                                                                color: Colors
+                                                                    .green),
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      SizedBox(
+                                                        width: 120,
+                                                        child: Center(
+                                                          child: Text(
+                                                            () {
+                                                              final currentBill =
+                                                                  bill['current_bill']
+                                                                          ?.toDouble() ??
+                                                                      0.0;
+                                                              final arrears =
+                                                                  bill['arrears']
+                                                                          ?.toDouble() ??
+                                                                      0.0;
+                                                              final paidAmount =
+                                                                  bill['paid_amount']
+                                                                          ?.toDouble() ??
+                                                                      0.0;
+                                                              final calculatedTotalDue =
+                                                                  currentBill +
+                                                                      arrears -
+                                                                      paidAmount;
+                                                              return '৳${calculatedTotalDue.toStringAsFixed(2)}';
+                                                            }(),
+                                                            style: TextStyle(
+                                                              fontSize: 14,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              color: () {
+                                                                final currentBill =
+                                                                    bill['current_bill']
+                                                                            ?.toDouble() ??
+                                                                        0.0;
+                                                                final arrears =
+                                                                    bill['arrears']
+                                                                            ?.toDouble() ??
+                                                                        0.0;
+                                                                final paidAmount =
+                                                                    bill['paid_amount']
+                                                                            ?.toDouble() ??
+                                                                        0.0;
+                                                                final calculatedTotalDue =
+                                                                    currentBill +
+                                                                        arrears -
+                                                                        paidAmount;
+                                                                return calculatedTotalDue <= 0
+                                                                    ? Colors
+                                                                        .green
+                                                                    : Colors
+                                                                        .black;
+                                                              }(),
+                                                            ),
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      SizedBox(
+                                                        width: 100,
+                                                        child: Center(
+                                                          child: IconButton(
+                                                            icon: const Icon(
+                                                                Icons
+                                                                    .picture_as_pdf,
+                                                                color:
+                                                                    Colors.red,
+                                                                size: 20),
+                                                            onPressed: () =>
+                                                                _generateUserBillPdf(
+                                                                    bill),
+                                                            tooltip:
+                                                                'Generate PDF',
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
-                                                ],
-                                              ),
-                                            );
-                                          }),
-                                        ),
-                                      ),
-                              )
-                            ],
+                                                );
+                                              }),
+                                            ),
+                                          ),
+                                  )
+                                ],
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
-                  ]),
-            ),
-          ),
-        );
+                      ]),
+                ),
+              ),
+            ));
       },
     );
   }

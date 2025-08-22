@@ -343,7 +343,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
               ),
             )
           : null,
-      body: _screens[_selectedIndex],
+  body: SafeArea(child: _screens[_selectedIndex]),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
@@ -378,6 +378,87 @@ class HomeContent extends StatefulWidget {
 }
 
 class _HomeContentState extends State<HomeContent> {
+  Color _getMealTypeColor(String mealType) {
+    switch (mealType.toLowerCase()) {
+      case 'breakfast':
+        return Colors.orange;
+      case 'lunch':
+        return Colors.green;
+      case 'dinner':
+        return Colors.blue;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _capitalizeMealType(String mealType) {
+    if (mealType.isEmpty) return mealType;
+    return mealType[0].toUpperCase() + mealType.substring(1);
+  }
+
+  Widget _buildMenuSection(
+      String title, Map<String, dynamic>? menuData, bool isToday) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              isToday ? Icons.today : Icons.event,
+              color: const Color(0xFF002B5B),
+              size: 24,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF002B5B),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (isLoading)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(20.0),
+              child: CircularProgressIndicator(),
+            ),
+          )
+        else
+          Row(
+            children: [
+              Expanded(
+                child: _buildMenuCard(
+                  'breakfast',
+                  menuData?['breakfast'],
+                  isToday,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildMenuCard(
+                  'lunch',
+                  menuData?['lunch'],
+                  isToday,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildMenuCard(
+                  'dinner',
+                  menuData?['dinner'],
+                  isToday,
+                ),
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+
   Map<String, dynamic>? todayMenu;
   Map<String, dynamic>? tomorrowMenu;
   bool isLoading = true;
@@ -550,236 +631,193 @@ class _HomeContentState extends State<HomeContent> {
         cardColor = Colors.grey.shade50;
     }
 
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(15),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              cardColor,
-              cardColor.withOpacity(0.3),
-            ],
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Meal type icon with larger size
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
+    return InkWell(
+      borderRadius: BorderRadius.circular(15),
+      onTap: () {
+        if (mealData != null) {
+          showDialog(
+            context: context,
+            builder: (context) {
+              return AlertDialog(
+                title: Text(_capitalizeMealType(mealType)),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      mealData['item'] ?? 'Not Available',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 16),
                     ),
+                    const SizedBox(height: 8),
+                    Text(
+                        'Price: ৳ ${(mealData['price'] as num?)?.toStringAsFixed(0) ?? '0'}'),
                   ],
                 ),
-                child: Icon(
-                  mealIcon,
-                  size: 32,
-                  color: _getMealTypeColor(mealType),
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // Meal type title
-              Text(
-                _capitalizeMealType(mealType),
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: Color(0xFF002B5B),
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-
-              // Menu item and price
-              if (mealData != null) ...[
-                Text(
-                  mealData['item'] ?? 'Not Available',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade700,
-                    fontWeight: FontWeight.w500,
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Close'),
                   ),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 6),
+                ],
+              );
+            },
+          );
+        }
+      },
+      child: Card(
+        elevation: 4,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Container(
+          height: 160,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(15),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                cardColor,
+                cardColor.withOpacity(0.3),
+              ],
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Colors.green.shade100,
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  child: Text(
-                    '৳ ${(mealData['price'] as num?)?.toStringAsFixed(0) ?? '0'}',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green.shade700,
-                    ),
+                  child: Icon(
+                    mealIcon,
+                    size: 28,
+                    color: _getMealTypeColor(mealType),
                   ),
-                ),
-              ] else ...[
-                Text(
-                  'Menu not available',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                    fontStyle: FontStyle.italic,
-                  ),
-                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(12),
+                Text(
+                  _capitalizeMealType(mealType),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Color(0xFF002B5B),
                   ),
-                  child: Text(
-                    '৳ --',
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
+                ),
+                const SizedBox(height: 6),
+                if (mealData != null) ...[
+                  Text(
+                    mealData['item'] ?? 'Not Available',
                     style: TextStyle(
                       fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade600,
+                      color: Colors.grey.shade700,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    softWrap: false,
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '৳ ${(mealData['price'] as num?)?.toStringAsFixed(0) ?? '0'}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green.shade700,
+                      ),
                     ),
                   ),
-                ),
+                ] else ...[
+                  Text(
+                    'Menu not available',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                      fontStyle: FontStyle.italic,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '৳ --',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
-    );
-  }
-
-  Color _getMealTypeColor(String mealType) {
-    switch (mealType.toLowerCase()) {
-      case 'breakfast':
-        return Colors.orange.shade600;
-      case 'lunch':
-        return Colors.green.shade600;
-      case 'dinner':
-        return Colors.blue.shade600;
-      default:
-        return Colors.grey.shade600;
-    }
-  }
-
-  String _capitalizeMealType(String mealType) {
-    return mealType[0].toUpperCase() + mealType.substring(1).toLowerCase();
-  }
-
-  Widget _buildMenuSection(
-      String title, Map<String, dynamic>? menuData, bool isToday) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(
-              isToday ? Icons.today : Icons.event,
-              color: const Color(0xFF002B5B),
-              size: 24,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF002B5B),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        if (isLoading)
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.all(20.0),
-              child: CircularProgressIndicator(),
-            ),
-          )
-        else
-          Row(
-            children: [
-              Expanded(
-                child: _buildMenuCard(
-                  'breakfast',
-                  menuData?['breakfast'],
-                  isToday,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _buildMenuCard(
-                  'lunch',
-                  menuData?['lunch'],
-                  isToday,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _buildMenuCard(
-                  'dinner',
-                  menuData?['dinner'],
-                  isToday,
-                ),
-              ),
-            ],
-          ),
-      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: ListView(
-          children: [
-            const SizedBox(height: 24),
+    return Padding(
+      padding: const EdgeInsets.only(top: 16, left: 16, right: 16),
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          const SizedBox(height: 24),
 
-            // Today's Menu Section
-            _buildMenuSection("Today's Menu", todayMenu, true),
+          // Today's Menu Section
+          _buildMenuSection("Today's Menu", todayMenu, true),
 
-            const SizedBox(height: 32),
+          const SizedBox(height: 32),
 
-            // Tomorrow's Menu Section
-            _buildMenuSection("Tomorrow's Menu", tomorrowMenu, false),
+          // Tomorrow's Menu Section
+          _buildMenuSection("Tomorrow's Menu", tomorrowMenu, false),
 
-            const SizedBox(height: 24),
+          const SizedBox(height: 24),
 
-            // Bill Payment Card
-            Card(
-              color: Colors.red.shade50,
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-                child: Row(
+          // Bill Payment Card
+          Card(
+            color: Colors.red.shade50,
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+              child: Row(
                   children: [
                     const Icon(Icons.warning_amber_rounded,
                         color: Colors.red, size: 32),
@@ -826,7 +864,6 @@ class _HomeContentState extends State<HomeContent> {
             const SizedBox(height: 18),
           ],
         ),
-      ),
-    );
+      );
   }
 }

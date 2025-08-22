@@ -29,81 +29,111 @@ class _AdminAllStaffActivityLogScreenState
         children: [
           Padding(
             padding: const EdgeInsets.all(12.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Search by Name',
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12)),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                double maxWidth = constraints.maxWidth;
+                double minFieldWidth = 140;
+                double spacing = 8;
+                return Wrap(
+                  spacing: spacing,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: maxWidth > 700 ? 200 : minFieldWidth,
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: 'Search by Name',
+                          prefixIcon: const Icon(Icons.search, size: 18),
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 6),
+                          isDense: true,
+                        ),
+                        style: const TextStyle(fontSize: 13),
+                        onChanged: (val) => setState(
+                            () => _searchQuery = val.trim().toLowerCase()),
+                      ),
                     ),
-                    onChanged: (val) =>
-                        setState(() => _searchQuery = val.trim().toLowerCase()),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection('staff_state')
-                      .snapshots(),
-                  builder: (context, userSnap) {
-                    if (!userSnap.hasData) return const SizedBox();
-                    final users = userSnap.data!.docs;
-                    return DropdownButton<String?>(
-                      value: _selectedUser,
-                      hint: const Text('Filter by User'),
-                      items: [
-                        const DropdownMenuItem<String?>(
-                            value: null, child: Text('All Users')),
-                        ...users.map((doc) {
-                          final data = doc.data() as Map<String, dynamic>;
-                          final baNo = data['ba_no']?.toString() ?? '';
-                          final name = data['name']?.toString() ?? '';
-                          return DropdownMenuItem<String?>(
-                            value: baNo,
-                            child: Text('$name ($baNo)'),
+                    SizedBox(
+                      width: maxWidth > 700 ? 180 : minFieldWidth,
+                      child: StreamBuilder<QuerySnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('staff_state')
+                            .snapshots(),
+                        builder: (context, userSnap) {
+                          if (!userSnap.hasData) return const SizedBox();
+                          final users = userSnap.data!.docs;
+                          return DropdownButton<String?>(
+                            value: _selectedUser,
+                            hint: const Text('Filter by User'),
+                            isExpanded: true,
+                            items: [
+                              const DropdownMenuItem<String?>(
+                                  value: null, child: Text('All Users')),
+                              ...users.map((doc) {
+                                final data = doc.data() as Map<String, dynamic>;
+                                final baNo = data['ba_no']?.toString() ?? '';
+                                final name = data['name']?.toString() ?? '';
+                                return DropdownMenuItem<String?>(
+                                  value: baNo,
+                                  child: Text('$name ($baNo)'),
+                                );
+                              }).toList(),
+                            ],
+                            onChanged: (val) =>
+                                setState(() => _selectedUser = val),
                           );
-                        }).toList(),
-                      ],
-                      onChanged: (val) => setState(() => _selectedUser = val),
-                    );
-                  },
-                ),
-                const SizedBox(width: 12),
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.date_range),
-                  label: const Text('Filter Date'),
-                  onPressed: () async {
-                    final picked = await showDateRangePicker(
-                      context: context,
-                      firstDate: DateTime(2023, 1, 1),
-                      lastDate: DateTime.now().add(const Duration(days: 1)),
-                      initialDateRange: _startDate != null && _endDate != null
-                          ? DateTimeRange(start: _startDate!, end: _endDate!)
-                          : null,
-                    );
-                    if (picked != null) {
-                      setState(() {
-                        _startDate = picked.start;
-                        _endDate = picked.end;
-                      });
-                    }
-                  },
-                ),
-                if (_startDate != null && _endDate != null)
-                  IconButton(
-                    icon: const Icon(Icons.clear),
-                    tooltip: 'Clear Date Filter',
-                    onPressed: () {
-                      setState(() {
-                        _startDate = null;
-                        _endDate = null;
-                      });
-                    },
-                  ),
-              ],
+                        },
+                      ),
+                    ),
+                    SizedBox(
+                      width: maxWidth > 700 ? 150 : minFieldWidth,
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.date_range, size: 18),
+                        label: const Text('Filter Date',
+                            style: TextStyle(fontSize: 13)),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 8),
+                          minimumSize: const Size(0, 36),
+                        ),
+                        onPressed: () async {
+                          final picked = await showDateRangePicker(
+                            context: context,
+                            firstDate: DateTime(2023, 1, 1),
+                            lastDate:
+                                DateTime.now().add(const Duration(days: 1)),
+                            initialDateRange:
+                                _startDate != null && _endDate != null
+                                    ? DateTimeRange(
+                                        start: _startDate!, end: _endDate!)
+                                    : null,
+                          );
+                          if (picked != null) {
+                            setState(() {
+                              _startDate = picked.start;
+                              _endDate = picked.end;
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                    if (_startDate != null && _endDate != null)
+                      IconButton(
+                        icon: const Icon(Icons.clear),
+                        tooltip: 'Clear Date Filter',
+                        onPressed: () {
+                          setState(() {
+                            _startDate = null;
+                            _endDate = null;
+                          });
+                        },
+                      ),
+                  ],
+                );
+              },
             ),
           ),
           Expanded(
