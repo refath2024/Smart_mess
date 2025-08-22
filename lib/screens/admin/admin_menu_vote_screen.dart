@@ -33,6 +33,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
   bool _isLoading = true;
   String _currentUserName = "Admin User"; // This is just a fallback, will be updated from Firebase
   Map<String, dynamic>? _currentUserData;
+  int _totalVoteCount = 0; // Store total vote count
 
   final TextEditingController _searchController = TextEditingController();
   String selectedDay = 'Sunday';
@@ -43,7 +44,14 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
     _checkAuthentication();
    // _filteredMealData = Map.from(mealData); // Initialize filtered data
     _getData();
+    _debugFetchAllRecords(); // Debug: Check available data
     // _updateRemarks will be called in build method when context is available
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _checkAuthentication() async {
@@ -64,10 +72,10 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
 
       // Get current admin data
       final userData = await _adminAuthService.getCurrentAdminData();
-      if (userData != null) {
+      if (userData != null && mounted) {
         setState(() {
           _currentUserData = userData;
-          _currentUserName = userData['name'] ?? AppLocalizations.of(context)!.adminUser;
+          _currentUserName = userData['name'] ?? 'Admin User'; // Fallback string since context might not be available
           _isLoading = false;
         });
       } else {
@@ -92,46 +100,195 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
     }
   }
   Future<void> _getData() async {
-    // Simulate data fetching delay
-   final date = DateTime.now();
-   final weekIdentifier = "${date.year}-W${_getWeekNumber(date)}";
-   final data = await FirebaseFirestore.instance.collection('voting_records').where((doc) => doc['selectedDay'] == selectedDay && doc['weekIdentifier'] == weekIdentifier).get();
-    final totalvote = data.docs.length; // Assuming each document represents a vote
-    final vote = {
+    try {
+      if (!mounted) return;
       
-      'breakfast': {
-        'breakfast_set1': (data.docs.where((doc) => doc['selectedBreakfast'] == 'breakfast_set1').length/totalvote)/100,
-        'breakfast_set2': (data.docs.where((doc) => doc['selectedBreakfast'] == 'breakfast_set2').length/totalvote)/100,
-        'breakfast_set3': (data.docs.where((doc) => doc['selectedBreakfast'] == 'breakfast_set3').length/totalvote)/100,
-      },
-      'lunch': {
-        'lunch_set1': (data.docs.where((doc) => doc['selectedLunch'] == 'lunch_set1').length/totalvote)/100,
-        'lunch_set2': (data.docs.where((doc) => doc['selectedLunch'] == 'lunch_set2').length/totalvote)/100,
-        'lunch_set3': (data.docs.where((doc) => doc['selectedLunch'] == 'lunch_set3').length/totalvote)/100,
-      },
-      'dinner': {
-        'dinner_set1': (data.docs.where((doc) => doc['selectedDinner'] == 'dinner_set1').length/totalvote)/100,
-        'dinner_set2': (data.docs.where((doc) => doc['selectedDinner'] == 'dinner_set2').length/totalvote)/100,
-        'dinner_set3': (data.docs.where((doc) => doc['selectedDinner'] == 'dinner_set3').length/totalvote)/100,
-      },
-    };
-   
-    setState(() {
-      _isLoading = false;
-     mealData = vote;
-    });
+      setState(() {
+        _isLoading = true;
+      });
+
+      final date = DateTime.now();
+      final weekIdentifier = "${date.year}-W${_getWeekNumber(date)}";
+      
+      print('Fetching voting data for day: $selectedDay, week: $weekIdentifier');
+      
+      // Try primary query with week identifier
+      var data = await FirebaseFirestore.instance
+          .collection('voting_records')
+          .where('selectedDay', isEqualTo: selectedDay)
+          .where('weekIdentifier', isEqualTo: weekIdentifier)
+          .get();
+      
+      print('Found ${data.docs.length} voting records with week identifier');
+      
+      // If no data found with week identifier, try without it (fallback)
+      if (data.docs.isEmpty) {
+        print('No data found with week identifier, trying without it...');
+        data = await FirebaseFirestore.instance
+            .collection('voting_records')
+            .where('selectedDay', isEqualTo: selectedDay)
+            .get();
+        print('Found ${data.docs.length} voting records without week identifier');
+      }
+      
+      // Debug: Print document structure
+      if (data.docs.isNotEmpty) {
+        print('Sample document structure: ${data.docs.first.data()}');
+        print('Document fields: ${data.docs.first.data().keys.toList()}');
+      }
+      
+      final totalvote = data.docs.length;
+      
+      // Initialize vote counts
+      Map<String, int> breakfastCounts = {'breakfast_set1': 0, 'breakfast_set2': 0, 'breakfast_set3': 0};
+      Map<String, int> lunchCounts = {'lunch_set1': 0, 'lunch_set2': 0, 'lunch_set3': 0};
+      Map<String, int> dinnerCounts = {'dinner_set1': 0, 'dinner_set2': 0, 'dinner_set3': 0};
+      
+      // Count votes for each meal type and set
+      for (var doc in data.docs) {
+        final docData = doc.data();
+        
+        // Debug: Print each document's data
+        print('Document data: $docData');
+        
+        // Count breakfast votes - check multiple possible field names
+        final selectedBreakfast = docData['selectedBreakfast'] ?? 
+                                docData['breakfast'] ?? 
+                                docData['breakfast_choice'];
+        if (selectedBreakfast != null && breakfastCounts.containsKey(selectedBreakfast)) {
+          breakfastCounts[selectedBreakfast] = breakfastCounts[selectedBreakfast]! + 1;
+        } else if (selectedBreakfast != null) {
+          print('Unknown breakfast choice: $selectedBreakfast');
+        }
+        
+        // Count lunch votes - check multiple possible field names
+        final selectedLunch = docData['selectedLunch'] ?? 
+                             docData['lunch'] ?? 
+                             docData['lunch_choice'];
+        if (selectedLunch != null && lunchCounts.containsKey(selectedLunch)) {
+          lunchCounts[selectedLunch] = lunchCounts[selectedLunch]! + 1;
+        } else if (selectedLunch != null) {
+          print('Unknown lunch choice: $selectedLunch');
+        }
+        
+        // Count dinner votes - check multiple possible field names
+        final selectedDinner = docData['selectedDinner'] ?? 
+                              docData['dinner'] ?? 
+                              docData['dinner_choice'];
+        if (selectedDinner != null && dinnerCounts.containsKey(selectedDinner)) {
+          dinnerCounts[selectedDinner] = dinnerCounts[selectedDinner]! + 1;
+        } else if (selectedDinner != null) {
+          print('Unknown dinner choice: $selectedDinner');
+        }
+      }
+      
+      // Calculate percentages
+      Map<String, Map<String, double>> vote = {
+        'breakfast': {},
+        'lunch': {},
+        'dinner': {},
+      };
+      
+      if (totalvote > 0) {
+        // Calculate breakfast percentages
+        breakfastCounts.forEach((key, value) {
+          vote['breakfast']![key] = (value / totalvote) * 100;
+        });
+        
+        // Calculate lunch percentages
+        lunchCounts.forEach((key, value) {
+          vote['lunch']![key] = (value / totalvote) * 100;
+        });
+        
+        // Calculate dinner percentages
+        dinnerCounts.forEach((key, value) {
+          vote['dinner']![key] = (value / totalvote) * 100;
+        });
+      } else {
+        // No votes found, set all percentages to 0
+        vote = {
+          'breakfast': {'breakfast_set1': 0.0, 'breakfast_set2': 0.0, 'breakfast_set3': 0.0},
+          'lunch': {'lunch_set1': 0.0, 'lunch_set2': 0.0, 'lunch_set3': 0.0},
+          'dinner': {'dinner_set1': 0.0, 'dinner_set2': 0.0, 'dinner_set3': 0.0},
+        };
+      }
+      
+      print('Calculated vote percentages: $vote');
+      print('Total votes counted: Breakfast: ${breakfastCounts.values.reduce((a, b) => a + b)}, Lunch: ${lunchCounts.values.reduce((a, b) => a + b)}, Dinner: ${dinnerCounts.values.reduce((a, b) => a + b)}');
+      
+      // Check if widget is still mounted before calling setState
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          mealData = vote;
+          _totalVoteCount = totalvote; // Store the total vote count
+        });
+      }
+    } catch (e) {
+      print('Error fetching voting data: $e');
+      // Check if widget is still mounted before calling setState
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          // Set default empty data on error
+          mealData = {
+            'breakfast': {'breakfast_set1': 0.0, 'breakfast_set2': 0.0, 'breakfast_set3': 0.0},
+            'lunch': {'lunch_set1': 0.0, 'lunch_set2': 0.0, 'lunch_set3': 0.0},
+            'dinner': {'dinner_set1': 0.0, 'dinner_set2': 0.0, 'dinner_set3': 0.0},
+          };
+          _totalVoteCount = 0;
+        });
+      }
+    }
   }
+
+  // Debug method to fetch all voting records
+  Future<void> _debugFetchAllRecords() async {
+    try {
+      print('=== DEBUG: Fetching ALL voting records ===');
+      final allData = await FirebaseFirestore.instance
+          .collection('voting_records')
+          .get();
+      
+      print('Total voting records in database: ${allData.docs.length}');
+      
+      if (allData.docs.isNotEmpty) {
+        print('Available days in records:');
+        Set<String> availableDays = {};
+        Set<String> availableWeeks = {};
+        
+        for (var doc in allData.docs) {
+          final data = doc.data();
+          if (data['selectedDay'] != null) {
+            availableDays.add(data['selectedDay']);
+          }
+          if (data['weekIdentifier'] != null) {
+            availableWeeks.add(data['weekIdentifier']);
+          }
+        }
+        
+        print('Available days: ${availableDays.toList()}');
+        print('Available weeks: ${availableWeeks.toList()}');
+        print('Current query day: $selectedDay');
+        
+        final currentWeek = "${DateTime.now().year}-W${_getWeekNumber(DateTime.now())}";
+        print('Current week identifier: $currentWeek');
+      }
+    } catch (e) {
+      print('Error in debug fetch: $e');
+    }
+  }
+
   int _getWeekNumber(DateTime date) {
     final firstDayOfYear = DateTime(date.year, 1, 1);
     final daysSinceFirstDay = date.difference(firstDayOfYear).inDays;
     return ((daysSinceFirstDay + firstDayOfYear.weekday - 1) / 7).ceil();
   }
-  // Dummy data structure for meal votes
+  // Data structure for meal votes
   Map<String, Map<String, double>> mealData = {
-    'Breakfast': {'breakfast_set1': 0.0, 'breakfast_set2': 0.0, 'breakfast_set3': 0.0},
-      'Lunch': {'lunch_set1': 0.0, 'lunch_set2': 0.0, 'lunch_set3': 0.0},
-      'Dinner': {'dinner_set1': 0.0, 'dinner_set2': 0.0, 'dinner_set3': 0.0}
-    
+    'breakfast': {'breakfast_set1': 0.0, 'breakfast_set2': 0.0, 'breakfast_set3': 0.0},
+    'lunch': {'lunch_set1': 0.0, 'lunch_set2': 0.0, 'lunch_set3': 0.0},
+    'dinner': {'dinner_set1': 0.0, 'dinner_set2': 0.0, 'dinner_set3': 0.0}
   };
 
  
@@ -170,12 +327,12 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
 
   // Method to get localized meal type name
   String getLocalizedMealType(BuildContext context, String mealType) {
-    switch (mealType) {
-      case 'Breakfast':
+    switch (mealType.toLowerCase()) {
+      case 'breakfast':
         return AppLocalizations.of(context)!.breakfast;
-      case 'Lunch':
+      case 'lunch':
         return AppLocalizations.of(context)!.lunch;
-      case 'Dinner':
+      case 'dinner':
         return AppLocalizations.of(context)!.dinner;
       default:
         return mealType;
@@ -217,6 +374,9 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
 
   // Method to update dynamic remarks instantly
   void _updateRemarks(BuildContext context) {
+    // Check if widget is still mounted before calling setState
+    if (!mounted) return;
+    
     setState(() {
       dynamicRemarks = []; // Clear previous remarks
 
@@ -272,6 +432,18 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
     });
   }
 
+  // Helper method to check if there are any votes
+  bool _hasAnyVotes() {
+    for (var mealType in mealData.values) {
+      for (var percentage in mealType.values) {
+        if (percentage > 0) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   // Helper widget for sidebar tiles
   Widget _buildSidebarTile({
     required IconData icon,
@@ -322,14 +494,14 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
 
     return Column(
       children: sortedMeals.map((meal) {
-        final double percent = meal.value;
+        final double percent = meal.value / 100; // Convert percentage to 0-1 range for progress indicator
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 6.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '${getLocalizedFoodItem(context, meal.key)} (${(meal.value ).toStringAsFixed(1)}%)',
+                '${getLocalizedFoodItem(context, meal.key)} (${meal.value.toStringAsFixed(1)}%)',
                 style:
                     const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
               ),
@@ -337,7 +509,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: LinearProgressIndicator(
-                  value: percent,
+                  value: percent.clamp(0.0, 1.0), // Ensure value is between 0 and 1
                   minHeight: 12,
                   backgroundColor: Colors.grey.shade300,
                   valueColor: AlwaysStoppedAnimation<Color>(
@@ -736,6 +908,61 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                       ),
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  ElevatedButton.icon(
+                    onPressed: _isLoading ? null : _getData,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    icon: _isLoading 
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Icon(Icons.refresh, color: Colors.white, size: 20),
+                    label: Text(
+                      'Refresh',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton.icon(
+                    onPressed: _debugFetchAllRecords,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    icon: const Icon(Icons.bug_report, color: Colors.white, size: 20),
+                    label: Text(
+                      'Debug',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 20),
@@ -786,37 +1013,102 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
               const SizedBox(height: 20),
               // Meal Vote Statistics Section
                ...[
-                Text(AppLocalizations.of(context)!.mealVoteStatistics,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 10),
-                // Removed Expanded from here to allow natural scrolling
-                Column(
-                  // Use a Column instead of ListView directly if content is not too long, or a ListView with shrinkWrap: true
-                  children: mealData.entries.map((entry) {
-                    return Card(
-                      margin: const EdgeInsets.symmetric(vertical: 8),
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Highlighted meal time (Breakfast, Lunch, Dinner)
-                            Text(
-                              getLocalizedMealType(context, entry.key),
-                              style: const TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(height: 10),
-                            _buildMealVoteList(entry.value),
-                          ],
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(AppLocalizations.of(context)!.mealVoteStatistics,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    if (_totalVoteCount > 0)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade100,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          'Total Votes: $_totalVoteCount',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.blue.shade800,
+                          ),
                         ),
                       ),
-                    );
-                  }).toList(),
+                  ],
                 ),
+                const SizedBox(height: 10),
+                // Check if there's any voting data
+                _isLoading 
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(32.0),
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
+                  : _hasAnyVotes() 
+                    ? Column(
+                        children: mealData.entries.map((entry) {
+                          return Card(
+                            margin: const EdgeInsets.symmetric(vertical: 8),
+                            elevation: 4,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10)),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Highlighted meal time (Breakfast, Lunch, Dinner)
+                                  Text(
+                                    getLocalizedMealType(context, entry.key),
+                                    style: const TextStyle(
+                                        fontSize: 16, fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  _buildMealVoteList(entry.value),
+                                ],
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      )
+                    : Card(
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                        child: Padding(
+                          padding: const EdgeInsets.all(32),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.poll_outlined,
+                                size: 64,
+                                color: Colors.grey.shade400,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No voting data available for ${getLocalizedDay(context, selectedDay)}',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey.shade600,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Users haven\'t voted for meals on this day yet.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey.shade500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
               ] ,
               // --- Horizontal Line before Remarks ---
               const SizedBox(height: 20),
