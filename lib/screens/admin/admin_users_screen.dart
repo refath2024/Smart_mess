@@ -117,9 +117,10 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       for (var doc in staffSnapshot.docs) {
         final data = doc.data();
         final status = data['status'] ?? 'Active';
+        final rejected = data['rejected'] == true;
 
-        // Only include active/inactive users, exclude pending
-        if (status.toString().toLowerCase() != 'pending') {
+        // Only include active/inactive users, exclude pending and rejected
+        if (status.toString().toLowerCase() != 'pending' && !rejected) {
           allUsers.add({
             'id': doc.id,
             'ba_no': data['ba_no'] ?? '',
@@ -139,9 +140,10 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       for (var doc in diningSnapshot.docs) {
         final data = doc.data();
         final status = data['status'] ?? 'Active';
+        final rejected = data['rejected'] == true;
 
-        // Only include active/inactive users, exclude pending
-        if (status.toString().toLowerCase() != 'pending') {
+        // Only include active/inactive users, exclude pending and rejected
+        if (status.toString().toLowerCase() != 'pending' && !rejected) {
           allUsers.add({
             'id': doc.id,
             'ba_no': data['ba_no'] ?? '',
@@ -157,22 +159,25 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
         }
       }
 
-      // Calculate summary stats (excluding pending users)
+      // Calculate summary stats (excluding pending and rejected users)
       _totalMembers = allUsers.length;
       _totalDiningMembers = diningSnapshot.docs
           .where((doc) =>
               (doc.data()['status'] ?? 'Active').toString().toLowerCase() !=
-              'pending')
+                  'pending' &&
+              (doc.data()['rejected'] != true))
           .length;
       _totalActiveDiningMembers = diningSnapshot.docs
           .where((doc) =>
               (doc.data()['status'] ?? 'Active').toString().toLowerCase() ==
-              'active')
+                  'active' &&
+              (doc.data()['rejected'] != true))
           .length;
       _totalStaff = staffSnapshot.docs
           .where((doc) =>
               (doc.data()['status'] ?? 'Active').toString().toLowerCase() !=
-              'pending')
+                  'pending' &&
+              (doc.data()['rejected'] != true))
           .length;
 
       setState(() {
