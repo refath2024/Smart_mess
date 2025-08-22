@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../services/admin_auth_service.dart';
 
 class InsertTransactionScreen extends StatefulWidget {
   const InsertTransactionScreen({super.key});
@@ -10,6 +11,8 @@ class InsertTransactionScreen extends StatefulWidget {
 }
 
 class _InsertTransactionScreenState extends State<InsertTransactionScreen> {
+  final AdminAuthService _adminAuthService = AdminAuthService();
+  Map<String, dynamic>? _currentUserData;
   bool _isSubmitting = false;
   bool _isLoadingUsers = true;
   bool _isLoadingBill = false;
@@ -38,6 +41,16 @@ class _InsertTransactionScreenState extends State<InsertTransactionScreen> {
   void initState() {
     super.initState();
     _loadUsers();
+    _loadAdminData();
+  }
+
+  Future<void> _loadAdminData() async {
+    final data = await _adminAuthService.getCurrentAdminData();
+    if (mounted) {
+      setState(() {
+        _currentUserData = data;
+      });
+    }
   }
 
   @override
@@ -216,11 +229,21 @@ class _InsertTransactionScreenState extends State<InsertTransactionScreen> {
         return;
       }
     }
-
-    setState(() => _isSubmitting = true);
-
     try {
-      final baNo = _selectedUser!['ba_no']?.toString();
+      final baNoRaw = _selectedUser!['ba_no'];
+      if (baNoRaw == null) {
+        setState(() => _isSubmitting = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('User BA No is missing.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+      final String baNo = baNoRaw.toString();
       final timestamp = DateTime.now();
       final now = DateTime.now();
       final monthYear = "${_getMonthName(now.month)} ${now.year}";
@@ -309,6 +332,26 @@ class _InsertTransactionScreenState extends State<InsertTransactionScreen> {
             transactionKey: paymentData,
           }, SetOptions(merge: true));
 
+          // Log activity
+          final adminName = _currentUserData?['name'] ?? 'Admin';
+          final baNoAdmin = _currentUserData?['ba_no'] ?? '';
+          if (baNoAdmin.isNotEmpty) {
+            final userName = _selectedUser!['name'] ?? '';
+            final userBaNo = _selectedUser!['ba_no'] ?? '';
+            final paymentDetails =
+                'Amount: ৳${amount.toStringAsFixed(2)}, Method: $_selectedPaymentMethod, Rank: ${_selectedUser!['rank'] ?? ''}, BA No: $userBaNo, Name: $userName, Transaction ID: ${_controllers['transactionId']!.text}';
+            await FirebaseFirestore.instance
+                .collection('staff_activity_log')
+                .doc(baNoAdmin)
+                .collection('logs')
+                .add({
+              'timestamp': FieldValue.serverTimestamp(),
+              'actionType': 'Payment Entry Added',
+              'message':
+                  '$adminName added new payment entry for $userName. $paymentDetails',
+              'name': adminName,
+            });
+          }
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -336,6 +379,7 @@ class _InsertTransactionScreenState extends State<InsertTransactionScreen> {
         );
       }
     }
+// Removed duplicated and misplaced code after catch block
   }
 
   Widget _buildInputField(String label, TextEditingController controller,

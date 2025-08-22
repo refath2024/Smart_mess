@@ -121,6 +121,26 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
   }
 
   Future<void> _approvePayment(Map<String, dynamic> request) async {
+    // Log activity (admin as actor, like admin_shopping_history)
+    final adminName = _currentUserData?['name'] ?? 'Admin';
+    final baNoAdmin = _currentUserData?['ba_no'] ?? '';
+    final userBaNo = request['ba_no'] ?? '';
+    final userName = request['name'] ?? '';
+    final paymentDetails =
+        'Amount: ৳${request['amount']?.toStringAsFixed(2) ?? ''}, Method: ${request['payment_method'] ?? ''}, Rank: ${request['rank'] ?? ''}, BA No: $userBaNo, Name: $userName, Transaction ID: ${request['transaction_id'] ?? ''}';
+    if (baNoAdmin.isNotEmpty) {
+      await FirebaseFirestore.instance
+          .collection('staff_activity_log')
+          .doc(baNoAdmin)
+          .collection('logs')
+          .add({
+        'timestamp': FieldValue.serverTimestamp(),
+        'actionType': 'Payment Accepted',
+        'message':
+            '$adminName approved payment for "$userName" (BA: $userBaNo). $paymentDetails',
+        'name': adminName,
+      });
+    }
     try {
       final parts = request['id'].split('_');
       final baNo = parts[0];
@@ -187,6 +207,26 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
   }
 
   Future<void> _rejectPayment(Map<String, dynamic> request) async {
+    // Log activity (admin as actor, like admin_shopping_history)
+    final adminName = _currentUserData?['name'] ?? 'Admin';
+    final baNoAdmin = _currentUserData?['ba_no'] ?? '';
+    final userBaNo = request['ba_no'] ?? '';
+    final userName = request['name'] ?? '';
+    final paymentDetails =
+        'Amount: ৳${request['amount']?.toStringAsFixed(2) ?? ''}, Method: ${request['payment_method'] ?? ''}, Rank: ${request['rank'] ?? ''}, BA No: $userBaNo, Name: $userName, Transaction ID: ${request['transaction_id'] ?? ''}';
+    if (baNoAdmin.isNotEmpty) {
+      await FirebaseFirestore.instance
+          .collection('staff_activity_log')
+          .doc(baNoAdmin)
+          .collection('logs')
+          .add({
+        'timestamp': FieldValue.serverTimestamp(),
+        'actionType': 'Payment Rejected',
+        'message':
+            '$adminName rejected payment for "$userName" (BA: $userBaNo). $paymentDetails',
+        'name': adminName,
+      });
+    }
     try {
       final parts = request['id'].split('_');
       final baNo = parts[0];

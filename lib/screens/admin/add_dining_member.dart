@@ -271,6 +271,24 @@ class _AddDiningMemberFormState extends State<AddDiningMemberForm> {
         'firebase_auth_created': true, // Firebase Auth account created
       });
 
+      // Log activity (admin as actor, like add_shopping.dart)
+      final adminName = _currentAdminData?['name'] ?? 'Admin';
+      final baNo = _currentAdminData?['ba_no'] ?? '';
+      if (baNo.isNotEmpty) {
+        final details =
+            'BA No: ${_baNoController.text.trim()}, Rank: ${_rankController.text.trim()}, Name: ${_nameController.text.trim()}, Unit: ${_unitController.text.trim()}, Email: ${_emailController.text.trim()}, Mobile: ${_mobileController.text.trim()}';
+        await FirebaseFirestore.instance
+            .collection('staff_activity_log')
+            .doc(baNo)
+            .collection('logs')
+            .add({
+          'timestamp': FieldValue.serverTimestamp(),
+          'actionType': 'Add Dining Member',
+          'message': '$adminName added dining member. Details: $details',
+          'name': adminName,
+        });
+      }
+
       // Sign out the newly created dining member
       await FirebaseAuth.instance.signOut();
 

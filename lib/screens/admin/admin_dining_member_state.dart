@@ -262,6 +262,25 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
 
     if (confirm == true) {
       try {
+        // Track changes for activity log
+        final original = row['original'] ?? {};
+        final List<String> changes = [];
+        for (final field in [
+          'ba_no',
+          'rank',
+          'name',
+          'unit',
+          'mobile',
+          'email',
+          'status',
+        ]) {
+          final oldVal = original[field];
+          final newVal = row[field == 'ba_no' ? 'no' : field];
+          if (oldVal != null && oldVal.toString() != newVal.toString()) {
+            changes.add('$field: "$oldVal" → "$newVal"');
+          }
+        }
+
         // Update in Firestore
         if (row['id'] != null) {
           await FirebaseFirestore.instance
@@ -281,6 +300,23 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
         setState(() {
           row['isEditing'] = false;
         });
+
+        // Log activity (admin as actor, like admin_shopping_history)
+        final adminName = _currentUserData?['name'] ?? 'Admin';
+        final baNo = _currentUserData?['ba_no'] ?? '';
+        if (baNo.isNotEmpty && changes.isNotEmpty) {
+          await FirebaseFirestore.instance
+              .collection('staff_activity_log')
+              .doc(baNo)
+              .collection('logs')
+              .add({
+            'timestamp': FieldValue.serverTimestamp(),
+            'actionType': 'Update Dining Member',
+            'message':
+                '$adminName updated dining member "${row['name']}" (BA: ${row['no']}). Changes: ${changes.join(', ')}',
+            'name': adminName,
+          });
+        }
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

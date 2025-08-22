@@ -269,6 +269,26 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
 
     if (confirm == true) {
       try {
+        // Track changes for activity log
+        final original = row['original'] ?? {};
+        final List<String> changes = [];
+        for (final field in [
+          'ba_no',
+          'rank',
+          'name',
+          'unit',
+          'mobile',
+          'email',
+          'role',
+          'status',
+        ]) {
+          final oldVal = original[field];
+          final newVal = row[field];
+          if (oldVal != null && oldVal.toString() != newVal.toString()) {
+            changes.add('$field: "$oldVal" → "$newVal"');
+          }
+        }
+
         await FirebaseFirestore.instance
             .collection('staff_state')
             .doc(row['id'])
@@ -287,6 +307,23 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
         setState(() {
           row['isEditing'] = false;
         });
+
+        // Log activity (admin as actor, like admin_shopping_history)
+        final adminName = _currentUserData?['name'] ?? 'Admin';
+        final baNo = _currentUserData?['ba_no'] ?? '';
+        if (baNo.isNotEmpty && changes.isNotEmpty) {
+          await FirebaseFirestore.instance
+              .collection('staff_activity_log')
+              .doc(baNo)
+              .collection('logs')
+              .add({
+            'timestamp': FieldValue.serverTimestamp(),
+            'actionType': 'Update Staff Member',
+            'message':
+                '$adminName updated staff member "${row['name']}" (BA: ${row['ba_no']}). Changes: ${changes.join(', ')}',
+            'name': adminName,
+          });
+        }
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

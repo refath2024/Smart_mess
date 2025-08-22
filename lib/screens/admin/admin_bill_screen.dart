@@ -32,6 +32,44 @@ class AdminBillScreen extends StatefulWidget {
 }
 
 class _AdminBillScreenState extends State<AdminBillScreen> {
+  // --- Statistics helpers ---
+  double get totalCurrentBill =>
+      filteredBills.fold(0.0, (sum, b) => sum + (b['current_bill'] ?? 0.0));
+  double get totalPaid =>
+      filteredBills.fold(0.0, (sum, b) => sum + (b['paid_amount'] ?? 0.0));
+  double get totalDue =>
+      filteredBills.fold(0.0, (sum, b) => sum + (b['total_due'] ?? 0.0));
+  double get totalArrear =>
+      filteredBills.fold(0.0, (sum, b) => sum + (b['arrears'] ?? 0.0));
+
+  Widget _buildStatTile(
+      String label, double value, IconData icon, Color color) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        CircleAvatar(
+          backgroundColor: color.withOpacity(0.1),
+          child: Icon(icon, color: color, size: 28),
+          radius: 24,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '৳${value.toStringAsFixed(2)}',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: color,
+          ),
+        ),
+      ],
+    );
+  }
+
   // Filter state for Paid/Unpaid/All
   String _billStatusFilter = 'All';
   final AdminAuthService _adminAuthService = AdminAuthService();
@@ -196,7 +234,9 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
     });
 
     try {
+      print('Starting bill generation...');
       String monthYear = '$_selectedMonth $_selectedYear';
+      print('Target month/year: $monthYear');
 
       // Get all active users
       QuerySnapshot userSnapshot = await FirebaseFirestore.instance
@@ -204,6 +244,7 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
           .where('approved', isEqualTo: true)
           .where('status', isEqualTo: 'active')
           .get();
+      print('Fetched users: ${userSnapshot.docs.length}');
 
       Map<String, Map<String, dynamic>> newBills = {};
 
@@ -212,10 +253,12 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
           .collection('Bills')
           .doc(monthYear)
           .get();
+      print('Fetched existing bill doc: ${existingBillDoc.exists}');
 
       Map<String, dynamic> existingBills = {};
       if (existingBillDoc.exists) {
         existingBills = existingBillDoc.data() as Map<String, dynamic>;
+        print('Existing bills loaded: ${existingBills.length}');
       }
 
       // Get last month's data for arrears calculation
@@ -224,11 +267,13 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
       DateTime lastMonth = DateTime(currentDate.year, currentDate.month - 1);
       String lastMonthYear =
           '${DateFormat('MMMM').format(lastMonth)} ${lastMonth.year}';
+      print('Last month/year: $lastMonthYear');
 
       DocumentSnapshot lastMonthDoc = await FirebaseFirestore.instance
           .collection('Bills')
           .doc(lastMonthYear)
           .get();
+      print('Fetched last month bill doc: ${lastMonthDoc.exists}');
 
       Map<String, double> lastMonthArrears = {};
       if (lastMonthDoc.exists) {
@@ -248,6 +293,7 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
             lastMonthArrears[baNo] = remainingFromLastMonth;
           }
         }
+        print('Last month arrears calculated: ${lastMonthArrears.length}');
       }
 
       // Generate bill for each user
@@ -256,10 +302,14 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
         final userId = userDoc.id;
         final baNo = userData['ba_no']?.toString();
 
-        if (baNo == null) continue;
+        if (baNo == null) {
+          print('User $userId has no ba_no, skipping');
+          continue;
+        }
 
         // Calculate total payable using the same logic as user_messing_screen.dart
         double totalPayable = await _calculateUserTotalPayable(userId);
+        print('User $userId ($baNo) totalPayable: $totalPayable');
         double arrears = lastMonthArrears[baNo] ?? 0.0;
 
         // Check if this user already has a bill entry with paid amount
@@ -284,16 +334,47 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
           'bill_status': billStatus,
           'generated_at': FieldValue.serverTimestamp(),
         };
+        print('Bill for $baNo: $newBills[baNo]');
       }
 
+      print('Saving bills to Firestore: ${newBills.length} users');
       // Save to Firebase
       await FirebaseFirestore.instance
           .collection('Bills')
           .doc(monthYear)
           .set(newBills, SetOptions(merge: true));
 
+      print('Bills saved. Reloading bills...');
+
+      // Activity log for bill generation
+      try {
+        if (_currentUserData != null) {
+          final adminName = _currentUserData!['name'] ?? 'Admin';
+          final adminBaNo = _currentUserData!['ba_no'] ?? '';
+          final logMessage =
+              'Bills generated by $adminName (BA: $adminBaNo) for $monthYear. Total users: ${newBills.length}.';
+
+          await FirebaseFirestore.instance
+              .collection('staff_activity_log')
+              .doc(adminBaNo)
+              .collection('logs')
+              .add({
+            'timestamp': FieldValue.serverTimestamp(),
+            'admin_name': adminName,
+            'admin_ba_no': adminBaNo,
+            'action': 'Generated Bills',
+            'details': logMessage,
+            'month_year': monthYear,
+            'user_count': newBills.length,
+          });
+        }
+      } catch (e) {
+        print('Failed to log bill generation activity: $e');
+      }
+
       // Reload bills
       await _loadBills();
+      print('Bills reloaded.');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -304,8 +385,9 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
           ),
         );
       }
-    } catch (e) {
+    } catch (e, stack) {
       print('Error generating bills: $e');
+      print('Stack trace: $stack');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1076,153 +1158,187 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
           ),
           body: Padding(
             padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                // Month/Year selector and Generate button (responsive)
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  crossAxisAlignment: WrapCrossAlignment.center,
+            child: SingleChildScrollView(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    DropdownButton<String>(
-                      value: _selectedMonth,
-                      items: _months
-                          .map(
-                              (m) => DropdownMenuItem(value: m, child: Text(m)))
-                          .toList(),
-                      onChanged: (val) {
-                        if (val != null) {
-                          setState(() => _selectedMonth = val);
-                          _loadBills();
-                        }
-                      },
-                    ),
-                    DropdownButton<int>(
-                      value: _selectedYear,
-                      items: List.generate(5, (i) => DateTime.now().year - i)
-                          .map((y) => DropdownMenuItem(
-                              value: y, child: Text(y.toString())))
-                          .toList(),
-                      onChanged: (val) {
-                        if (val != null) {
-                          setState(() => _selectedYear = val);
-                          _loadBills();
-                        }
-                      },
-                    ),
-                    ElevatedButton(
-                      onPressed: _isGenerating ? null : _generateBills,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF002B5B),
+                    Card(
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      color: Colors.white,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      child: Padding(
                         padding: const EdgeInsets.symmetric(
-                            vertical: 14, horizontal: 20),
-                      ),
-                      child: _isGenerating
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor:
-                                    AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            )
-                          : const Text(
-                              'Generate Bills',
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600),
-                            ),
-                    ),
-                    ElevatedButton(
-                      onPressed: _recalculateAllBills,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF4CAF50),
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 14, horizontal: 20),
-                      ),
-                      child: const Text(
-                        'Recalculate',
-                        style: TextStyle(
-                            color: Colors.white, fontWeight: FontWeight.w600),
+                            vertical: 18, horizontal: 18),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _buildStatTile(
+                                'Total Current Bill',
+                                totalCurrentBill,
+                                Icons.receipt_long,
+                                Colors.blue),
+                            _buildStatTile('Total Paid', totalPaid,
+                                Icons.check_circle, Colors.green),
+                            _buildStatTile('Total Due', totalDue,
+                                Icons.warning_amber_rounded, Colors.orange),
+                            _buildStatTile('Total Arrear', totalArrear,
+                                Icons.account_balance_wallet, Colors.redAccent),
+                          ],
+                        ),
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                // Paid/Unpaid/All filter
-                Row(
-                  children: [
-                    const Text('Filter: ',
-                        style: TextStyle(fontWeight: FontWeight.w600)),
-                    ChoiceChip(
-                      label: const Text('All'),
-                      selected: _billStatusFilter == 'All',
-                      onSelected: (selected) {
-                        setState(() => _billStatusFilter = 'All');
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    ChoiceChip(
-                      label: const Text('Paid'),
-                      selected: _billStatusFilter == 'Paid',
-                      onSelected: (selected) {
-                        setState(() => _billStatusFilter = 'Paid');
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    ChoiceChip(
-                      label: const Text('Unpaid'),
-                      selected: _billStatusFilter == 'Unpaid',
-                      onSelected: (selected) {
-                        setState(() => _billStatusFilter = 'Unpaid');
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-
-                // Search bar and total bills (responsive)
-                Wrap(
-                  spacing: 12,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    SizedBox(
-                      width: 300,
-                      child: TextField(
-                        decoration: InputDecoration(
-                          hintText: 'Search',
-                          prefixIcon: const Icon(Icons.search, size: 20),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
+                    // Month/Year selector and Generate button (responsive)
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        DropdownButton<String>(
+                          value: _selectedMonth,
+                          items: _months
+                              .map((m) =>
+                                  DropdownMenuItem(value: m, child: Text(m)))
+                              .toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() => _selectedMonth = val);
+                              _loadBills();
+                            }
+                          },
+                        ),
+                        DropdownButton<int>(
+                          value: _selectedYear,
+                          items:
+                              List.generate(5, (i) => DateTime.now().year - i)
+                                  .map((y) => DropdownMenuItem(
+                                      value: y, child: Text(y.toString())))
+                                  .toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() => _selectedYear = val);
+                              _loadBills();
+                            }
+                          },
+                        ),
+                        ElevatedButton(
+                          onPressed: _isGenerating ? null : _generateBills,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF002B5B),
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 14, horizontal: 20),
                           ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 8,
+                          child: _isGenerating
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white),
+                                  ),
+                                )
+                              : const Text(
+                                  'Generate Bills',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600),
+                                ),
+                        ),
+                        ElevatedButton(
+                          onPressed: _recalculateAllBills,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF4CAF50),
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 14, horizontal: 20),
+                          ),
+                          child: const Text(
+                            'Recalculate',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600),
                           ),
                         ),
-                        onChanged: (val) {
-                          setState(() => searchTerm = val);
-                        },
-                      ),
+                      ],
                     ),
-                    Text(
-                      'Total Bills: ${filteredBills.length}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
+                    const SizedBox(height: 16),
 
-                // Table
-                Expanded(
-                  child: SafeArea(
-                    top: false,
-                    minimum: const EdgeInsets.only(bottom: 12),
-                    child: Container(
+                    // Paid/Unpaid/All filter
+                    Row(
+                      children: [
+                        const Text('Filter: ',
+                            style: TextStyle(fontWeight: FontWeight.w600)),
+                        ChoiceChip(
+                          label: const Text('All'),
+                          selected: _billStatusFilter == 'All',
+                          onSelected: (selected) {
+                            setState(() => _billStatusFilter = 'All');
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        ChoiceChip(
+                          label: const Text('Paid'),
+                          selected: _billStatusFilter == 'Paid',
+                          onSelected: (selected) {
+                            setState(() => _billStatusFilter = 'Paid');
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        ChoiceChip(
+                          label: const Text('Unpaid'),
+                          selected: _billStatusFilter == 'Unpaid',
+                          onSelected: (selected) {
+                            setState(() => _billStatusFilter = 'Unpaid');
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    // --- Statistics Card ---
+
+                    // Search bar and total bills (responsive)
+                    Wrap(
+                      spacing: 12,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 300,
+                          child: TextField(
+                            decoration: InputDecoration(
+                              hintText: 'Search',
+                              prefixIcon: const Icon(Icons.search, size: 20),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 8,
+                              ),
+                            ),
+                            onChanged: (val) {
+                              setState(() => searchTerm = val);
+                            },
+                          ),
+                        ),
+                        Text(
+                          'Total Bills: ${filteredBills.length}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Table area: fixed height for 5 rows, horizontally scrollable
+                    Container(
+                      constraints: BoxConstraints(
+                        minHeight: 56.0 + 48.0 * 5, // header + 5 rows
+                        maxHeight: 56.0 + 48.0 * 5,
+                      ),
                       decoration: BoxDecoration(
                         border: Border.all(color: Colors.grey.shade300),
                         borderRadius: BorderRadius.circular(8),
@@ -1632,15 +1748,13 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
                                           }),
                                         ),
                                       ),
-                              ), // closes child: of Expanded (table body)
-                            ], // closes children of Column (table)
-                          ), // closes Column (table)
-                        ), // closes SizedBox
-                      ), // closes SingleChildScrollView (horizontal)
-                    ), // closes Container
-                  ), // closes SafeArea
-                ), // closes Expanded (table)
-              ],
+                              )
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ]),
             ),
           ),
         );

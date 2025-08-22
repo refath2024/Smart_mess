@@ -219,6 +219,24 @@ class _AddNewUserFormState extends State<AddNewUserForm> {
         'created_by': _currentAdminData?['name'] ?? 'Admin',
       });
 
+      // Log activity (admin as actor, like add_shopping.dart)
+      final adminName = _currentAdminData?['name'] ?? 'Admin';
+      final baNo = _currentAdminData?['ba_no'] ?? '';
+      if (baNo.isNotEmpty) {
+        final details =
+            'BA No: ${_baNoController.text.trim()}, Rank: ${_rankController.text.trim()}, Name: ${_nameController.text.trim()}, Unit: ${_unitController.text.trim()}, Email: ${_emailController.text.trim()}, Mobile: ${_mobileController.text.trim()}, Role: $_selectedRole';
+        await FirebaseFirestore.instance
+            .collection('staff_activity_log')
+            .doc(baNo)
+            .collection('logs')
+            .add({
+          'timestamp': FieldValue.serverTimestamp(),
+          'actionType': 'Add Staff Member',
+          'message': '$adminName added staff member. Details: $details',
+          'name': adminName,
+        });
+      }
+
       // Success dialog
       await showDialog<void>(
         context: context,
