@@ -1566,7 +1566,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                mealType,
+                '$mealType (${menuSets.length}/3 options)',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Colors.green.shade700,
@@ -1596,42 +1596,112 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                 border: Border.all(color: Colors.grey.shade300),
               ),
               child: Center(
-                child: Text(
-                  'No options configured for $mealType',
-                  style: TextStyle(color: Colors.grey.shade600),
+                child: Column(
+                  children: [
+                    Icon(Icons.restaurant_menu, color: Colors.grey.shade400),
+                    const SizedBox(height: 8),
+                    Text(
+                      'No options configured for $mealType',
+                      style: TextStyle(color: Colors.grey.shade600),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Configure 3 menu options above',
+                      style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                    ),
+                  ],
                 ),
               ),
             )
           else
             Column(
-              children: menuSets.map((menuSet) => Card(
-                margin: const EdgeInsets.symmetric(vertical: 2),
-                child: ListTile(
-                  leading: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.asset(
-                      'assets/${menuSet['image']}',
-                      width: 50,
-                      height: 50,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          width: 50,
-                          height: 50,
-                          color: Colors.grey.shade300,
-                          child: Icon(Icons.image_not_supported, color: Colors.grey.shade600),
-                        );
-                      },
+              children: [
+                // Show status indicator
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: menuSets.length == 3 ? Colors.green.shade100 : Colors.orange.shade100,
+                    borderRadius: BorderRadius.circular(15),
+                    border: Border.all(
+                      color: menuSets.length == 3 ? Colors.green.shade300 : Colors.orange.shade300,
                     ),
                   ),
-                  title: Text(menuSet['title'] ?? ''),
-                  subtitle: Text(menuSet['price'] ?? ''),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () => _deleteMenuSet(menuSet['id']),
+                  child: Text(
+                    menuSets.length == 3 ? 'Complete (3/3 options)' : 'Incomplete (${menuSets.length}/3 options)',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: menuSets.length == 3 ? Colors.green.shade700 : Colors.orange.shade700,
+                    ),
                   ),
                 ),
-              )).toList(),
+                const SizedBox(height: 8),
+                // Show all menu options
+                ...menuSets.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final menuSet = entry.value;
+                  return Card(
+                    margin: const EdgeInsets.symmetric(vertical: 2),
+                    child: ListTile(
+                      leading: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: Colors.green.shade100,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.green.shade300),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${index + 1}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green.shade700,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.asset(
+                              'assets/${menuSet['image']}',
+                              width: 50,
+                              height: 50,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  width: 50,
+                                  height: 50,
+                                  color: Colors.grey.shade300,
+                                  child: Icon(Icons.image_not_supported, color: Colors.grey.shade600),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      title: Text(
+                        menuSet['title'] ?? 'Unknown Menu',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(
+                        menuSet['price'] ?? 'No price',
+                        style: const TextStyle(color: Colors.green, fontWeight: FontWeight.w600),
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () => _deleteMenuSet(menuSet['id']),
+                        tooltip: 'Delete this option',
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ],
             ),
         ],
       ),

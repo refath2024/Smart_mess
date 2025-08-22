@@ -159,18 +159,50 @@ class MenuSetService {
         final mealType = data['mealType']?.toString().toLowerCase() ?? '';
         
         if (allMenuSets.containsKey(day) && allMenuSets[day]!.containsKey(mealType)) {
-          allMenuSets[day]![mealType]!.add({
-            'id': doc.id,
-            'title': data['title'] ?? '',
-            'price': data['price'] ?? '',
-            'image': data['image'] ?? '',
-            'day': data['day'] ?? '',
-            'mealType': data['mealType'] ?? '',
-          });
+          // Check if document has 'options' field (new format with 3 options) or single meal (old format)
+          if (data['options'] != null) {
+            // New format: Extract all options from the options array
+            final options = List<Map<String, dynamic>>.from(data['options']);
+            for (int i = 0; i < options.length; i++) {
+              final option = options[i];
+              allMenuSets[day]![mealType]!.add({
+                'id': '${doc.id}_option_$i',
+                'title': option['title'] ?? '',
+                'price': option['price'] ?? '',
+                'image': option['image'] ?? '',
+                'day': data['day'] ?? '',
+                'mealType': data['mealType'] ?? '',
+                'isFromOptionsArray': true,
+                'originalDocId': doc.id,
+                'optionIndex': i,
+              });
+            }
+          } else {
+            // Old format: Single menu item per document
+            allMenuSets[day]![mealType]!.add({
+              'id': doc.id,
+              'title': data['title'] ?? '',
+              'price': data['price'] ?? '',
+              'image': data['image'] ?? '',
+              'day': data['day'] ?? '',
+              'mealType': data['mealType'] ?? '',
+              'isFromOptionsArray': false,
+            });
+          }
         }
       }
 
-      debugPrint("✅ Loaded all menu sets");
+      debugPrint("✅ Loaded all menu sets: ${querySnapshot.docs.length} documents");
+      // Debug: Print how many options each day/meal has
+      for (String day in days) {
+        for (String meal in ['breakfast', 'lunch', 'dinner']) {
+          final count = allMenuSets[day]![meal]!.length;
+          if (count > 0) {
+            debugPrint("   $day $meal: $count options");
+          }
+        }
+      }
+      
       return allMenuSets;
     } catch (e) {
       debugPrint("❌ Error loading all menu sets: $e");
@@ -178,17 +210,70 @@ class MenuSetService {
     }
   }
 
-  /// Delete a menu set
+  /// Delete a menu set or specific option from options array
   static Future<void> deleteMenuSet(String documentId) async {
     try {
-      await _firestore
-          .collection(collectionName)
-          .doc(documentId)
-          .update({'isActive': false, 'updatedAt': FieldValue.serverTimestamp()});
-
-      debugPrint("✅ Menu set deactivated successfully: $documentId");
+      // Check if this is an option from the new format (contains "_option_")
+      if (documentId.contains('_option_')) {
+        await _deleteSpecificOption(documentId);
+      } else {
+        // Old format: Delete entire document
+        await _firestore
+            .collection(collectionName)
+            .doc(documentId)
+            .update({'isActive': false, 'updatedAt': FieldValue.serverTimestamp()});
+        debugPrint("✅ Menu set deactivated successfully: $documentId");
+      }
     } catch (e) {
       debugPrint("❌ Error deactivating menu set: $e");
+      rethrow;
+    }
+  }
+
+  /// Delete a specific option from the options array
+  static Future<void> _deleteSpecificOption(String optionId) async {
+    try {
+      // Parse the option ID: "docId_option_index"
+      final parts = optionId.split('_option_');
+      if (parts.length != 2) {
+        throw Exception('Invalid option ID format: $optionId');
+      }
+      
+      final docId = parts[0];
+      final optionIndex = int.parse(parts[1]);
+      
+      // Get the document
+      final docSnapshot = await _firestore
+          .collection(collectionName)
+          .doc(docId)
+          .get();
+          
+      if (!docSnapshot.exists) {
+        throw Exception('Document not found: $docId');
+      }
+      
+      final data = docSnapshot.data()!;
+      final options = List<Map<String, dynamic>>.from(data['options'] ?? []);
+      
+      // Remove the specific option
+      if (optionIndex < options.length) {
+        options.removeAt(optionIndex);
+        
+        // Update the document with the modified options array
+        await _firestore
+            .collection(collectionName)
+            .doc(docId)
+            .update({
+          'options': options,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+        
+        debugPrint("✅ Option $optionIndex deleted from document $docId");
+      } else {
+        throw Exception('Option index $optionIndex out of range');
+      }
+    } catch (e) {
+      debugPrint("❌ Error deleting specific option: $e");
       rethrow;
     }
   }
