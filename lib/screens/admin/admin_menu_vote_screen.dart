@@ -295,45 +295,417 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
   // Debug method to fetch all voting records
   Future<void> _debugFetchAllRecords() async {
     try {
-      print('=== DEBUG: Fetching ALL voting records ===');
       final allData = await FirebaseFirestore.instance
           .collection('voting_records')
           .get();
       
-      print('Total voting records in database: ${allData.docs.length}');
-      
       if (allData.docs.isNotEmpty) {
-        print('Available days in records:');
         Set<String> availableDays = {};
         Set<String> availableWeeks = {};
+        Map<String, List<Map<String, dynamic>>> dayVotes = {};
         
         for (var doc in allData.docs) {
           final data = doc.data();
-          print('Record ID: ${doc.id}');
-          print('Record data: $data');
-          if (data['selectedDay'] != null) {
-            availableDays.add(data['selectedDay']);
+          final day = data['selectedDay'] as String?;
+          final userName = data['userName'] as String? ?? 'Unknown User';
+          final userEmail = data['userEmail'] as String? ?? 'No email';
+          final breakfast = data['selectedBreakfast'] as String? ?? 'No selection';
+          final lunch = data['selectedLunch'] as String? ?? 'No selection';
+          final dinner = data['selectedDinner'] as String? ?? 'No selection';
+          final weekId = data['weekIdentifier'] as String? ?? 'No week';
+          final submittedAt = data['submittedAt']?.toString() ?? 'No timestamp';
+          
+          if (day != null) {
+            availableDays.add(day);
+            if (!dayVotes.containsKey(day)) {
+              dayVotes[day] = [];
+            }
+            dayVotes[day]!.add({
+              'userName': userName,
+              'userEmail': userEmail,
+              'breakfast': breakfast,
+              'lunch': lunch,
+              'dinner': dinner,
+              'weekIdentifier': weekId,
+              'submittedAt': submittedAt,
+            });
           }
+          
           if (data['weekIdentifier'] != null) {
             availableWeeks.add(data['weekIdentifier']);
           }
         }
         
-        print('Available days: ${availableDays.toList()}');
-        print('Available weeks: ${availableWeeks.toList()}');
-        print('Current query day: $selectedDay');
+        // Show debug dialog with user voting details
+        _showDebugDialog(dayVotes, availableDays, availableWeeks, allData.docs.length);
         
-        final currentWeek = "${DateTime.now().year}-W${_getWeekNumber(DateTime.now())}";
-        print('Current week identifier: $currentWeek');
       } else {
-        print('No voting records found in database');
-        
-        // Let's add some test data
-        await _addTestVotingData();
+        // Show dialog saying no records found and add test data
+        _showNoRecordsDialog();
       }
     } catch (e) {
-      print('Error in debug fetch: $e');
+      _showErrorDialog('Error fetching debug data: $e');
     }
+  }
+
+  void _showDebugDialog(Map<String, List<Map<String, dynamic>>> dayVotes, 
+                       Set<String> availableDays, Set<String> availableWeeks, int totalRecords) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          insetPadding: const EdgeInsets.all(16),
+          child: Container(
+            width: double.maxFinite,
+            height: MediaQuery.of(context).size.height * 0.8,
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'User Voting Details',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1A4D8F),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info, color: Colors.blue.shade600),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Total Records: $totalRecords | Days: ${availableDays.join(", ")} | Weeks: ${availableWeeks.join(", ")}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.blue.shade800,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: DefaultTabController(
+                    length: availableDays.length,
+                    child: Column(
+                      children: [
+                        TabBar(
+                          isScrollable: true,
+                          labelColor: const Color(0xFF1A4D8F),
+                          unselectedLabelColor: Colors.grey,
+                          indicatorColor: const Color(0xFF1A4D8F),
+                          tabs: availableDays.map((day) => Tab(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(day),
+                                const SizedBox(width: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF1A4D8F),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Text(
+                                    '${dayVotes[day]?.length ?? 0}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )).toList(),
+                        ),
+                        const SizedBox(height: 16),
+                        Expanded(
+                          child: TabBarView(
+                            children: availableDays.map((day) => _buildDayVotesWidget(day, dayVotes[day] ?? [])).toList(),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDayVotesWidget(String day, List<Map<String, dynamic>> votes) {
+    if (votes.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.inbox_outlined, size: 64, color: Colors.grey.shade400),
+            const SizedBox(height: 16),
+            Text(
+              'No votes for $day',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Vote summary
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.green.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.green.shade200),
+            ),
+            child: Text(
+              '$day - ${votes.length} vote(s)',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.green.shade800,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Individual votes
+          ...votes.asMap().entries.map((entry) {
+            final index = entry.key;
+            final vote = entry.value;
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade300),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.shade200,
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: const Color(0xFF1A4D8F),
+                        radius: 16,
+                        child: Text(
+                          '${index + 1}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              vote['userName'],
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            Text(
+                              vote['userEmail'],
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildMealSelection('🥞', 'Breakfast', vote['breakfast']),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildMealSelection('🍛', 'Lunch', vote['lunch']),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildMealSelection('🍽️', 'Dinner', vote['dinner']),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade600),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Week: ${vote['weekIdentifier']}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMealSelection(String emoji, String mealType, String selection) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        children: [
+          Text(
+            emoji,
+            style: const TextStyle(fontSize: 20),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            mealType,
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            selection.replaceAll('_set', ' ').replaceAll('_', ' '),
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showNoRecordsDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.inbox_outlined, color: Colors.orange),
+              SizedBox(width: 8),
+              Text('No Records Found'),
+            ],
+          ),
+          content: const Text(
+            'No voting records found in the database. Would you like to add some test data for demonstration?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await _addTestVotingData();
+                // Show success message
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Test data added successfully!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1A4D8F),
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Add Test Data'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showErrorDialog(String errorMessage) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.error_outline, color: Colors.red),
+              SizedBox(width: 8),
+              Text('Error'),
+            ],
+          ),
+          content: Text(errorMessage),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   // Add test voting data for demonstration
