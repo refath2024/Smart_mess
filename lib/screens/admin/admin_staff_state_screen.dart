@@ -377,8 +377,7 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
                 style: const TextStyle(fontWeight: FontWeight.w500),
               ),
               Text(AppLocalizations.of(context)!.deleteRecordInfo),
-              Text(AppLocalizations.of(context)!.deleteAccountInfo),
-              Text(AppLocalizations.of(context)!.deleteFirebaseInfo),
+              // Only Firestore deletion, so remove misleading info
               const SizedBox(height: 8),
               Text(
                 AppLocalizations.of(context)!.actionCannotBeUndone,
@@ -420,10 +419,7 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
       );
 
       try {
-        // Step 1: Delete from staff_state collection
-        // The Cloud Function trigger will automatically handle:
-        // - Firebase Auth user deletion
-        // - User document deletion from 'users' collection
+        // Delete from Firestore only
         await FirebaseFirestore.instance
             .collection('staff_state')
             .doc(row['id'])
@@ -441,8 +437,7 @@ class _AdminStaffStateScreenState extends State<AdminStaffStateScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Staff member "${row['name']}" deleted successfully.\n'
-                'Firebase Auth account will be automatically removed.',
+                'Staff member "${row['name']}" deleted successfully.',
               ),
               duration: const Duration(seconds: 4),
               backgroundColor: Colors.green,

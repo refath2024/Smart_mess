@@ -255,24 +255,46 @@ class _AddIndlEntryScreenState extends State<AddIndlEntryScreen> {
       String dateStr, Map<String, dynamic> data) async {
     final List<Map<String, dynamic>> loadedData = [];
 
-    // Get all users to ensure we have complete data
+    // Get all users (active and deleted)
     final usersSnapshot = await FirebaseFirestore.instance
         .collection('user_requests')
         .where('approved', isEqualTo: true)
-        .where('status', isEqualTo: 'active')
+        .get();
+    final deletedUsersSnapshot = await FirebaseFirestore.instance
+        .collection('deleted_user_details')
         .get();
 
-    for (var userDoc in usersSnapshot.docs) {
-      final userData = userDoc.data();
+    // Build user map with deletion date for deleted users
+    Map<String, Map<String, dynamic>> userMap = {};
+    for (var doc in usersSnapshot.docs) {
+      final userData = doc.data();
       final baNo = userData['ba_no']?.toString() ?? '';
+      if (baNo.isNotEmpty) {
+        userMap[baNo] = {...userData, 'active': true};
+      }
+    }
+    for (var doc in deletedUsersSnapshot.docs) {
+      final userData = doc.data();
+      final baNo = userData['ba_no']?.toString() ?? doc.id;
+      if (baNo.isNotEmpty && !userMap.containsKey(baNo)) {
+        userMap[baNo] = {...userData, 'active': false};
+      }
+    }
 
-      if (baNo.isEmpty) continue;
+    for (var baNo in userMap.keys) {
+      final userData = userMap[baNo]!;
+      // If deleted, only include if selected date is before or on deletion date
+      if (userData['active'] == false && userData['deleted_at'] != null) {
+        Timestamp deletedAt = userData['deleted_at'];
+        DateTime deletedDate = deletedAt.toDate();
+        if (_selectedDate!.isAfter(deletedDate)) continue;
+      }
 
       // Get messing data for this user (if exists)
       final userMessingData = data[baNo] as Map<String, dynamic>? ?? {};
 
       final record = {
-        'id': userDoc.id,
+        'id': userData['id'] ?? baNo,
         'ba_number': baNo,
         'name': userData['name'] ?? '',
         'rank': userData['rank'] ?? '',

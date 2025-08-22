@@ -171,11 +171,16 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
       if (billDoc.exists) {
         Map<String, dynamic> data = billDoc.data() as Map<String, dynamic>;
 
-        // Get all user data to fetch names and ranks
+        // Get all user data to fetch names and ranks (active users)
         QuerySnapshot userSnapshot = await FirebaseFirestore.instance
             .collection('user_requests')
             .where('approved', isEqualTo: true)
             .where('status', isEqualTo: 'active')
+            .get();
+
+        // Get all deleted user details
+        QuerySnapshot deletedUserSnapshot = await FirebaseFirestore.instance
+            .collection('deleted_user_details')
             .get();
 
         Map<String, Map<String, dynamic>> userDataMap = {};
@@ -183,6 +188,13 @@ class _AdminBillScreenState extends State<AdminBillScreen> {
           final userData = doc.data() as Map<String, dynamic>;
           final baNo = userData['ba_no']?.toString();
           if (baNo != null) {
+            userDataMap[baNo] = userData;
+          }
+        }
+        for (var doc in deletedUserSnapshot.docs) {
+          final userData = doc.data() as Map<String, dynamic>;
+          final baNo = userData['ba_no']?.toString() ?? doc.id;
+          if (!userDataMap.containsKey(baNo)) {
             userDataMap[baNo] = userData;
           }
         }

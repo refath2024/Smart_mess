@@ -82,6 +82,31 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
       final snapshot =
           await FirebaseFirestore.instance.collection('payment_history').get();
 
+      // Fetch user details from both user_requests and deleted_user_details
+      final userSnapshot = await FirebaseFirestore.instance
+          .collection('user_requests')
+          .where('approved', isEqualTo: true)
+          .get();
+      final deletedUserSnapshot = await FirebaseFirestore.instance
+          .collection('deleted_user_details')
+          .get();
+
+      Map<String, Map<String, dynamic>> userDataMap = {};
+      for (var doc in userSnapshot.docs) {
+        final userData = doc.data();
+        final baNo = userData['ba_no']?.toString();
+        if (baNo != null) {
+          userDataMap[baNo] = userData;
+        }
+      }
+      for (var doc in deletedUserSnapshot.docs) {
+        final userData = doc.data();
+        final baNo = userData['ba_no']?.toString() ?? doc.id;
+        if (!userDataMap.containsKey(baNo)) {
+          userDataMap[baNo] = userData;
+        }
+      }
+
       List<Map<String, dynamic>> requests = [];
 
       for (var doc in snapshot.docs) {
@@ -91,13 +116,15 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
         for (String key in data.keys) {
           if (key.contains('_transaction_')) {
             final transactionData = data[key] as Map<String, dynamic>;
+            final baNo = transactionData['ba_no']?.toString();
+            final userData = baNo != null ? userDataMap[baNo] : null;
             requests.add({
               'id': '${doc.id}_$key',
-              'ba_no': transactionData['ba_no'],
+              'ba_no': baNo,
               'amount': transactionData['amount'],
               'payment_method': transactionData['payment_method'],
-              'rank': transactionData['rank'],
-              'name': transactionData['name'],
+              'rank': userData?['rank'] ?? transactionData['rank'] ?? 'Unknown',
+              'name': userData?['name'] ?? transactionData['name'] ?? 'Unknown',
               'status': transactionData['status'],
               'request_time': transactionData['request_time'],
               'phone_number': transactionData['phone_number'] ?? '',

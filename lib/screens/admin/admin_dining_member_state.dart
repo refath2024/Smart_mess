@@ -182,13 +182,39 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
   }
 
   Future<void> _deleteStaff(Map<String, dynamic> row) async {
+    // Debug: Print ba_no before attempting to delete from user_auto_loop
+    if (row['ba_no'] != null) {
+      try {
+        print(
+            'Attempting to delete user_auto_loop document with ba_no: \'${row['ba_no']}\'');
+        await FirebaseFirestore.instance
+            .collection('user_auto_loop')
+            .doc(row['ba_no'])
+            .delete();
+        print('Successfully called delete on user_auto_loop/${row['ba_no']}');
+      } catch (e) {
+        print('Error deleting user_auto_loop/${row['ba_no']}: $e');
+      }
+    }
     final bool? confirm = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text(AppLocalizations.of(context)!.confirmDelete),
-          content: Text(
-              '${AppLocalizations.of(context)!.areYouSureYouWantToDelete} "${row['name']}"?'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                  '${AppLocalizations.of(context)!.areYouSureYouWantToDelete} "${row['name']}"?'),
+              const SizedBox(height: 12),
+              Text(
+                'Warning: This will delete any auto loop and future data for this user. Past records will remain for reference.',
+                style:
+                    TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -206,7 +232,18 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
 
     if (confirm == true) {
       try {
-        // Delete from Firestore
+        // Save user details to 'deleted_user_details' before deletion
+        if (row['ba_no'] != null) {
+          await FirebaseFirestore.instance
+              .collection('deleted_user_details')
+              .doc(row['ba_no'])
+              .set({
+            ...row,
+            'deleted_at': FieldValue.serverTimestamp(),
+          });
+        }
+
+        // Delete from user_requests
         if (row['id'] != null) {
           await FirebaseFirestore.instance
               .collection('user_requests')
@@ -214,9 +251,34 @@ class _DiningMemberStatePageState extends State<DiningMemberStatePage> {
               .delete();
         }
 
+        // Delete from user_auto_loop where ba_no matches (document ID is ba_no)
+        if (row['ba_no'] != null) {
+          try {
+            print(
+                'Attempting to delete user_auto_loop document with ba_no: \'${row['ba_no']}\'');
+            await FirebaseFirestore.instance
+                .collection('user_auto_loop')
+                .doc(row['ba_no'])
+                .delete();
+            print(
+                'Successfully called delete on user_auto_loop/${row['ba_no']}');
+          } catch (e) {
+            print('Error deleting user_auto_loop/${row['ba_no']}: $e');
+          }
+
+          // Delete from ba_no_wise where ba_no matches (assuming doc id is ba_no)
+          final baNoWiseDoc = FirebaseFirestore.instance
+              .collection('ba_no_wise')
+              .doc(row['ba_no']);
+          final baNoWiseSnapshot = await baNoWiseDoc.get();
+          if (baNoWiseSnapshot.exists) {
+            await baNoWiseDoc.delete();
+          }
+        }
+
         setState(() {
           members.remove(row);
-          _applyFilters(); // Use the new filter method
+          _applyFilters();
         });
 
         if (mounted) {

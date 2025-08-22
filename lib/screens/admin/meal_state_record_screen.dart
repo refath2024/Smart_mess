@@ -96,6 +96,31 @@ class _MealStateRecordScreenState extends State<MealStateRecordScreen> {
     try {
       allRecords.clear();
 
+      // Fetch user details from both user_requests and deleted_user_details
+      final userSnapshot = await FirebaseFirestore.instance
+          .collection('user_requests')
+          .where('approved', isEqualTo: true)
+          .get();
+      final deletedUserSnapshot = await FirebaseFirestore.instance
+          .collection('deleted_user_details')
+          .get();
+
+      Map<String, Map<String, dynamic>> userDataMap = {};
+      for (var doc in userSnapshot.docs) {
+        final userData = doc.data();
+        final baNo = userData['ba_no']?.toString();
+        if (baNo != null) {
+          userDataMap[baNo] = userData;
+        }
+      }
+      for (var doc in deletedUserSnapshot.docs) {
+        final userData = doc.data();
+        final baNo = userData['ba_no']?.toString() ?? doc.id;
+        if (!userDataMap.containsKey(baNo)) {
+          userDataMap[baNo] = userData;
+        }
+      }
+
       // Get all meal state documents without ordering (to avoid index requirement)
       final querySnapshot =
           await FirebaseFirestore.instance.collection('user_meal_state').get();
@@ -106,6 +131,7 @@ class _MealStateRecordScreenState extends State<MealStateRecordScreen> {
 
         for (String baNo in data.keys) {
           final userData = data[baNo] as Map<String, dynamic>;
+          final userDetails = userDataMap[baNo];
 
           // Format disposal information
           String disposalInfo = 'N/A';
@@ -137,8 +163,8 @@ class _MealStateRecordScreenState extends State<MealStateRecordScreen> {
 
           allRecords.add({
             'BA No': baNo,
-            'Rk': userData['rank'] ?? '',
-            'Name': userData['name'] ?? '',
+            'Rk': userDetails?['rank'] ?? userData['rank'] ?? '',
+            'Name': userDetails?['name'] ?? userData['name'] ?? '',
             'Date': dateStr,
             'Breakfast': userData['breakfast'] == true ? 'Yes' : 'No',
             'Lunch': userData['lunch'] == true ? 'Yes' : 'No',
