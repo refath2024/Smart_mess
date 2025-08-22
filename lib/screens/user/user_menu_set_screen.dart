@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../services/menu_set_service.dart';
 
 class MenuSetScreen extends StatefulWidget {
   const MenuSetScreen({super.key});
@@ -25,6 +26,51 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
   String? _selectedLunch;
   String? _selectedDinner;
   final TextEditingController _remarksController = TextEditingController();
+
+  // Menu sets data
+  Map<String, List<Map<String, dynamic>>> _currentDayMenuSets = {
+    'breakfast': [],
+    'lunch': [],
+    'dinner': [],
+  };
+  bool _isLoadingMenuSets = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMenuSetsForDay();
+  }
+
+  /// Load menu sets for the currently selected day
+  Future<void> _loadMenuSetsForDay() async {
+    setState(() {
+      _isLoadingMenuSets = true;
+    });
+
+    try {
+      final menuSets = await MenuSetService.getMenuSetsForDay(_selectedDay);
+      setState(() {
+        _currentDayMenuSets = menuSets;
+        _isLoadingMenuSets = false;
+        
+        // Reset selections when day changes
+        _selectedBreakfast = null;
+        _selectedLunch = null;
+        _selectedDinner = null;
+      });
+      debugPrint("✅ Menu sets loaded for $_selectedDay");
+    } catch (e) {
+      debugPrint("❌ Error loading menu sets: $e");
+      setState(() {
+        _isLoadingMenuSets = false;
+        _currentDayMenuSets = {
+          'breakfast': [],
+          'lunch': [],
+          'dinner': [],
+        };
+      });
+    }
+  }
 
   void _showHelpDialog() {
     showDialog(
@@ -286,71 +332,51 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
     required String? selectedValue,
     required Function(String?) onChanged,
   }) {
-    List<Map<String, String>> mealSets = [];
+    // If loading, show loading indicator
+    if (_isLoadingMenuSets) {
+      return Container(
+        height: 120,
+        child: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
 
-    if (mealType == "breakfast") {
-      mealSets = [
-        {
-          'id': '${mealType}_set1',
-          'title': 'Bhuna Khichuri',
-          'subtitle': '৳ 40',
-          'image': '1.png',
-        },
-        {
-          'id': '${mealType}_set2',
-          'title': 'Luchi with Alur dom',
-          'subtitle': '৳ 50',
-          'image': '2.png',
-        },
-        {
-          'id': '${mealType}_set3',
-          'title': 'Luchi with curry',
-          'subtitle': '৳ 70',
-          'image': '3.png',
-        },
-      ];
-    } else if (mealType == "lunch") {
-      mealSets = [
-        {
-          'id': '${mealType}_set1',
-          'title': 'Bhuna Khichuri',
-          'subtitle': '৳ 60',
-          'image': '1.png',
-        },
-        {
-          'id': '${mealType}_set2',
-          'title': 'Luchi with Alur dom',
-          'subtitle': '৳ 70',
-          'image': '2.png',
-        },
-        {
-          'id': '${mealType}_set3',
-          'title': 'Luchi with curry',
-          'subtitle': '৳ 55',
-          'image': '3.png',
-        },
-      ];
-    } else if (mealType == "dinner") {
-      mealSets = [
-        {
-          'id': '${mealType}_set1',
-          'title': 'Bhuna Khichuri',
-          'subtitle': '৳ 50',
-          'image': '1.png',
-        },
-        {
-          'id': '${mealType}_set2',
-          'title': 'Luchi with Alur dom',
-          'subtitle': '৳ 45',
-          'image': '2.png',
-        },
-        {
-          'id': '${mealType}_set3',
-          'title': 'Luchi with curry',
-          'subtitle': '৳ 75',
-          'image': '3.png',
-        },
-      ];
+    // Get menu sets for this meal type
+    final List<Map<String, dynamic>> mealSets = _currentDayMenuSets[mealType] ?? [];
+
+    // If no menu sets available, show message
+    if (mealSets.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Column(
+          children: [
+            Icon(Icons.restaurant_menu, size: 40, color: Colors.grey.shade400),
+            const SizedBox(height: 8),
+            Text(
+              'No ${mealType} options available',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Admin needs to configure options for this day',
+              style: TextStyle(
+                color: Colors.grey.shade500,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
     return Row(
@@ -379,6 +405,18 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
                       height: 100,
                       width: double.infinity,
                       fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          height: 100,
+                          width: double.infinity,
+                          color: Colors.grey.shade300,
+                          child: Icon(
+                            Icons.image_not_supported,
+                            color: Colors.grey.shade600,
+                            size: 40,
+                          ),
+                        );
+                      },
                     ),
                   ),
                   Padding(
@@ -387,7 +425,7 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          meal['title']!,
+                          meal['title'] ?? 'Unknown',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
@@ -396,7 +434,7 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          meal['subtitle']!,
+                          meal['price'] ?? '',
                           style: const TextStyle(
                             color: Colors.green,
                             fontWeight: FontWeight.w600,
@@ -456,6 +494,7 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
                 onChanged: (value) {
                   if (value != null) {
                     setState(() => _selectedDay = value);
+                    _loadMenuSetsForDay(); // Load menu sets for the new day
                   }
                 },
               ),

@@ -19,6 +19,7 @@ import 'admin_bill_screen.dart';
 import 'add_menu_set.dart';
 import 'admin_login_screen.dart';
 import '../../services/admin_auth_service.dart';
+import '../../services/menu_set_service.dart';
 
 class MenuVoteScreen extends StatefulWidget {
   const MenuVoteScreen({super.key});
@@ -43,6 +44,17 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
   bool _isLoadingConfig = false;
   String _configSelectedDay = 'Sunday';
 
+  // Menu Set configuration state variables
+  Map<String, Map<String, List<Map<String, dynamic>>>> _menuSets = {};
+  bool _isLoadingMenuSets = false;
+  String _menuSetSelectedDay = 'Sunday';
+  String _selectedMealType = 'breakfast';
+  
+  // Controllers for 3 options
+  final List<TextEditingController> _menuTitleControllers = List.generate(3, (index) => TextEditingController());
+  final List<TextEditingController> _menuPriceControllers = List.generate(3, (index) => TextEditingController());
+  final List<TextEditingController> _menuImageControllers = List.generate(3, (index) => TextEditingController());
+
   @override
   void initState() {
     super.initState();
@@ -51,12 +63,23 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
     _getData();
     _debugFetchAllRecords(); // Debug: Check available data
     _loadMenuConfigurations(); // Load menu configurations
+    _loadMenuSets(); // Load menu sets
     // _updateRemarks will be called in build method when context is available
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    // Dispose menu set controllers
+    for (var controller in _menuTitleControllers) {
+      controller.dispose();
+    }
+    for (var controller in _menuPriceControllers) {
+      controller.dispose();
+    }
+    for (var controller in _menuImageControllers) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -1115,6 +1138,187 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
     }
   }
 
+  // Load menu sets from Firestore
+  Future<void> _loadMenuSets() async {
+    setState(() {
+      _isLoadingMenuSets = true;
+    });
+
+    try {
+      final menuSets = await MenuSetService.getAllMenuSets();
+      setState(() {
+        _menuSets = menuSets;
+        _isLoadingMenuSets = false;
+      });
+      debugPrint("✅ Menu sets loaded successfully");
+    } catch (e) {
+      debugPrint("❌ Error loading menu sets: $e");
+      setState(() {
+        _isLoadingMenuSets = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading menu sets: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // Save menu set to Firestore
+  Future<void> _saveMenuSet() async {
+    // Validate that all 3 options are filled
+    List<Map<String, String>> options = [];
+    List<String> missingFields = [];
+
+    for (int i = 0; i < 3; i++) {
+      final title = _menuTitleControllers[i].text.trim();
+      final price = _menuPriceControllers[i].text.trim();
+      final image = _menuImageControllers[i].text.trim();
+
+      if (title.isEmpty || price.isEmpty || image.isEmpty) {
+        missingFields.add('Option ${i + 1}');
+      } else {
+        options.add({
+          'title': title,
+          'price': price,
+          'image': image,
+        });
+      }
+    }
+
+    if (options.length != 3) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please fill all fields for all 3 options. Missing: ${missingFields.join(", ")}'),
+          backgroundColor: Colors.orange,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
+    try {
+      await MenuSetService.saveMenuSetOptions(
+        day: _menuSetSelectedDay,
+        mealType: _selectedMealType,
+        options: options,
+      );
+
+      // Clear form
+      for (var controller in _menuTitleControllers) {
+        controller.clear();
+      }
+      for (var controller in _menuPriceControllers) {
+        controller.clear();
+      }
+      for (var controller in _menuImageControllers) {
+        controller.clear();
+      }
+
+      // Reload menu sets
+      await _loadMenuSets();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('3 menu options saved successfully for $_menuSetSelectedDay $_selectedMealType'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint("❌ Error saving menu set: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving menu set: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // Delete menu set
+  Future<void> _deleteMenuSet(String documentId) async {
+    try {
+      await MenuSetService.deleteMenuSet(documentId);
+      await _loadMenuSets();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Menu set deleted successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint("❌ Error deleting menu set: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error deleting menu set: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // Load existing menu options for editing
+  Future<void> _loadExistingMenuOptions(String day, String mealType) async {
+    try {
+      final menuSets = await MenuSetService.getMenuSetsForDay(day);
+      final options = menuSets[mealType.toLowerCase()] ?? [];
+      
+      // Clear existing form data
+      for (var controller in _menuTitleControllers) {
+        controller.clear();
+      }
+      for (var controller in _menuPriceControllers) {
+        controller.clear();
+      }
+      for (var controller in _menuImageControllers) {
+        controller.clear();
+      }
+      
+      // Load existing data into form (up to 3 options)
+      for (int i = 0; i < options.length && i < 3; i++) {
+        _menuTitleControllers[i].text = options[i]['title'] ?? '';
+        _menuPriceControllers[i].text = options[i]['price'] ?? '';
+        _menuImageControllers[i].text = options[i]['image'] ?? '';
+      }
+      
+      setState(() {
+        _menuSetSelectedDay = day;
+        _selectedMealType = mealType.toLowerCase();
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Loaded existing options for $day $mealType'),
+            backgroundColor: Colors.blue,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint("❌ Error loading existing menu options: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading existing options: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   // Build menu configuration section
   Widget _buildMenuConfigurationSection() {
     return Container(
@@ -1350,6 +1554,420 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  // Build menu set configuration section
+  Widget _buildMenuSetConfigurationSection() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.only(top: 20),
+      decoration: BoxDecoration(
+        color: Colors.green.shade50,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.green.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.restaurant, color: Colors.green.shade700, size: 24),
+              const SizedBox(width: 10),
+              Text(
+                'Menu Set Configuration',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green.shade800,
+                ),
+              ),
+              const Spacer(),
+              ElevatedButton.icon(
+                onPressed: _loadMenuSets,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green.shade600,
+                  foregroundColor: Colors.white,
+                ),
+                icon: const Icon(Icons.refresh, size: 18),
+                label: const Text('Refresh'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 15),
+          Text(
+            'Configure exactly 3 menu options for each meal type (breakfast, lunch, dinner) for each day. Users will select from these 3 options when voting.',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.green.shade700,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+          const SizedBox(height: 20),
+          
+          // Add new menu set form
+          Container(
+            padding: const EdgeInsets.all(15),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.green.shade300),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Configure 3 Menu Options',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green.shade800,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Add exactly 3 menu options for users to choose from',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.green.shade600,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+                const SizedBox(height: 15),
+                
+                // Day and meal type selection
+                Row(
+                  children: [
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        value: _menuSetSelectedDay,
+                        decoration: const InputDecoration(
+                          labelText: 'Day',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: days.map((String day) {
+                          return DropdownMenuItem<String>(
+                            value: day,
+                            child: Text(day),
+                          );
+                        }).toList(),
+                        onChanged: (String? newValue) {
+                          if (newValue != null) {
+                            setState(() {
+                              _menuSetSelectedDay = newValue;
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 15),
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        value: _selectedMealType,
+                        decoration: const InputDecoration(
+                          labelText: 'Meal Type',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 'breakfast', child: Text('Breakfast')),
+                          DropdownMenuItem(value: 'lunch', child: Text('Lunch')),
+                          DropdownMenuItem(value: 'dinner', child: Text('Dinner')),
+                        ],
+                        onChanged: (String? newValue) {
+                          if (newValue != null) {
+                            setState(() {
+                              _selectedMealType = newValue;
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 15),
+                
+                // Menu details - 3 required options
+                Text(
+                  'Configure 3 menu options (all required):',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.green.shade700,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                
+                ...List.generate(3, (index) => Container(
+                  margin: const EdgeInsets.only(bottom: 15),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.green.shade200),
+                    borderRadius: BorderRadius.circular(8),
+                    color: Colors.green.shade50,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            'Option ${index + 1}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green.shade800,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade100,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              'Required',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.red.shade700,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _menuTitleControllers[index],
+                        decoration: InputDecoration(
+                          labelText: 'Menu Title *',
+                          hintText: 'e.g., Bhuna Khichuri',
+                          border: const OutlineInputBorder(),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          labelStyle: TextStyle(fontSize: 12, color: Colors.green.shade600),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _menuPriceControllers[index],
+                              decoration: InputDecoration(
+                                labelText: 'Price *',
+                                hintText: 'e.g., ৳ 40',
+                                border: const OutlineInputBorder(),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                labelStyle: TextStyle(fontSize: 12, color: Colors.green.shade600),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextField(
+                              controller: _menuImageControllers[index],
+                              decoration: InputDecoration(
+                                labelText: 'Image *',
+                                hintText: 'e.g., 1.png',
+                                border: const OutlineInputBorder(),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                labelStyle: TextStyle(fontSize: 12, color: Colors.green.shade600),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                )),
+                
+                ElevatedButton.icon(
+                  onPressed: _saveMenuSet,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green.shade600,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  ),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Save 3 Menu Options'),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          
+          // Display existing menu sets
+          if (_isLoadingMenuSets)
+            const Center(child: CircularProgressIndicator())
+          else
+            _buildMenuSetsList(),
+        ],
+      ),
+    );
+  }
+
+  // Build menu sets list
+  Widget _buildMenuSetsList() {
+    if (_menuSets.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(30),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Column(
+          children: [
+            Icon(Icons.restaurant_menu, size: 40, color: Colors.grey.shade400),
+            const SizedBox(height: 8),
+            Text(
+              'No menu sets configured',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Add menu sets that users can vote for',
+              style: TextStyle(
+                color: Colors.grey.shade500,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Existing Menu Sets',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.green.shade800,
+          ),
+        ),
+        const SizedBox(height: 10),
+        ...days.map((day) => _buildDayMenuSets(day)).toList(),
+      ],
+    );
+  }
+
+  // Build menu sets for a specific day
+  Widget _buildDayMenuSets(String day) {
+    final dayMenuSets = _menuSets[day];
+    if (dayMenuSets == null || 
+        (dayMenuSets['breakfast']!.isEmpty && 
+         dayMenuSets['lunch']!.isEmpty && 
+         dayMenuSets['dinner']!.isEmpty)) {
+      return const SizedBox.shrink();
+    }
+
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 5),
+      child: ExpansionTile(
+        title: Text(
+          day,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        children: [
+          if (dayMenuSets['breakfast']!.isNotEmpty)
+            _buildMealTypeMenuSets('Breakfast', dayMenuSets['breakfast']!),
+          if (dayMenuSets['lunch']!.isNotEmpty)
+            _buildMealTypeMenuSets('Lunch', dayMenuSets['lunch']!),
+          if (dayMenuSets['dinner']!.isNotEmpty)
+            _buildMealTypeMenuSets('Dinner', dayMenuSets['dinner']!),
+        ],
+      ),
+    );
+  }
+
+  // Build menu sets for a specific meal type
+  Widget _buildMealTypeMenuSets(String mealType, List<Map<String, dynamic>> menuSets) {
+    return Padding(
+      padding: const EdgeInsets.all(10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                mealType,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green.shade700,
+                ),
+              ),
+              if (menuSets.isNotEmpty)
+                TextButton.icon(
+                  onPressed: () => _loadExistingMenuOptions(
+                    menuSets[0]['day'] ?? _menuSetSelectedDay, 
+                    mealType
+                  ),
+                  icon: const Icon(Icons.edit, size: 16),
+                  label: const Text('Edit', style: TextStyle(fontSize: 12)),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.blue.shade600,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (menuSets.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Center(
+                child: Text(
+                  'No options configured for $mealType',
+                  style: TextStyle(color: Colors.grey.shade600),
+                ),
+              ),
+            )
+          else
+            Column(
+              children: menuSets.map((menuSet) => Card(
+                margin: const EdgeInsets.symmetric(vertical: 2),
+                child: ListTile(
+                  leading: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.asset(
+                      'assets/${menuSet['image']}',
+                      width: 50,
+                      height: 50,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          width: 50,
+                          height: 50,
+                          color: Colors.grey.shade300,
+                          child: Icon(Icons.image_not_supported, color: Colors.grey.shade600),
+                        );
+                      },
+                    ),
+                  ),
+                  title: Text(menuSet['title'] ?? ''),
+                  subtitle: Text(menuSet['price'] ?? ''),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () => _deleteMenuSet(menuSet['id']),
+                  ),
+                ),
+              )).toList(),
+            ),
+        ],
       ),
     );
   }
@@ -2101,6 +2719,8 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
               const Divider(thickness: 2),
               const SizedBox(height: 20),
               _buildMenuConfigurationSection(),
+              const SizedBox(height: 20),
+              _buildMenuSetConfigurationSection(),
               
               // --- Horizontal Line before Remarks ---
               const SizedBox(height: 20),
