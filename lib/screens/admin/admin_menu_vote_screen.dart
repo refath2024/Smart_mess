@@ -2063,35 +2063,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AddMenuSetScreen(),
-                        ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1A4D8F),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    icon: const Icon(Icons.add, color: Colors.white),
-                    label: Text(
-                      AppLocalizations.of(context)!.addNewSet,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
+                  
                   const SizedBox(width: 8),
                   ElevatedButton.icon(
                     onPressed: _isLoading ? null : _getData,
