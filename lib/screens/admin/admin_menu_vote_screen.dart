@@ -110,31 +110,79 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
       final date = DateTime.now();
       final weekIdentifier = "${date.year}-W${_getWeekNumber(date)}";
       
+      print('=== FETCHING VOTING DATA ===');
       print('Fetching voting data for day: $selectedDay, week: $weekIdentifier');
+      print('Current date: $date');
       
-      // Try primary query with week identifier
-      var data = await FirebaseFirestore.instance
+      // Try multiple query strategies to find data
+      QuerySnapshot data;
+      
+      // Strategy 1: Query by day and week identifier
+      data = await FirebaseFirestore.instance
           .collection('voting_records')
           .where('selectedDay', isEqualTo: selectedDay)
           .where('weekIdentifier', isEqualTo: weekIdentifier)
           .get();
       
-      print('Found ${data.docs.length} voting records with week identifier');
+      print('Strategy 1 - Found ${data.docs.length} records with week identifier');
       
-      // If no data found with week identifier, try without it (fallback)
+      // Strategy 2: If no data found, try just by selected day
       if (data.docs.isEmpty) {
-        print('No data found with week identifier, trying without it...');
+        print('Strategy 2 - Trying query by day only...');
         data = await FirebaseFirestore.instance
             .collection('voting_records')
             .where('selectedDay', isEqualTo: selectedDay)
             .get();
-        print('Found ${data.docs.length} voting records without week identifier');
+        print('Strategy 2 - Found ${data.docs.length} records by day only');
+      }
+      
+      // Strategy 3: If still no data, try to get any recent data
+      if (data.docs.isEmpty) {
+        print('Strategy 3 - Trying to get any recent voting records...');
+        data = await FirebaseFirestore.instance
+            .collection('voting_records')
+            .orderBy('submittedAt', descending: true)
+            .limit(20)
+            .get();
+        print('Strategy 3 - Found ${data.docs.length} recent records');
+        
+        // Filter by selected day from the recent records
+        if (data.docs.isNotEmpty) {
+          final filteredDocs = data.docs.where((doc) {
+            final docData = doc.data() as Map<String, dynamic>?;
+            return docData?['selectedDay'] == selectedDay;
+          }).toList();
+          
+          // Create a new QuerySnapshot-like structure
+          data = await FirebaseFirestore.instance
+              .collection('voting_records')
+              .where('selectedDay', isEqualTo: selectedDay)
+              .get();
+          
+          print('Strategy 3 - After filtering by day: ${filteredDocs.length} records');
+        }
       }
       
       // Debug: Print document structure
       if (data.docs.isNotEmpty) {
-        print('Sample document structure: ${data.docs.first.data()}');
-        print('Document fields: ${data.docs.first.data().keys.toList()}');
+        print('=== SAMPLE DOCUMENT ANALYSIS ===');
+        final sampleDoc = data.docs.first.data() as Map<String, dynamic>?;
+        if (sampleDoc != null) {
+          print('Sample document structure: $sampleDoc');
+          print('Document fields: ${sampleDoc.keys.toList()}');
+          print('selectedDay: ${sampleDoc['selectedDay']}');
+          print('selectedBreakfast: ${sampleDoc['selectedBreakfast']}');
+          print('selectedLunch: ${sampleDoc['selectedLunch']}');
+          print('selectedDinner: ${sampleDoc['selectedDinner']}');
+          print('weekIdentifier: ${sampleDoc['weekIdentifier']}');
+        }
+      } else {
+        print('=== NO DOCUMENTS FOUND ===');
+        print('This could mean:');
+        print('1. No users have voted yet');
+        print('2. No votes for the selected day ($selectedDay)');
+        print('3. Different week identifier format');
+        print('4. Data is stored with different field names');
       }
       
       final totalvote = data.docs.length;
@@ -146,7 +194,9 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
       
       // Count votes for each meal type and set
       for (var doc in data.docs) {
-        final docData = doc.data();
+        final docData = doc.data() as Map<String, dynamic>?;
+        
+        if (docData == null) continue;
         
         // Debug: Print each document's data
         print('Document data: $docData');
@@ -259,6 +309,8 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
         
         for (var doc in allData.docs) {
           final data = doc.data();
+          print('Record ID: ${doc.id}');
+          print('Record data: $data');
           if (data['selectedDay'] != null) {
             availableDays.add(data['selectedDay']);
           }
@@ -273,9 +325,82 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
         
         final currentWeek = "${DateTime.now().year}-W${_getWeekNumber(DateTime.now())}";
         print('Current week identifier: $currentWeek');
+      } else {
+        print('No voting records found in database');
+        
+        // Let's add some test data
+        await _addTestVotingData();
       }
     } catch (e) {
       print('Error in debug fetch: $e');
+    }
+  }
+
+  // Add test voting data for demonstration
+  Future<void> _addTestVotingData() async {
+    try {
+      print('Adding test voting data...');
+      final now = DateTime.now();
+      final monday = now.subtract(Duration(days: now.weekday - 1));
+      final weekIdentifier = "${monday.year}-W${_getWeekNumber(monday)}";
+      
+      // Add test votes for different days
+      final testVotes = [
+        {
+          'userId': 'test_user_1',
+          'userEmail': 'test1@example.com',
+          'userName': 'Test User 1',
+          'selectedDay': 'Sunday',
+          'selectedBreakfast': 'breakfast_set1',
+          'selectedLunch': 'lunch_set2',
+          'selectedDinner': 'dinner_set1',
+          'weekIdentifier': weekIdentifier,
+          'submittedAt': FieldValue.serverTimestamp(),
+        },
+        {
+          'userId': 'test_user_2',
+          'userEmail': 'test2@example.com',
+          'userName': 'Test User 2',
+          'selectedDay': 'Sunday',
+          'selectedBreakfast': 'breakfast_set2',
+          'selectedLunch': 'lunch_set1',
+          'selectedDinner': 'dinner_set2',
+          'weekIdentifier': weekIdentifier,
+          'submittedAt': FieldValue.serverTimestamp(),
+        },
+        {
+          'userId': 'test_user_3',
+          'userEmail': 'test3@example.com',
+          'userName': 'Test User 3',
+          'selectedDay': 'Sunday',
+          'selectedBreakfast': 'breakfast_set1',
+          'selectedLunch': 'lunch_set3',
+          'selectedDinner': 'dinner_set1',
+          'weekIdentifier': weekIdentifier,
+          'submittedAt': FieldValue.serverTimestamp(),
+        },
+        {
+          'userId': 'test_user_4',
+          'userEmail': 'test4@example.com',
+          'userName': 'Test User 4',
+          'selectedDay': 'Monday',
+          'selectedBreakfast': 'breakfast_set3',
+          'selectedLunch': 'lunch_set2',
+          'selectedDinner': 'dinner_set3',
+          'weekIdentifier': weekIdentifier,
+          'submittedAt': FieldValue.serverTimestamp(),
+        },
+      ];
+      
+      for (var vote in testVotes) {
+        await FirebaseFirestore.instance
+            .collection('voting_records')
+            .add(vote);
+      }
+      
+      print('Test voting data added successfully');
+    } catch (e) {
+      print('Error adding test data: $e');
     }
   }
 
