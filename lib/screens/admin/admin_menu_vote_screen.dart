@@ -20,6 +20,7 @@ import 'add_menu_set.dart';
 import 'admin_login_screen.dart';
 import '../../services/admin_auth_service.dart';
 import '../../services/menu_set_service.dart';
+import '../../services/voting_statistics_service.dart';
 
 class MenuVoteScreen extends StatefulWidget {
   const MenuVoteScreen({super.key});
@@ -130,184 +131,43 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
         _isLoading = true;
       });
 
-      final date = DateTime.now();
-      final weekIdentifier = "${date.year}-W${_getWeekNumber(date)}";
+      debugPrint("🔍 Fetching dynamic voting data for day: $selectedDay");
       
-      print('=== FETCHING VOTING DATA ===');
-      print('Fetching voting data for day: $selectedDay, week: $weekIdentifier');
-      print('Current date: $date');
+      // Get voting statistics using the new service
+      final votingStats = await VotingStatisticsService.getVotingStatisticsForDay(selectedDay);
+      final totalVoteCount = await VotingStatisticsService.getTotalVoteCountForDay(selectedDay);
       
-      // Try multiple query strategies to find data
-      QuerySnapshot data;
+      // Convert the statistics to the format expected by the UI
+      Map<String, Map<String, double>> formattedMealData = {};
       
-      // Strategy 1: Query by day and week identifier
-      data = await FirebaseFirestore.instance
-          .collection('voting_records')
-          .where('selectedDay', isEqualTo: selectedDay)
-          .where('weekIdentifier', isEqualTo: weekIdentifier)
-          .get();
-      
-      print('Strategy 1 - Found ${data.docs.length} records with week identifier');
-      
-      // Strategy 2: If no data found, try just by selected day
-      if (data.docs.isEmpty) {
-        print('Strategy 2 - Trying query by day only...');
-        data = await FirebaseFirestore.instance
-            .collection('voting_records')
-            .where('selectedDay', isEqualTo: selectedDay)
-            .get();
-        print('Strategy 2 - Found ${data.docs.length} records by day only');
+      for (String mealType in ['breakfast', 'lunch', 'dinner']) {
+        final percentages = votingStats[mealType]!['percentages'] as Map<String, double>;
+        formattedMealData[mealType] = percentages;
       }
-      
-      // Strategy 3: If still no data, try to get any recent data
-      if (data.docs.isEmpty) {
-        print('Strategy 3 - Trying to get any recent voting records...');
-        data = await FirebaseFirestore.instance
-            .collection('voting_records')
-            .orderBy('submittedAt', descending: true)
-            .limit(20)
-            .get();
-        print('Strategy 3 - Found ${data.docs.length} recent records');
-        
-        // Filter by selected day from the recent records
-        if (data.docs.isNotEmpty) {
-          final filteredDocs = data.docs.where((doc) {
-            final docData = doc.data() as Map<String, dynamic>?;
-            return docData?['selectedDay'] == selectedDay;
-          }).toList();
-          
-          // Create a new QuerySnapshot-like structure
-          data = await FirebaseFirestore.instance
-              .collection('voting_records')
-              .where('selectedDay', isEqualTo: selectedDay)
-              .get();
-          
-          print('Strategy 3 - After filtering by day: ${filteredDocs.length} records');
-        }
-      }
-      
-      // Debug: Print document structure
-      if (data.docs.isNotEmpty) {
-        print('=== SAMPLE DOCUMENT ANALYSIS ===');
-        final sampleDoc = data.docs.first.data() as Map<String, dynamic>?;
-        if (sampleDoc != null) {
-          print('Sample document structure: $sampleDoc');
-          print('Document fields: ${sampleDoc.keys.toList()}');
-          print('selectedDay: ${sampleDoc['selectedDay']}');
-          print('selectedBreakfast: ${sampleDoc['selectedBreakfast']}');
-          print('selectedLunch: ${sampleDoc['selectedLunch']}');
-          print('selectedDinner: ${sampleDoc['selectedDinner']}');
-          print('weekIdentifier: ${sampleDoc['weekIdentifier']}');
-        }
-      } else {
-        print('=== NO DOCUMENTS FOUND ===');
-        print('This could mean:');
-        print('1. No users have voted yet');
-        print('2. No votes for the selected day ($selectedDay)');
-        print('3. Different week identifier format');
-        print('4. Data is stored with different field names');
-      }
-      
-      final totalvote = data.docs.length;
-      
-      // Initialize vote counts
-      Map<String, int> breakfastCounts = {'breakfast_set1': 0, 'breakfast_set2': 0, 'breakfast_set3': 0};
-      Map<String, int> lunchCounts = {'lunch_set1': 0, 'lunch_set2': 0, 'lunch_set3': 0};
-      Map<String, int> dinnerCounts = {'dinner_set1': 0, 'dinner_set2': 0, 'dinner_set3': 0};
-      
-      // Count votes for each meal type and set
-      for (var doc in data.docs) {
-        final docData = doc.data() as Map<String, dynamic>?;
-        
-        if (docData == null) continue;
-        
-        // Debug: Print each document's data
-        print('Document data: $docData');
-        
-        // Count breakfast votes - check multiple possible field names
-        final selectedBreakfast = docData['selectedBreakfast'] ?? 
-                                docData['breakfast'] ?? 
-                                docData['breakfast_choice'];
-        if (selectedBreakfast != null && breakfastCounts.containsKey(selectedBreakfast)) {
-          breakfastCounts[selectedBreakfast] = breakfastCounts[selectedBreakfast]! + 1;
-        } else if (selectedBreakfast != null) {
-          print('Unknown breakfast choice: $selectedBreakfast');
-        }
-        
-        // Count lunch votes - check multiple possible field names
-        final selectedLunch = docData['selectedLunch'] ?? 
-                             docData['lunch'] ?? 
-                             docData['lunch_choice'];
-        if (selectedLunch != null && lunchCounts.containsKey(selectedLunch)) {
-          lunchCounts[selectedLunch] = lunchCounts[selectedLunch]! + 1;
-        } else if (selectedLunch != null) {
-          print('Unknown lunch choice: $selectedLunch');
-        }
-        
-        // Count dinner votes - check multiple possible field names
-        final selectedDinner = docData['selectedDinner'] ?? 
-                              docData['dinner'] ?? 
-                              docData['dinner_choice'];
-        if (selectedDinner != null && dinnerCounts.containsKey(selectedDinner)) {
-          dinnerCounts[selectedDinner] = dinnerCounts[selectedDinner]! + 1;
-        } else if (selectedDinner != null) {
-          print('Unknown dinner choice: $selectedDinner');
-        }
-      }
-      
-      // Calculate percentages
-      Map<String, Map<String, double>> vote = {
-        'breakfast': {},
-        'lunch': {},
-        'dinner': {},
-      };
-      
-      if (totalvote > 0) {
-        // Calculate breakfast percentages
-        breakfastCounts.forEach((key, value) {
-          vote['breakfast']![key] = (value / totalvote) * 100;
-        });
-        
-        // Calculate lunch percentages
-        lunchCounts.forEach((key, value) {
-          vote['lunch']![key] = (value / totalvote) * 100;
-        });
-        
-        // Calculate dinner percentages
-        dinnerCounts.forEach((key, value) {
-          vote['dinner']![key] = (value / totalvote) * 100;
-        });
-      } else {
-        // No votes found, set all percentages to 0
-        vote = {
-          'breakfast': {'breakfast_set1': 0.0, 'breakfast_set2': 0.0, 'breakfast_set3': 0.0},
-          'lunch': {'lunch_set1': 0.0, 'lunch_set2': 0.0, 'lunch_set3': 0.0},
-          'dinner': {'dinner_set1': 0.0, 'dinner_set2': 0.0, 'dinner_set3': 0.0},
-        };
-      }
-      
-      print('Calculated vote percentages: $vote');
-      print('Total votes counted: Breakfast: ${breakfastCounts.values.reduce((a, b) => a + b)}, Lunch: ${lunchCounts.values.reduce((a, b) => a + b)}, Dinner: ${dinnerCounts.values.reduce((a, b) => a + b)}');
+
+      debugPrint("✅ Dynamic voting data loaded successfully");
+      debugPrint("   Total votes: $totalVoteCount");
+      debugPrint("   Meal data: $formattedMealData");
       
       // Check if widget is still mounted before calling setState
       if (mounted) {
         setState(() {
           _isLoading = false;
-          mealData = vote;
-          _totalVoteCount = totalvote; // Store the total vote count
+          mealData = formattedMealData;
+          _totalVoteCount = totalVoteCount;
         });
       }
     } catch (e) {
-      print('Error fetching voting data: $e');
+      debugPrint("❌ Error fetching dynamic voting data: $e");
       // Check if widget is still mounted before calling setState
       if (mounted) {
         setState(() {
           _isLoading = false;
           // Set default empty data on error
           mealData = {
-            'breakfast': {'breakfast_set1': 0.0, 'breakfast_set2': 0.0, 'breakfast_set3': 0.0},
-            'lunch': {'lunch_set1': 0.0, 'lunch_set2': 0.0, 'lunch_set3': 0.0},
-            'dinner': {'dinner_set1': 0.0, 'dinner_set2': 0.0, 'dinner_set3': 0.0},
+            'breakfast': {},
+            'lunch': {},
+            'dinner': {},
           };
           _totalVoteCount = 0;
         });
@@ -804,11 +664,11 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
     final daysSinceFirstDay = date.difference(firstDayOfYear).inDays;
     return ((daysSinceFirstDay + firstDayOfYear.weekday - 1) / 7).ceil();
   }
-  // Data structure for meal votes
+  // Data structure for meal votes - now dynamic based on admin configurations
   Map<String, Map<String, double>> mealData = {
-    'breakfast': {'breakfast_set1': 0.0, 'breakfast_set2': 0.0, 'breakfast_set3': 0.0},
-    'lunch': {'lunch_set1': 0.0, 'lunch_set2': 0.0, 'lunch_set3': 0.0},
-    'dinner': {'dinner_set1': 0.0, 'dinner_set2': 0.0, 'dinner_set3': 0.0}
+    'breakfast': {},
+    'lunch': {},
+    'dinner': {},
   };
 
  
@@ -1008,6 +868,40 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
 
   // Helper widget to build meal vote list with progress indicators
   Widget _buildMealVoteList(Map<String, double> meals) {
+    if (meals.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Center(
+          child: Column(
+            children: [
+              Icon(Icons.ballot_outlined, color: Colors.grey.shade400, size: 40),
+              const SizedBox(height: 8),
+              Text(
+                'No votes submitted yet',
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Users haven\'t voted for this meal type',
+                style: TextStyle(
+                  color: Colors.grey.shade500,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     // Sort meals by percentage in descending order
     final sortedMeals = meals.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
@@ -1015,28 +909,68 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
     return Column(
       children: sortedMeals.map((meal) {
         final double percent = meal.value / 100; // Convert percentage to 0-1 range for progress indicator
+        final bool isWinning = meal.value == sortedMeals.first.value && meal.value > 0;
+        
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 6.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${getLocalizedFoodItem(context, meal.key)} (${meal.value.toStringAsFixed(1)}%)',
-                style:
-                    const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isWinning ? Colors.green.shade50 : Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: isWinning ? Colors.green.shade300 : Colors.grey.shade300,
+                width: isWinning ? 2 : 1,
               ),
-              const SizedBox(height: 4),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: LinearProgressIndicator(
-                  value: percent.clamp(0.0, 1.0), // Ensure value is between 0 and 1
-                  minHeight: 12,
-                  backgroundColor: Colors.grey.shade300,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                      Theme.of(context).primaryColor),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        meal.key, // Now showing actual menu title from admin config (e.g., 'bread', 'parata', 'muri')
+                        style: TextStyle(
+                          fontSize: 14, 
+                          fontWeight: isWinning ? FontWeight.bold : FontWeight.w600,
+                          color: isWinning ? Colors.green.shade800 : Colors.black87,
+                        ),
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        if (isWinning) ...[
+                          Icon(Icons.emoji_events, color: Colors.green.shade600, size: 16),
+                          const SizedBox(width: 4),
+                        ],
+                        Text(
+                          '${meal.value.toStringAsFixed(1)}%',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: isWinning ? Colors.green.shade700 : Colors.grey.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ),
-            ],
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: LinearProgressIndicator(
+                    value: percent.clamp(0.0, 1.0), // Ensure value is between 0 and 1
+                    minHeight: 12,
+                    backgroundColor: Colors.grey.shade300,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      isWinning ? Colors.green.shade600 : Theme.of(context).primaryColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       }).toList(),
@@ -2172,8 +2106,19 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(AppLocalizations.of(context)!.mealVoteStatistics,
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          AppLocalizations.of(context)!.mealVoteStatistics,
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          'Dynamic voting results for ${getLocalizedDay(context, selectedDay)}',
+                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                        ),
+                      ],
+                    ),
                     if (_totalVoteCount > 0)
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
