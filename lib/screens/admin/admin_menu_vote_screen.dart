@@ -64,7 +64,6 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
     _debugFetchAllRecords(); // Debug: Check available data
     _loadMenuSets(); // Load menu sets
     _loadVotingStatus(); // Load admin voting control status
-    // _updateRemarks will be called in build method when context is available
   }
 
   @override
@@ -751,71 +750,8 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
     }
   }
 
-  // Remarks data - this will be dynamically populated
-  List<String> dynamicRemarks = [];
-
   // Search functionality implementation
   
-
-  // Method to update dynamic remarks instantly
-  void _updateRemarks(BuildContext context) {
-    // Check if widget is still mounted before calling setState
-    if (!mounted) return;
-    
-    setState(() {
-      dynamicRemarks = []; // Clear previous remarks
-
-      // Localized remarks based on selectedDay
-      if (selectedDay == 'Sunday') {
-        dynamicRemarks = [
-          AppLocalizations.of(context)!.sundayRemark1,
-          AppLocalizations.of(context)!.sundayRemark2,
-          AppLocalizations.of(context)!.sundayRemark3,
-        ];
-      } else if (selectedDay == 'Monday') {
-        dynamicRemarks = [
-          AppLocalizations.of(context)!.mondayRemark1,
-          AppLocalizations.of(context)!.mondayRemark2,
-          AppLocalizations.of(context)!.mondayRemark3,
-        ];
-      } else if (selectedDay == 'Tuesday') {
-        dynamicRemarks = [
-          AppLocalizations.of(context)!.tuesdayRemark1,
-          AppLocalizations.of(context)!.tuesdayRemark2,
-          AppLocalizations.of(context)!.tuesdayRemark3,
-        ];
-      } else if (selectedDay == 'Wednesday') {
-        dynamicRemarks = [
-          AppLocalizations.of(context)!.wednesdayRemark1,
-          AppLocalizations.of(context)!.wednesdayRemark2,
-          AppLocalizations.of(context)!.wednesdayRemark3,
-        ];
-      } else if (selectedDay == 'Thursday') {
-        dynamicRemarks = [
-          AppLocalizations.of(context)!.thursdayRemark1,
-          AppLocalizations.of(context)!.thursdayRemark2,
-          AppLocalizations.of(context)!.thursdayRemark3,
-        ];
-      } else if (selectedDay == 'Friday') {
-        dynamicRemarks = [
-          AppLocalizations.of(context)!.fridayRemark1,
-          AppLocalizations.of(context)!.fridayRemark2,
-          AppLocalizations.of(context)!.fridayRemark3,
-        ];
-      } else if (selectedDay == 'Saturday') {
-        dynamicRemarks = [
-          AppLocalizations.of(context)!.saturdayRemark1,
-          AppLocalizations.of(context)!.saturdayRemark2,
-          AppLocalizations.of(context)!.saturdayRemark3,
-        ];
-      } else {
-        dynamicRemarks = [
-          AppLocalizations.of(context)!.noSpecificRemarks,
-          AppLocalizations.of(context)!.dataCollectionOngoing,
-        ];
-      }
-    });
-  }
 
   // Helper method to check if there are any votes
   bool _hasAnyVotes() {
@@ -1714,11 +1650,6 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
   Widget build(BuildContext context) {
     return Consumer<LanguageProvider>(
       builder: (context, languageProvider, child) {
-        // Ensure remarks are updated for the current day and language
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _updateRemarks(context);
-        });
-        
         // Show loading screen while authenticating
         if (_isLoading) {
           return const Scaffold(
@@ -2171,7 +2102,6 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                               selectedDay = newValue;
                               // Re-apply filter based on the new day
                               //_filterRecords(_searchController.text);
-                              _updateRemarks(context); // Update remarks for the new day instantly
                               _getData(); // Fetch data for the selected day
                             });
                           }
@@ -2298,71 +2228,6 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
               const Divider(thickness: 2),
               const SizedBox(height: 20),
               _buildMenuSetConfigurationSection(),
-              
-              // --- Horizontal Line before Remarks ---
-              const SizedBox(height: 20),
-              const Divider(), // Added a divider for visual separation
-              const SizedBox(height: 20),
-              // --- Remarks Section at the very end (scrollable into view) ---
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.grey.shade300),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      AppLocalizations.of(context)!.insightsRemarks,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF002B5B),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    // Display remarks content directly
-                    dynamicRemarks.isEmpty
-                        ? Text(
-                            AppLocalizations.of(context)!.noRemarksAvailable,
-                            style: const TextStyle(
-                                fontSize: 14,
-                                fontStyle: FontStyle.italic,
-                                color: Colors.grey),
-                          )
-                        : Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: dynamicRemarks
-                                .map(
-                                  (remark) => Padding(
-                                    padding:
-                                        const EdgeInsets.symmetric(vertical: 4),
-                                    child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        const Icon(Icons.info_outline,
-                                            size: 18, color: Colors.blueGrey),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            remark,
-                                            style:
-                                                const TextStyle(fontSize: 14),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                          ),
-                  ],
-                ),
-              ),
             ],
           ),
         ),
