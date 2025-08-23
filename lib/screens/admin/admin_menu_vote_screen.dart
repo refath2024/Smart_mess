@@ -37,6 +37,10 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
   Map<String, dynamic>? _currentUserData;
   int _totalVoteCount = 0; // Store total vote count
 
+  // Admin voting control state
+  bool _isVotingEnabled = false;
+  bool _isLoadingVotingStatus = true;
+
   final TextEditingController _searchController = TextEditingController();
   String selectedDay = 'Sunday';
 
@@ -59,6 +63,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
     _getData();
     _debugFetchAllRecords(); // Debug: Check available data
     _loadMenuSets(); // Load menu sets
+    _loadVotingStatus(); // Load admin voting control status
     // _updateRemarks will be called in build method when context is available
   }
 
@@ -1158,6 +1163,70 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
     }
   }
 
+  // Admin voting control methods
+  Future<void> _loadVotingStatus() async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('admin_settings')
+          .doc('voting_control')
+          .get();
+      
+      if (mounted) {
+        setState(() {
+          _isVotingEnabled = doc.exists ? (doc.data()?['enabled'] ?? false) : false;
+          _isLoadingVotingStatus = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("❌ Error loading voting status: $e");
+      if (mounted) {
+        setState(() {
+          _isLoadingVotingStatus = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _toggleVotingStatus() async {
+    try {
+      final newStatus = !_isVotingEnabled;
+      
+      await FirebaseFirestore.instance
+          .collection('admin_settings')
+          .doc('voting_control')
+          .set({
+        'enabled': newStatus,
+        'lastUpdated': FieldValue.serverTimestamp(),
+        'updatedBy': _currentUserName,
+      });
+      
+      if (mounted) {
+        setState(() {
+          _isVotingEnabled = newStatus;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(newStatus 
+                ? '✅ Voting enabled for all users' 
+                : '❌ Voting disabled (Saturday-only mode)'),
+            backgroundColor: newStatus ? Colors.green : Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint("❌ Error toggling voting status: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating voting status: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   // Build menu set configuration section
   Widget _buildMenuSetConfigurationSection() {
     return Container(
@@ -1921,6 +1990,18 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
           ),
         ),
         actions: [
+          // Voting control toggle button
+          if (!_isLoadingVotingStatus)
+            IconButton(
+              onPressed: _toggleVotingStatus,
+              icon: Icon(
+                _isVotingEnabled ? Icons.how_to_vote : Icons.block,
+                color: _isVotingEnabled ? Colors.green : Colors.orange,
+              ),
+              tooltip: _isVotingEnabled 
+                  ? 'Voting Enabled (Click to disable)' 
+                  : 'Saturday-only voting (Click to enable anytime)',
+            ),
           PopupMenuButton<Locale>(
             icon: Row(
               mainAxisSize: MainAxisSize.min,

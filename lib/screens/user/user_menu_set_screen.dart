@@ -34,12 +34,84 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
     'dinner': [],
   };
   bool _isLoadingMenuSets = false;
+  bool _isVotingAllowed = false;
+  bool _isCheckingVotingStatus = true;
 
   @override
   void initState() {
     super.initState();
     _loadMenuSetsForDay();
     _debugUserCollections(); // Add debug method to check user data
+    _checkVotingPermission(); // Check if voting is allowed
+  }
+
+  /// Check if voting is allowed (Saturday or admin override)
+  Future<void> _checkVotingPermission() async {
+    setState(() {
+      _isCheckingVotingStatus = true;
+    });
+
+    try {
+      final now = DateTime.now();
+      final isSaturday = now.weekday == DateTime.saturday;
+      
+      // Check if admin has enabled voting for this week
+      bool adminOverride = false;
+      try {
+        final adminSettingsDoc = await FirebaseFirestore.instance
+            .collection('admin_settings')
+            .doc('voting_control')
+            .get();
+            
+        if (adminSettingsDoc.exists) {
+          final data = adminSettingsDoc.data()!;
+          final weekIdentifier = "${now.year}-W${_getWeekNumber(now)}";
+          adminOverride = data['allowVoting'] == true && 
+                         data['weekIdentifier'] == weekIdentifier;
+          debugPrint("🔍 Admin override status: $adminOverride for week $weekIdentifier");
+        }
+      } catch (e) {
+        debugPrint("❌ Error checking admin override: $e");
+      }
+
+      // Check if user has already voted this week
+      bool hasVotedThisWeek = false;
+      try {
+        final currentUser = FirebaseAuth.instance.currentUser;
+        if (currentUser != null) {
+          final weekIdentifier = "${now.year}-W${_getWeekNumber(now)}";
+          final existingVoteQuery = await FirebaseFirestore.instance
+              .collection('voting_records')
+              .where('userId', isEqualTo: currentUser.uid)
+              .where('weekIdentifier', isEqualTo: weekIdentifier)
+              .limit(1)
+              .get();
+          
+          hasVotedThisWeek = existingVoteQuery.docs.isNotEmpty;
+          debugPrint("🗳️ User has voted this week: $hasVotedThisWeek");
+        }
+      } catch (e) {
+        debugPrint("❌ Error checking existing votes: $e");
+      }
+
+      setState(() {
+        _isVotingAllowed = (isSaturday || adminOverride) && !hasVotedThisWeek;
+        _isCheckingVotingStatus = false;
+      });
+
+      debugPrint("📅 Voting permission check:");
+      debugPrint("   Is Saturday: $isSaturday");
+      debugPrint("   Admin Override: $adminOverride");
+      debugPrint("   Has Voted This Week: $hasVotedThisWeek");
+      debugPrint("   Voting Allowed: $_isVotingAllowed");
+
+    } catch (e) {
+      debugPrint("❌ Error checking voting permission: $e");
+      setState(() {
+        _isVotingAllowed = false;
+        _isCheckingVotingStatus = false;
+      });
+    }
   }
 
   /// Debug method to check user data in Firestore collections
@@ -200,6 +272,28 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
   }
 
   Future<void> _submitVote() async {
+    // Check if voting is allowed
+    if (!_isVotingAllowed) {
+      final now = DateTime.now();
+      final isSaturday = now.weekday == DateTime.saturday;
+      
+      String message;
+      if (!isSaturday) {
+        message = "Voting is only allowed on Saturdays. Please wait until Saturday to submit your vote.";
+      } else {
+        message = "You have already voted this week. Only one vote per week is allowed.";
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
     if (_selectedBreakfast == null &&
         _selectedLunch == null &&
         _selectedDinner == null) {
@@ -440,6 +534,101 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
       _selectedDinner = null;
       _remarksController.clear();
     });
+    _checkVotingPermission(); // Recheck voting permission
+  }
+
+  /// Build voting status indicator card
+  Widget _buildVotingStatusCard() {
+    if (_isCheckingVotingStatus) {
+      return Card(
+        color: Colors.blue.shade50,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(width: 12),
+              const Text("Checking voting status..."),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final now = DateTime.now();
+    final isSaturday = now.weekday == DateTime.saturday;
+    
+    if (_isVotingAllowed) {
+      return Card(
+        color: Colors.green.shade50,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.green.shade600, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  isSaturday 
+                    ? "✅ Voting is open! You can submit your preferences."
+                    : "✅ Special voting session enabled by admin.",
+                  style: TextStyle(
+                    color: Colors.green.shade700,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    } else {
+      String statusText;
+      IconData statusIcon;
+      MaterialColor statusColor;
+
+      if (!isSaturday) {
+        statusText = "⏰ Voting opens on Saturday. Current day: ${_getDayName(now.weekday)}";
+        statusIcon = Icons.schedule;
+        statusColor = Colors.orange;
+      } else {
+        statusText = "🗳️ You have already voted this week. Next voting: Next Saturday";
+        statusIcon = Icons.how_to_vote;
+        statusColor = Colors.blue;
+      }
+
+      return Card(
+        color: statusColor.shade50,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Icon(statusIcon, color: statusColor.shade600, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  statusText,
+                  style: TextStyle(
+                    color: statusColor.shade700,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+
+  /// Get day name from weekday number
+  String _getDayName(int weekday) {
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    return days[weekday - 1];
   }
 
   Widget _buildMealRow({
@@ -594,6 +783,11 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
                   ),
                 ],
               ),
+              const SizedBox(height: 8),
+              
+              // Voting Status Indicator
+              _buildVotingStatusCard(),
+              
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: _selectedDay,
