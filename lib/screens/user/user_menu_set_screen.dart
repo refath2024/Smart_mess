@@ -36,6 +36,8 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
   bool _isLoadingMenuSets = false;
   bool _isVotingAllowed = false;
   bool _isCheckingVotingStatus = true;
+  bool _hasVotedThisWeek = false;
+  String? _existingVoteChoice;
 
   @override
   void initState() {
@@ -76,26 +78,43 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
 
       // Check if user has already voted this week
       bool hasVotedThisWeek = false;
+      String? existingVoteChoice = null;
       try {
         final currentUser = FirebaseAuth.instance.currentUser;
         if (currentUser != null) {
           final weekIdentifier = "${now.year}-W${_getWeekNumber(now)}";
-          final existingVoteQuery = await FirebaseFirestore.instance
+          final documentId = "${currentUser.uid}_$weekIdentifier";
+          
+          // Check for existing vote document
+          final existingVoteDoc = await FirebaseFirestore.instance
               .collection('voting_records')
-              .where('userId', isEqualTo: currentUser.uid)
-              .where('weekIdentifier', isEqualTo: weekIdentifier)
-              .limit(1)
+              .doc(documentId)
               .get();
           
-          hasVotedThisWeek = existingVoteQuery.docs.isNotEmpty;
+          hasVotedThisWeek = existingVoteDoc.exists;
+          if (hasVotedThisWeek) {
+            final data = existingVoteDoc.data()!;
+            // Build existing vote choice summary
+            List<String> choices = [];
+            if (data['selectedBreakfast'] != null) choices.add("Breakfast: ${data['selectedBreakfast']}");
+            if (data['selectedLunch'] != null) choices.add("Lunch: ${data['selectedLunch']}");
+            if (data['selectedDinner'] != null) choices.add("Dinner: ${data['selectedDinner']}");
+            existingVoteChoice = choices.isNotEmpty ? choices.join(", ") : "No meals selected";
+          }
           debugPrint("🗳️ User has voted this week: $hasVotedThisWeek");
+          if (existingVoteChoice != null) {
+            debugPrint("🗳️ Previous vote: $existingVoteChoice");
+          }
         }
       } catch (e) {
         debugPrint("❌ Error checking existing votes: $e");
       }
 
       setState(() {
-        _isVotingAllowed = (isSaturday || adminOverride) && !hasVotedThisWeek;
+        // Allow voting if it's Saturday/admin override, regardless of previous votes
+        _isVotingAllowed = (isSaturday || adminOverride);
+        _hasVotedThisWeek = hasVotedThisWeek;
+        _existingVoteChoice = existingVoteChoice;
         _isCheckingVotingStatus = false;
       });
 
@@ -281,7 +300,7 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
       if (!isSaturday) {
         message = "Voting is only allowed on Saturdays. Please wait until Saturday to submit your vote.";
       } else {
-        message = "You have already voted this week. Only one vote per week is allowed.";
+        message = "Voting is not available at this time.";
       }
       
       ScaffoldMessenger.of(context).showSnackBar(
@@ -304,6 +323,83 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
         ),
       );
       return;
+    }
+
+    // Show warning dialog if user has already voted this week
+    if (_hasVotedThisWeek) {
+      final bool? shouldProceed = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.warning_amber, color: Colors.orange, size: 28),
+                SizedBox(width: 12),
+                Text('Vote Already Submitted'),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'You have already voted this week.',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                ),
+                SizedBox(height: 8),
+                if (_existingVoteChoice != null)
+                  Container(
+                    padding: EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.how_to_vote, color: Colors.blue.shade600, size: 20),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Previous choice: $_existingVoteChoice',
+                            style: TextStyle(
+                              color: Colors.blue.shade700,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                SizedBox(height: 12),
+                Text(
+                  'Do you want to change your vote? Your previous vote will be overwritten.',
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  foregroundColor: Colors.white,
+                ),
+                child: Text('Change Vote'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (shouldProceed != true) {
+        return; // User cancelled
+      }
     }
 
     // Show loading dialog
@@ -440,33 +536,42 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
         'status': 'submitted',
       };
 
-      // Store in voting_records collection
+      // Create unique document ID based on user and week to ensure one vote per user per week
+      final documentId = "${currentUser.uid}_$weekIdentifier";
+      
+      // Store in voting_records collection (overwrite if exists)
       await FirebaseFirestore.instance
           .collection('voting_records')
-          .add(votingData);
+          .doc(documentId)
+          .set(votingData);
 
-      debugPrint("✅ Voting record saved successfully");
+      debugPrint("✅ Voting record saved successfully with ID: $documentId");
       
       // Close loading dialog
       if (mounted) {
         Navigator.pop(context);
       }
 
+      // Refresh voting permission status after successful vote
+      _checkVotingPermission();
+
       // Show success dialog
       if (mounted) {
         showDialog(
           context: context,
           builder: (_) => AlertDialog(
-            title: const Text(
-              "Vote Submitted Successfully",
+            title: Text(
+              _hasVotedThisWeek ? "Vote Changed Successfully" : "Vote Submitted Successfully",
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  "Your menu preference has been recorded and will be considered for the next committee review. Thank you for your participation.",
+                Text(
+                  _hasVotedThisWeek 
+                    ? "Your vote has been updated successfully. Your new menu preference has been recorded and will be considered for the next committee review."
+                    : "Your menu preference has been recorded and will be considered for the next committee review. Thank you for your participation.",
                 ),
                 const SizedBox(height: 12),
                 Text(
@@ -564,24 +669,62 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
     
     if (_isVotingAllowed) {
       return Card(
-        color: Colors.green.shade50,
+        color: _hasVotedThisWeek ? Colors.blue.shade50 : Colors.green.shade50,
         child: Padding(
           padding: const EdgeInsets.all(12),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.check_circle, color: Colors.green.shade600, size: 20),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  isSaturday 
-                    ? "✅ Voting is open! You can submit your preferences."
-                    : "✅ Special voting session enabled by admin.",
-                  style: TextStyle(
-                    color: Colors.green.shade700,
-                    fontWeight: FontWeight.w500,
+              Row(
+                children: [
+                  Icon(
+                    _hasVotedThisWeek ? Icons.edit : Icons.check_circle, 
+                    color: _hasVotedThisWeek ? Colors.blue.shade600 : Colors.green.shade600, 
+                    size: 20
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _hasVotedThisWeek
+                        ? "🔄 You can change your vote if needed."
+                        : (isSaturday 
+                            ? "✅ Voting is open! You can submit your preferences."
+                            : "✅ Special voting session enabled by admin."),
+                      style: TextStyle(
+                        color: _hasVotedThisWeek ? Colors.blue.shade700 : Colors.green.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (_hasVotedThisWeek && _existingVoteChoice != null) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade100,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: Colors.blue.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.how_to_vote, color: Colors.blue.shade600, size: 16),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Current: $_existingVoteChoice',
+                          style: TextStyle(
+                            color: Colors.blue.shade700,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
+              ],
             ],
           ),
         ),
@@ -852,20 +995,29 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
               ElevatedButton(
                 onPressed: _submitVote,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF002B5B),
+                  backgroundColor: _hasVotedThisWeek ? Colors.orange : const Color(0xFF002B5B),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: const Text(
-                  "SUBMIT PREFERENCE",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                  ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (_hasVotedThisWeek) ...[
+                      Icon(Icons.edit, color: Colors.white, size: 18),
+                      SizedBox(width: 8),
+                    ],
+                    Text(
+                      _hasVotedThisWeek ? "CHANGE VOTE" : "SUBMIT PREFERENCE",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
