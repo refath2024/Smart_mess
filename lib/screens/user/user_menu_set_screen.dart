@@ -67,7 +67,9 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
             
         if (adminSettingsDoc.exists) {
           final data = adminSettingsDoc.data()!;
-          final weekIdentifier = "${now.year}-W${_getWeekNumber(now)}";
+          // Use same week calculation as in submit method
+          final monday = now.subtract(Duration(days: now.weekday - 1));
+          final weekIdentifier = "${monday.year}-W${_getWeekNumber(monday)}";
           adminOverride = data['allowVoting'] == true && 
                          data['weekIdentifier'] == weekIdentifier;
           debugPrint("🔍 Admin override status: $adminOverride for week $weekIdentifier");
@@ -82,8 +84,12 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
       try {
         final currentUser = FirebaseAuth.instance.currentUser;
         if (currentUser != null) {
-          final weekIdentifier = "${now.year}-W${_getWeekNumber(now)}";
+          // Use same week calculation as in submit method
+          final monday = now.subtract(Duration(days: now.weekday - 1));
+          final weekIdentifier = "${monday.year}-W${_getWeekNumber(monday)}";
           final documentId = "${currentUser.uid}_$weekIdentifier";
+          
+          debugPrint("🔍 Checking for existing vote with document ID: $documentId");
           
           // Check for existing vote document
           final existingVoteDoc = await FirebaseFirestore.instance
@@ -96,9 +102,15 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
             final data = existingVoteDoc.data()!;
             // Build existing vote choice summary
             List<String> choices = [];
-            if (data['selectedBreakfast'] != null) choices.add("Breakfast: ${data['selectedBreakfast']}");
-            if (data['selectedLunch'] != null) choices.add("Lunch: ${data['selectedLunch']}");
-            if (data['selectedDinner'] != null) choices.add("Dinner: ${data['selectedDinner']}");
+            if (data['selectedBreakfast'] != null && data['selectedBreakfast'].toString().isNotEmpty) {
+              choices.add("Breakfast: ${data['selectedBreakfast']}");
+            }
+            if (data['selectedLunch'] != null && data['selectedLunch'].toString().isNotEmpty) {
+              choices.add("Lunch: ${data['selectedLunch']}");
+            }
+            if (data['selectedDinner'] != null && data['selectedDinner'].toString().isNotEmpty) {
+              choices.add("Dinner: ${data['selectedDinner']}");
+            }
             existingVoteChoice = choices.isNotEmpty ? choices.join(", ") : "No meals selected";
           }
           debugPrint("🗳️ User has voted this week: $hasVotedThisWeek");
@@ -326,7 +338,9 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
     }
 
     // Show warning dialog if user has already voted this week
+    debugPrint("🔍 Checking for warning dialog: _hasVotedThisWeek = $_hasVotedThisWeek");
     if (_hasVotedThisWeek) {
+      debugPrint("🚨 Showing warning dialog for existing vote");
       final bool? shouldProceed = await showDialog<bool>(
         context: context,
         barrierDismissible: false,
@@ -335,22 +349,22 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
             title: Row(
               children: [
                 Icon(Icons.warning_amber, color: Colors.orange, size: 28),
-                SizedBox(width: 12),
-                Text('Vote Already Submitted'),
+                const SizedBox(width: 12),
+                const Text('Vote Already Submitted'),
               ],
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'You have already voted this week.',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 if (_existingVoteChoice != null)
                   Container(
-                    padding: EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: Colors.blue.shade50,
                       borderRadius: BorderRadius.circular(8),
@@ -359,7 +373,7 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
                     child: Row(
                       children: [
                         Icon(Icons.how_to_vote, color: Colors.blue.shade600, size: 20),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             'Previous choice: $_existingVoteChoice',
@@ -372,10 +386,10 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
                       ],
                     ),
                   ),
-                SizedBox(height: 12),
-                Text(
+                const SizedBox(height: 12),
+                const Text(
                   'Do you want to change your vote? Your previous vote will be overwritten.',
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
                 ),
               ],
             ),
@@ -390,16 +404,19 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
                   backgroundColor: Colors.orange,
                   foregroundColor: Colors.white,
                 ),
-                child: Text('Change Vote'),
+                child: const Text('Change Vote'),
               ),
             ],
           );
         },
       );
 
+      debugPrint("🔍 Warning dialog result: shouldProceed = $shouldProceed");
       if (shouldProceed != true) {
+        debugPrint("❌ User cancelled vote change");
         return; // User cancelled
       }
+      debugPrint("✅ User confirmed vote change, proceeding...");
     }
 
     // Show loading dialog
@@ -663,6 +680,18 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
         ),
       );
     }
+
+    return GestureDetector(
+      onTap: () {
+        // Allow manual refresh by tapping the status card
+        debugPrint("🔄 Manual refresh of voting status requested");
+        _checkVotingPermission();
+      },
+      child: _buildActualStatusCard(),
+    );
+  }
+
+  Widget _buildActualStatusCard() {
 
     final now = DateTime.now();
     final isSaturday = now.weekday == DateTime.saturday;
