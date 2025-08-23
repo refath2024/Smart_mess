@@ -39,6 +39,70 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
   void initState() {
     super.initState();
     _loadMenuSetsForDay();
+    _debugUserCollections(); // Add debug method to check user data
+  }
+
+  /// Debug method to check user data in Firestore collections
+  Future<void> _debugUserCollections() async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return;
+
+      debugPrint("🐛 DEBUG: Checking user data for ${currentUser.email}");
+      debugPrint("🐛 DEBUG: User UID: ${currentUser.uid}");
+      debugPrint("🐛 DEBUG: Display Name: ${currentUser.displayName}");
+
+      // Check users collection by UID
+      try {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(currentUser.uid)
+            .get();
+        
+        if (userDoc.exists) {
+          debugPrint("🐛 DEBUG: Found in 'users' collection by UID: ${userDoc.data()}");
+        } else {
+          debugPrint("🐛 DEBUG: NOT found in 'users' collection by UID");
+        }
+      } catch (e) {
+        debugPrint("🐛 DEBUG: Error checking users by UID: $e");
+      }
+
+      // Check users collection by email
+      try {
+        final userQuery = await FirebaseFirestore.instance
+            .collection('users')
+            .where('email', isEqualTo: currentUser.email)
+            .get();
+        
+        if (userQuery.docs.isNotEmpty) {
+          debugPrint("🐛 DEBUG: Found in 'users' collection by email: ${userQuery.docs.first.data()}");
+        } else {
+          debugPrint("🐛 DEBUG: NOT found in 'users' collection by email");
+        }
+      } catch (e) {
+        debugPrint("🐛 DEBUG: Error checking users by email: $e");
+      }
+
+      // Check staff_state collection
+      try {
+        final staffQuery = await FirebaseFirestore.instance
+            .collection('staff_state')
+            .where('email', isEqualTo: currentUser.email)
+            .get();
+        
+        if (staffQuery.docs.isNotEmpty) {
+          debugPrint("🐛 DEBUG: Found in 'staff_state' collection: ${staffQuery.docs.first.data()}");
+        } else {
+          debugPrint("🐛 DEBUG: NOT found in 'staff_state' collection");
+        }
+      } catch (e) {
+        debugPrint("🐛 DEBUG: Error checking staff_state: $e");
+      }
+
+    } catch (e) {
+      debugPrint("🐛 DEBUG: Error in debug method: $e");
+    }
   }
 
   /// Load menu sets for the currently selected day
@@ -170,13 +234,15 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
         throw Exception("User not authenticated");
       }
 
-      // Get user details from users collection or staff_state collection
+      // Get user details from multiple possible collections with enhanced logic
       String userName = "Unknown User";
       String userRole = "user";
       String baNo = "";
 
       try {
-        // First try to get from users collection
+        debugPrint("🔍 Fetching user details for: ${currentUser.email}");
+        
+        // Strategy 1: Try users collection by UID
         DocumentSnapshot userDoc = await FirebaseFirestore.instance
             .collection('users')
             .doc(currentUser.uid)
@@ -184,11 +250,21 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
         
         if (userDoc.exists) {
           final userData = userDoc.data() as Map<String, dynamic>;
-          userName = userData['name'] ?? currentUser.displayName ?? "Unknown User";
+          debugPrint("✅ Found user in 'users' collection: $userData");
+          
+          // Try multiple possible field names for user name
+          userName = userData['name'] ?? 
+                    userData['userName'] ?? 
+                    userData['fullName'] ?? 
+                    userData['displayName'] ?? 
+                    currentUser.displayName ?? 
+                    "Unknown User";
           userRole = userData['role'] ?? "user";
-          baNo = userData['ba_no'] ?? "";
+          baNo = userData['ba_no'] ?? userData['baNo'] ?? "";
         } else {
-          // Try staff_state collection if not found in users
+          debugPrint("❌ User not found in 'users' collection, trying 'staff_state'");
+          
+          // Strategy 2: Try staff_state collection by email
           final staffQuery = await FirebaseFirestore.instance
               .collection('staff_state')
               .where('email', isEqualTo: currentUser.email)
@@ -197,14 +273,53 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
           
           if (staffQuery.docs.isNotEmpty) {
             final staffData = staffQuery.docs.first.data();
-            userName = staffData['name'] ?? "Unknown User";
+            debugPrint("✅ Found user in 'staff_state' collection: $staffData");
+            
+            userName = staffData['name'] ?? 
+                      staffData['userName'] ?? 
+                      staffData['fullName'] ?? 
+                      "Unknown User";
             userRole = staffData['role'] ?? "staff";
-            baNo = staffData['ba_no'] ?? "";
+            baNo = staffData['ba_no'] ?? staffData['baNo'] ?? "";
+          } else {
+            debugPrint("❌ User not found in 'staff_state' collection, trying other collections");
+            
+            // Strategy 3: Try looking in 'users' collection by email (in case UID mapping is different)
+            final userByEmailQuery = await FirebaseFirestore.instance
+                .collection('users')
+                .where('email', isEqualTo: currentUser.email)
+                .limit(1)
+                .get();
+            
+            if (userByEmailQuery.docs.isNotEmpty) {
+              final userData = userByEmailQuery.docs.first.data();
+              debugPrint("✅ Found user in 'users' collection by email: $userData");
+              
+              userName = userData['name'] ?? 
+                        userData['userName'] ?? 
+                        userData['fullName'] ?? 
+                        userData['displayName'] ?? 
+                        currentUser.displayName ?? 
+                        "Unknown User";
+              userRole = userData['role'] ?? "user";
+              baNo = userData['ba_no'] ?? userData['baNo'] ?? "";
+            } else {
+              debugPrint("❌ User not found in any collection, using fallback");
+              // Use Firebase Auth displayName or email as fallback
+              userName = currentUser.displayName ?? 
+                        currentUser.email?.split('@')[0] ?? 
+                        "Unknown User";
+            }
           }
         }
+        
+        debugPrint("📋 Final user details: Name='$userName', Role='$userRole', BA='$baNo'");
+        
       } catch (e) {
-        debugPrint("Error fetching user details: $e");
-        userName = currentUser.displayName ?? currentUser.email ?? "Unknown User";
+        debugPrint("❌ Error fetching user details: $e");
+        userName = currentUser.displayName ?? 
+                  currentUser.email?.split('@')[0] ?? 
+                  "Unknown User";
       }
 
       // Generate week identifier for grouping votes
@@ -382,10 +497,10 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: mealSets.map((meal) {
-        final isSelected = selectedValue == meal['id'];
+        final isSelected = selectedValue == meal['title']; // Use meal title for comparison
         return Expanded(
           child: GestureDetector(
-            onTap: () => onChanged(meal['id']),
+            onTap: () => onChanged(meal['title']), // Store the actual menu name (e.g., 'parata', 'bread', 'muri')
             child: Card(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
