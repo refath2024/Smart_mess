@@ -57,7 +57,7 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
       final now = DateTime.now();
       final isSaturday = now.weekday == DateTime.saturday;
       
-      // Check if admin has enabled voting for this week
+      // Check if admin has enabled voting
       bool adminOverride = false;
       try {
         final adminSettingsDoc = await FirebaseFirestore.instance
@@ -67,15 +67,12 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
             
         if (adminSettingsDoc.exists) {
           final data = adminSettingsDoc.data()!;
-          // Use same week calculation as in submit method
-          final monday = now.subtract(Duration(days: now.weekday - 1));
-          final weekIdentifier = "${monday.year}-W${_getWeekNumber(monday)}";
-          adminOverride = data['allowVoting'] == true && 
-                         data['weekIdentifier'] == weekIdentifier;
-          debugPrint("🔍 Admin override status: $adminOverride for week $weekIdentifier");
+          // Check if admin has enabled voting for all users
+          adminOverride = data['enabled'] ?? false;
+          debugPrint("🔍 Admin voting enabled: $adminOverride");
         }
       } catch (e) {
-        debugPrint("❌ Error checking admin override: $e");
+        debugPrint("❌ Error checking admin voting control: $e");
       }
 
       // Check if user has already voted this week
@@ -132,7 +129,7 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
 
       debugPrint("📅 Voting permission check:");
       debugPrint("   Is Saturday: $isSaturday");
-      debugPrint("   Admin Override: $adminOverride");
+      debugPrint("   Admin Enabled Voting: $adminOverride");
       debugPrint("   Has Voted This Week: $hasVotedThisWeek");
       debugPrint("   Voting Allowed: $_isVotingAllowed");
 
@@ -309,10 +306,10 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
       final isSaturday = now.weekday == DateTime.saturday;
       
       String message;
-      if (!isSaturday) {
-        message = "Voting is only allowed on Saturdays. Please wait until Saturday to submit your vote.";
+      if (isSaturday) {
+        message = "Voting is currently disabled by admin. Please contact admin for more information.";
       } else {
-        message = "Voting is not available at this time.";
+        message = "Voting is only allowed on Saturdays or when enabled by admin. Current status: Disabled.";
       }
       
       ScaffoldMessenger.of(context).showSnackBar(
@@ -763,14 +760,18 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
       IconData statusIcon;
       MaterialColor statusColor;
 
-      if (!isSaturday) {
-        statusText = "⏰ Voting opens on Saturday. Current day: ${_getDayName(now.weekday)}";
+      // Check admin voting status first
+      final now = DateTime.now();
+      final isSaturday = now.weekday == DateTime.saturday;
+      
+      if (isSaturday) {
+        statusText = "❌ Voting is disabled by admin. Saturday voting not available.";
+        statusIcon = Icons.admin_panel_settings;
+        statusColor = Colors.red;
+      } else {
+        statusText = "⏰ Voting opens on Saturday or when enabled by admin. Current: Disabled.";
         statusIcon = Icons.schedule;
         statusColor = Colors.orange;
-      } else {
-        statusText = "🗳️ You have already voted this week. Next voting: Next Saturday";
-        statusIcon = Icons.how_to_vote;
-        statusColor = Colors.blue;
       }
 
       return Card(
@@ -795,12 +796,6 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
         ),
       );
     }
-  }
-
-  /// Get day name from weekday number
-  String _getDayName(int weekday) {
-    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    return days[weekday - 1];
   }
 
   Widget _buildMealRow({
