@@ -16,7 +16,6 @@ import 'admin_payment_history.dart';
 import 'admin_meal_state_screen.dart';
 import 'admin_monthly_menu_screen.dart';
 import 'admin_bill_screen.dart';
-import 'add_menu_set.dart';
 import 'admin_login_screen.dart';
 import '../../services/admin_auth_service.dart';
 import '../../services/menu_set_service.dart';
@@ -32,7 +31,8 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
   final AdminAuthService _adminAuthService = AdminAuthService();
 
   bool _isLoading = true;
-  String _currentUserName = "Admin User"; // This is just a fallback, will be updated from Firebase
+  String _currentUserName =
+      "Admin User"; // This is just a fallback, will be updated from Firebase
   Map<String, dynamic>? _currentUserData;
   int _totalVoteCount = 0; // Store total vote count
 
@@ -44,17 +44,20 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
   bool _isLoadingMenuSets = false;
   String _menuSetSelectedDay = 'Sunday';
   String _selectedMealType = 'breakfast';
-  
+
   // Controllers for 3 options
-  final List<TextEditingController> _menuTitleControllers = List.generate(3, (index) => TextEditingController());
-  final List<TextEditingController> _menuPriceControllers = List.generate(3, (index) => TextEditingController());
-  final List<TextEditingController> _menuImageControllers = List.generate(3, (index) => TextEditingController());
+  final List<TextEditingController> _menuTitleControllers =
+      List.generate(3, (index) => TextEditingController());
+  final List<TextEditingController> _menuPriceControllers =
+      List.generate(3, (index) => TextEditingController());
+  final List<TextEditingController> _menuImageControllers =
+      List.generate(3, (index) => TextEditingController());
 
   @override
   void initState() {
     super.initState();
     _checkAuthentication();
-   // _filteredMealData = Map.from(mealData); // Initialize filtered data
+    // _filteredMealData = Map.from(mealData); // Initialize filtered data
     _getData();
     _debugFetchAllRecords(); // Debug: Check available data
     _loadMenuSets(); // Load menu sets
@@ -98,7 +101,8 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
       if (userData != null && mounted) {
         setState(() {
           _currentUserData = userData;
-          _currentUserName = userData['name'] ?? 'Admin User'; // Fallback string since context might not be available
+          _currentUserName = userData['name'] ??
+              'Admin User'; // Fallback string since context might not be available
           _isLoading = false;
         });
       } else {
@@ -122,33 +126,36 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
       }
     }
   }
+
   Future<void> _getData() async {
     try {
       if (!mounted) return;
-      
+
       setState(() {
         _isLoading = true;
       });
 
       final date = DateTime.now();
       final weekIdentifier = "${date.year}-W${_getWeekNumber(date)}";
-      
+
       print('=== FETCHING VOTING DATA ===');
-      print('Fetching voting data for day: $selectedDay, week: $weekIdentifier');
+      print(
+          'Fetching voting data for day: $selectedDay, week: $weekIdentifier');
       print('Current date: $date');
-      
+
       // Try multiple query strategies to find data
       QuerySnapshot data;
-      
+
       // Strategy 1: Query by day and week identifier
       data = await FirebaseFirestore.instance
           .collection('voting_records')
           .where('selectedDay', isEqualTo: selectedDay)
           .where('weekIdentifier', isEqualTo: weekIdentifier)
           .get();
-      
-      print('Strategy 1 - Found ${data.docs.length} records with week identifier');
-      
+
+      print(
+          'Strategy 1 - Found ${data.docs.length} records with week identifier');
+
       // Strategy 2: If no data found, try just by selected day
       if (data.docs.isEmpty) {
         print('Strategy 2 - Trying query by day only...');
@@ -158,7 +165,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
             .get();
         print('Strategy 2 - Found ${data.docs.length} records by day only');
       }
-      
+
       // Strategy 3: If still no data, try to get any recent data
       if (data.docs.isEmpty) {
         print('Strategy 3 - Trying to get any recent voting records...');
@@ -168,24 +175,25 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
             .limit(20)
             .get();
         print('Strategy 3 - Found ${data.docs.length} recent records');
-        
+
         // Filter by selected day from the recent records
         if (data.docs.isNotEmpty) {
           final filteredDocs = data.docs.where((doc) {
             final docData = doc.data() as Map<String, dynamic>?;
             return docData?['selectedDay'] == selectedDay;
           }).toList();
-          
+
           // Create a new QuerySnapshot-like structure
           data = await FirebaseFirestore.instance
               .collection('voting_records')
               .where('selectedDay', isEqualTo: selectedDay)
               .get();
-          
-          print('Strategy 3 - After filtering by day: ${filteredDocs.length} records');
+
+          print(
+              'Strategy 3 - After filtering by day: ${filteredDocs.length} records');
         }
       }
-      
+
       // Debug: Print document structure
       if (data.docs.isNotEmpty) {
         print('=== SAMPLE DOCUMENT ANALYSIS ===');
@@ -207,72 +215,87 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
         print('3. Different week identifier format');
         print('4. Data is stored with different field names');
       }
-      
+
       final totalvote = data.docs.length;
-      
+
       // Initialize vote counts
-      Map<String, int> breakfastCounts = {'breakfast_set1': 0, 'breakfast_set2': 0, 'breakfast_set3': 0};
-      Map<String, int> lunchCounts = {'lunch_set1': 0, 'lunch_set2': 0, 'lunch_set3': 0};
-      Map<String, int> dinnerCounts = {'dinner_set1': 0, 'dinner_set2': 0, 'dinner_set3': 0};
-      
+      Map<String, int> breakfastCounts = {
+        'breakfast_set1': 0,
+        'breakfast_set2': 0,
+        'breakfast_set3': 0
+      };
+      Map<String, int> lunchCounts = {
+        'lunch_set1': 0,
+        'lunch_set2': 0,
+        'lunch_set3': 0
+      };
+      Map<String, int> dinnerCounts = {
+        'dinner_set1': 0,
+        'dinner_set2': 0,
+        'dinner_set3': 0
+      };
+
       // Count votes for each meal type and set
       for (var doc in data.docs) {
         final docData = doc.data() as Map<String, dynamic>?;
-        
+
         if (docData == null) continue;
-        
+
         // Debug: Print each document's data
         print('Document data: $docData');
-        
+
         // Count breakfast votes - check multiple possible field names
-        final selectedBreakfast = docData['selectedBreakfast'] ?? 
-                                docData['breakfast'] ?? 
-                                docData['breakfast_choice'];
-        if (selectedBreakfast != null && breakfastCounts.containsKey(selectedBreakfast)) {
-          breakfastCounts[selectedBreakfast] = breakfastCounts[selectedBreakfast]! + 1;
+        final selectedBreakfast = docData['selectedBreakfast'] ??
+            docData['breakfast'] ??
+            docData['breakfast_choice'];
+        if (selectedBreakfast != null &&
+            breakfastCounts.containsKey(selectedBreakfast)) {
+          breakfastCounts[selectedBreakfast] =
+              breakfastCounts[selectedBreakfast]! + 1;
         } else if (selectedBreakfast != null) {
           print('Unknown breakfast choice: $selectedBreakfast');
         }
-        
+
         // Count lunch votes - check multiple possible field names
-        final selectedLunch = docData['selectedLunch'] ?? 
-                             docData['lunch'] ?? 
-                             docData['lunch_choice'];
+        final selectedLunch = docData['selectedLunch'] ??
+            docData['lunch'] ??
+            docData['lunch_choice'];
         if (selectedLunch != null && lunchCounts.containsKey(selectedLunch)) {
           lunchCounts[selectedLunch] = lunchCounts[selectedLunch]! + 1;
         } else if (selectedLunch != null) {
           print('Unknown lunch choice: $selectedLunch');
         }
-        
+
         // Count dinner votes - check multiple possible field names
-        final selectedDinner = docData['selectedDinner'] ?? 
-                              docData['dinner'] ?? 
-                              docData['dinner_choice'];
-        if (selectedDinner != null && dinnerCounts.containsKey(selectedDinner)) {
+        final selectedDinner = docData['selectedDinner'] ??
+            docData['dinner'] ??
+            docData['dinner_choice'];
+        if (selectedDinner != null &&
+            dinnerCounts.containsKey(selectedDinner)) {
           dinnerCounts[selectedDinner] = dinnerCounts[selectedDinner]! + 1;
         } else if (selectedDinner != null) {
           print('Unknown dinner choice: $selectedDinner');
         }
       }
-      
+
       // Calculate percentages
       Map<String, Map<String, double>> vote = {
         'breakfast': {},
         'lunch': {},
         'dinner': {},
       };
-      
+
       if (totalvote > 0) {
         // Calculate breakfast percentages
         breakfastCounts.forEach((key, value) {
           vote['breakfast']![key] = (value / totalvote) * 100;
         });
-        
+
         // Calculate lunch percentages
         lunchCounts.forEach((key, value) {
           vote['lunch']![key] = (value / totalvote) * 100;
         });
-        
+
         // Calculate dinner percentages
         dinnerCounts.forEach((key, value) {
           vote['dinner']![key] = (value / totalvote) * 100;
@@ -280,15 +303,24 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
       } else {
         // No votes found, set all percentages to 0
         vote = {
-          'breakfast': {'breakfast_set1': 0.0, 'breakfast_set2': 0.0, 'breakfast_set3': 0.0},
+          'breakfast': {
+            'breakfast_set1': 0.0,
+            'breakfast_set2': 0.0,
+            'breakfast_set3': 0.0
+          },
           'lunch': {'lunch_set1': 0.0, 'lunch_set2': 0.0, 'lunch_set3': 0.0},
-          'dinner': {'dinner_set1': 0.0, 'dinner_set2': 0.0, 'dinner_set3': 0.0},
+          'dinner': {
+            'dinner_set1': 0.0,
+            'dinner_set2': 0.0,
+            'dinner_set3': 0.0
+          },
         };
       }
-      
+
       print('Calculated vote percentages: $vote');
-      print('Total votes counted: Breakfast: ${breakfastCounts.values.reduce((a, b) => a + b)}, Lunch: ${lunchCounts.values.reduce((a, b) => a + b)}, Dinner: ${dinnerCounts.values.reduce((a, b) => a + b)}');
-      
+      print(
+          'Total votes counted: Breakfast: ${breakfastCounts.values.reduce((a, b) => a + b)}, Lunch: ${lunchCounts.values.reduce((a, b) => a + b)}, Dinner: ${dinnerCounts.values.reduce((a, b) => a + b)}');
+
       // Check if widget is still mounted before calling setState
       if (mounted) {
         setState(() {
@@ -305,9 +337,17 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
           _isLoading = false;
           // Set default empty data on error
           mealData = {
-            'breakfast': {'breakfast_set1': 0.0, 'breakfast_set2': 0.0, 'breakfast_set3': 0.0},
+            'breakfast': {
+              'breakfast_set1': 0.0,
+              'breakfast_set2': 0.0,
+              'breakfast_set3': 0.0
+            },
             'lunch': {'lunch_set1': 0.0, 'lunch_set2': 0.0, 'lunch_set3': 0.0},
-            'dinner': {'dinner_set1': 0.0, 'dinner_set2': 0.0, 'dinner_set3': 0.0},
+            'dinner': {
+              'dinner_set1': 0.0,
+              'dinner_set2': 0.0,
+              'dinner_set3': 0.0
+            },
           };
           _totalVoteCount = 0;
         });
@@ -318,26 +358,26 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
   // Debug method to fetch all voting records
   Future<void> _debugFetchAllRecords() async {
     try {
-      final allData = await FirebaseFirestore.instance
-          .collection('voting_records')
-          .get();
-      
+      final allData =
+          await FirebaseFirestore.instance.collection('voting_records').get();
+
       if (allData.docs.isNotEmpty) {
         Set<String> availableDays = {};
         Set<String> availableWeeks = {};
         Map<String, List<Map<String, dynamic>>> dayVotes = {};
-        
+
         for (var doc in allData.docs) {
           final data = doc.data();
           final day = data['selectedDay'] as String?;
           final userName = data['userName'] as String? ?? 'Unknown User';
           final userEmail = data['userEmail'] as String? ?? 'No email';
-          final breakfast = data['selectedBreakfast'] as String? ?? 'No selection';
+          final breakfast =
+              data['selectedBreakfast'] as String? ?? 'No selection';
           final lunch = data['selectedLunch'] as String? ?? 'No selection';
           final dinner = data['selectedDinner'] as String? ?? 'No selection';
           final weekId = data['weekIdentifier'] as String? ?? 'No week';
           final submittedAt = data['submittedAt']?.toString() ?? 'No timestamp';
-          
+
           if (day != null) {
             availableDays.add(day);
             if (!dayVotes.containsKey(day)) {
@@ -353,15 +393,15 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
               'submittedAt': submittedAt,
             });
           }
-          
+
           if (data['weekIdentifier'] != null) {
             availableWeeks.add(data['weekIdentifier']);
           }
         }
-        
+
         // Show debug dialog with user voting details
-        _showDebugDialog(dayVotes, availableDays, availableWeeks, allData.docs.length);
-        
+        _showDebugDialog(
+            dayVotes, availableDays, availableWeeks, allData.docs.length);
       } else {
         // Show dialog saying no records found and add test data
         _showNoRecordsDialog();
@@ -371,8 +411,8 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
     }
   }
 
-  void _showDebugDialog(Map<String, List<Map<String, dynamic>>> dayVotes, 
-                       Set<String> availableDays, Set<String> availableWeeks, int totalRecords) {
+  void _showDebugDialog(Map<String, List<Map<String, dynamic>>> dayVotes,
+      Set<String> availableDays, Set<String> availableWeeks, int totalRecords) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -438,35 +478,42 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                           labelColor: const Color(0xFF1A4D8F),
                           unselectedLabelColor: Colors.grey,
                           indicatorColor: const Color(0xFF1A4D8F),
-                          tabs: availableDays.map((day) => Tab(
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(day),
-                                const SizedBox(width: 4),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF1A4D8F),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Text(
-                                    '${dayVotes[day]?.length ?? 0}',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
+                          tabs: availableDays
+                              .map((day) => Tab(
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(day),
+                                        const SizedBox(width: 4),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF1A4D8F),
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                          ),
+                                          child: Text(
+                                            '${dayVotes[day]?.length ?? 0}',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )).toList(),
+                                  ))
+                              .toList(),
                         ),
                         const SizedBox(height: 16),
                         Expanded(
                           child: TabBarView(
-                            children: availableDays.map((day) => _buildDayVotesWidget(day, dayVotes[day] ?? [])).toList(),
+                            children: availableDays
+                                .map((day) => _buildDayVotesWidget(
+                                    day, dayVotes[day] ?? []))
+                                .toList(),
                           ),
                         ),
                       ],
@@ -589,22 +636,26 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: _buildMealSelection('🥞', 'Breakfast', vote['breakfast']),
+                        child: _buildMealSelection(
+                            '🥞', 'Breakfast', vote['breakfast']),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: _buildMealSelection('🍛', 'Lunch', vote['lunch']),
+                        child:
+                            _buildMealSelection('🍛', 'Lunch', vote['lunch']),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: _buildMealSelection('🍽️', 'Dinner', vote['dinner']),
+                        child: _buildMealSelection(
+                            '🍽️', 'Dinner', vote['dinner']),
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade600),
+                      Icon(Icons.calendar_today,
+                          size: 14, color: Colors.grey.shade600),
                       const SizedBox(width: 4),
                       Text(
                         'Week: ${vote['weekIdentifier']}',
@@ -738,7 +789,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
       final now = DateTime.now();
       final monday = now.subtract(Duration(days: now.weekday - 1));
       final weekIdentifier = "${monday.year}-W${_getWeekNumber(monday)}";
-      
+
       // Add test votes for different days
       final testVotes = [
         {
@@ -786,13 +837,11 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
           'submittedAt': FieldValue.serverTimestamp(),
         },
       ];
-      
+
       for (var vote in testVotes) {
-        await FirebaseFirestore.instance
-            .collection('voting_records')
-            .add(vote);
+        await FirebaseFirestore.instance.collection('voting_records').add(vote);
       }
-      
+
       print('Test voting data added successfully');
     } catch (e) {
       print('Error adding test data: $e');
@@ -804,14 +853,17 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
     final daysSinceFirstDay = date.difference(firstDayOfYear).inDays;
     return ((daysSinceFirstDay + firstDayOfYear.weekday - 1) / 7).ceil();
   }
+
   // Data structure for meal votes
   Map<String, Map<String, double>> mealData = {
-    'breakfast': {'breakfast_set1': 0.0, 'breakfast_set2': 0.0, 'breakfast_set3': 0.0},
+    'breakfast': {
+      'breakfast_set1': 0.0,
+      'breakfast_set2': 0.0,
+      'breakfast_set3': 0.0
+    },
     'lunch': {'lunch_set1': 0.0, 'lunch_set2': 0.0, 'lunch_set3': 0.0},
     'dinner': {'dinner_set1': 0.0, 'dinner_set2': 0.0, 'dinner_set3': 0.0}
   };
-
- 
 
   final List<String> days = [
     'Sunday',
@@ -880,7 +932,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
         return 'Luchi with Alur dom'; // Example localized name
       case 'dinner_set3':
         return 'Luchi with curry'; // Example localized name
-     
+
       default:
         return foodItem;
     }
@@ -890,13 +942,12 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
   List<String> dynamicRemarks = [];
 
   // Search functionality implementation
-  
 
   // Method to update dynamic remarks instantly
   void _updateRemarks(BuildContext context) {
     // Check if widget is still mounted before calling setState
     if (!mounted) return;
-    
+
     setState(() {
       dynamicRemarks = []; // Clear previous remarks
 
@@ -1000,7 +1051,9 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${AppLocalizations.of(context)!.logoutFailed}: $e')),
+          SnackBar(
+              content:
+                  Text('${AppLocalizations.of(context)!.logoutFailed}: $e')),
         );
       }
     }
@@ -1014,7 +1067,8 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
 
     return Column(
       children: sortedMeals.map((meal) {
-        final double percent = meal.value / 100; // Convert percentage to 0-1 range for progress indicator
+        final double percent = meal.value /
+            100; // Convert percentage to 0-1 range for progress indicator
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 6.0),
           child: Column(
@@ -1029,7 +1083,8 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: LinearProgressIndicator(
-                  value: percent.clamp(0.0, 1.0), // Ensure value is between 0 and 1
+                  value: percent.clamp(
+                      0.0, 1.0), // Ensure value is between 0 and 1
                   minHeight: 12,
                   backgroundColor: Colors.grey.shade300,
                   valueColor: AlwaysStoppedAnimation<Color>(
@@ -1097,7 +1152,8 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
     if (options.length != 3) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please fill all fields for all 3 options. Missing: ${missingFields.join(", ")}'),
+          content: Text(
+              'Please fill all fields for all 3 options. Missing: ${missingFields.join(", ")}'),
           backgroundColor: Colors.orange,
           duration: const Duration(seconds: 4),
         ),
@@ -1129,7 +1185,8 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('3 menu options saved successfully for $_menuSetSelectedDay $_selectedMealType'),
+            content: Text(
+                '3 menu options saved successfully for $_menuSetSelectedDay $_selectedMealType'),
             backgroundColor: Colors.green,
           ),
         );
@@ -1152,7 +1209,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
     try {
       await MenuSetService.deleteMenuSet(documentId);
       await _loadMenuSets();
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -1179,7 +1236,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
     try {
       final menuSets = await MenuSetService.getMenuSetsForDay(day);
       final options = menuSets[mealType.toLowerCase()] ?? [];
-      
+
       // Clear existing form data
       for (var controller in _menuTitleControllers) {
         controller.clear();
@@ -1190,19 +1247,19 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
       for (var controller in _menuImageControllers) {
         controller.clear();
       }
-      
+
       // Load existing data into form (up to 3 options)
       for (int i = 0; i < options.length && i < 3; i++) {
         _menuTitleControllers[i].text = options[i]['title'] ?? '';
         _menuPriceControllers[i].text = options[i]['price'] ?? '';
         _menuImageControllers[i].text = options[i]['image'] ?? '';
       }
-      
+
       setState(() {
         _menuSetSelectedDay = day;
         _selectedMealType = mealType.toLowerCase();
       });
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1272,7 +1329,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          
+
           // Add new menu set form
           Container(
             padding: const EdgeInsets.all(15),
@@ -1302,7 +1359,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                   ),
                 ),
                 const SizedBox(height: 15),
-                
+
                 // Day and meal type selection
                 Row(
                   children: [
@@ -1337,9 +1394,12 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                           border: OutlineInputBorder(),
                         ),
                         items: const [
-                          DropdownMenuItem(value: 'breakfast', child: Text('Breakfast')),
-                          DropdownMenuItem(value: 'lunch', child: Text('Lunch')),
-                          DropdownMenuItem(value: 'dinner', child: Text('Dinner')),
+                          DropdownMenuItem(
+                              value: 'breakfast', child: Text('Breakfast')),
+                          DropdownMenuItem(
+                              value: 'lunch', child: Text('Lunch')),
+                          DropdownMenuItem(
+                              value: 'dinner', child: Text('Dinner')),
                         ],
                         onChanged: (String? newValue) {
                           if (newValue != null) {
@@ -1353,7 +1413,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                   ],
                 ),
                 const SizedBox(height: 15),
-                
+
                 // Menu details - 3 required options
                 Text(
                   'Configure 3 menu options (all required):',
@@ -1364,97 +1424,112 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                
-                ...List.generate(3, (index) => Container(
-                  margin: const EdgeInsets.only(bottom: 15),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.green.shade200),
-                    borderRadius: BorderRadius.circular(8),
-                    color: Colors.green.shade50,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            'Option ${index + 1}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.green.shade800,
-                              fontSize: 13,
-                            ),
+
+                ...List.generate(
+                    3,
+                    (index) => Container(
+                          margin: const EdgeInsets.only(bottom: 15),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.green.shade200),
+                            borderRadius: BorderRadius.circular(8),
+                            color: Colors.green.shade50,
                           ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.red.shade100,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              'Required',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: Colors.red.shade700,
-                                fontWeight: FontWeight.bold,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    'Option ${index + 1}',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.green.shade800,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red.shade100,
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Text(
+                                      'Required',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.red.shade700,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: _menuTitleControllers[index],
-                        decoration: InputDecoration(
-                          labelText: 'Menu Title *',
-                          hintText: 'e.g., Bhuna Khichuri',
-                          border: const OutlineInputBorder(),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          labelStyle: TextStyle(fontSize: 12, color: Colors.green.shade600),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _menuPriceControllers[index],
-                              decoration: InputDecoration(
-                                labelText: 'Price *',
-                                hintText: 'e.g., ৳ 40',
-                                border: const OutlineInputBorder(),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                labelStyle: TextStyle(fontSize: 12, color: Colors.green.shade600),
+                              const SizedBox(height: 8),
+                              TextField(
+                                controller: _menuTitleControllers[index],
+                                decoration: InputDecoration(
+                                  labelText: 'Menu Title *',
+                                  hintText: 'e.g., Bhuna Khichuri',
+                                  border: const OutlineInputBorder(),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 8),
+                                  labelStyle: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.green.shade600),
+                                ),
                               ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: TextField(
-                              controller: _menuImageControllers[index],
-                              decoration: InputDecoration(
-                                labelText: 'Image *',
-                                hintText: 'e.g., 1.png',
-                                border: const OutlineInputBorder(),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                labelStyle: TextStyle(fontSize: 12, color: Colors.green.shade600),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextField(
+                                      controller: _menuPriceControllers[index],
+                                      decoration: InputDecoration(
+                                        labelText: 'Price *',
+                                        hintText: 'e.g., ৳ 40',
+                                        border: const OutlineInputBorder(),
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                                horizontal: 12, vertical: 8),
+                                        labelStyle: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.green.shade600),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: TextField(
+                                      controller: _menuImageControllers[index],
+                                      decoration: InputDecoration(
+                                        labelText: 'Image *',
+                                        hintText: 'e.g., 1.png',
+                                        border: const OutlineInputBorder(),
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                                horizontal: 12, vertical: 8),
+                                        labelStyle: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.green.shade600),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
-                )),
-                
+                        )),
+
                 ElevatedButton.icon(
                   onPressed: _saveMenuSet,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green.shade600,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12),
                   ),
                   icon: const Icon(Icons.add),
                   label: const Text('Save 3 Menu Options'),
@@ -1463,7 +1538,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          
+
           // Display existing menu sets
           if (_isLoadingMenuSets)
             const Center(child: CircularProgressIndicator())
@@ -1529,10 +1604,10 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
   // Build menu sets for a specific day
   Widget _buildDayMenuSets(String day) {
     final dayMenuSets = _menuSets[day];
-    if (dayMenuSets == null || 
-        (dayMenuSets['breakfast']!.isEmpty && 
-         dayMenuSets['lunch']!.isEmpty && 
-         dayMenuSets['dinner']!.isEmpty)) {
+    if (dayMenuSets == null ||
+        (dayMenuSets['breakfast']!.isEmpty &&
+            dayMenuSets['lunch']!.isEmpty &&
+            dayMenuSets['dinner']!.isEmpty)) {
       return const SizedBox.shrink();
     }
 
@@ -1556,7 +1631,8 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
   }
 
   // Build menu sets for a specific meal type
-  Widget _buildMealTypeMenuSets(String mealType, List<Map<String, dynamic>> menuSets) {
+  Widget _buildMealTypeMenuSets(
+      String mealType, List<Map<String, dynamic>> menuSets) {
     return Padding(
       padding: const EdgeInsets.all(10),
       child: Column(
@@ -1575,9 +1651,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
               if (menuSets.isNotEmpty)
                 TextButton.icon(
                   onPressed: () => _loadExistingMenuOptions(
-                    menuSets[0]['day'] ?? _menuSetSelectedDay, 
-                    mealType
-                  ),
+                      menuSets[0]['day'] ?? _menuSetSelectedDay, mealType),
                   icon: const Icon(Icons.edit, size: 16),
                   label: const Text('Edit', style: TextStyle(fontSize: 12)),
                   style: TextButton.styleFrom(
@@ -1607,7 +1681,8 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                     const SizedBox(height: 4),
                     Text(
                       'Configure 3 menu options above',
-                      style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                      style:
+                          TextStyle(color: Colors.grey.shade500, fontSize: 12),
                     ),
                   ],
                 ),
@@ -1618,20 +1693,29 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
               children: [
                 // Show status indicator
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: menuSets.length == 3 ? Colors.green.shade100 : Colors.orange.shade100,
+                    color: menuSets.length == 3
+                        ? Colors.green.shade100
+                        : Colors.orange.shade100,
                     borderRadius: BorderRadius.circular(15),
                     border: Border.all(
-                      color: menuSets.length == 3 ? Colors.green.shade300 : Colors.orange.shade300,
+                      color: menuSets.length == 3
+                          ? Colors.green.shade300
+                          : Colors.orange.shade300,
                     ),
                   ),
                   child: Text(
-                    menuSets.length == 3 ? 'Complete (3/3 options)' : 'Incomplete (${menuSets.length}/3 options)',
+                    menuSets.length == 3
+                        ? 'Complete (3/3 options)'
+                        : 'Incomplete (${menuSets.length}/3 options)',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: menuSets.length == 3 ? Colors.green.shade700 : Colors.orange.shade700,
+                      color: menuSets.length == 3
+                          ? Colors.green.shade700
+                          : Colors.orange.shade700,
                     ),
                   ),
                 ),
@@ -1678,7 +1762,8 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                                   width: 50,
                                   height: 50,
                                   color: Colors.grey.shade300,
-                                  child: Icon(Icons.image_not_supported, color: Colors.grey.shade600),
+                                  child: Icon(Icons.image_not_supported,
+                                      color: Colors.grey.shade600),
                                 );
                               },
                             ),
@@ -1691,7 +1776,8 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                       ),
                       subtitle: Text(
                         menuSet['price'] ?? 'No price',
-                        style: const TextStyle(color: Colors.green, fontWeight: FontWeight.w600),
+                        style: const TextStyle(
+                            color: Colors.green, fontWeight: FontWeight.w600),
                       ),
                       trailing: IconButton(
                         icon: const Icon(Icons.delete, color: Colors.red),
@@ -1715,7 +1801,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _updateRemarks(context);
         });
-        
+
         // Show loading screen while authenticating
         if (_isLoading) {
           return const Scaffold(
@@ -1725,623 +1811,640 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
           );
         }
 
-      
-
         return Scaffold(
-      drawer: Drawer(
-        child: Column(
-          children: [
-            DrawerHeader(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF002B5B), Color(0xFF1A4D8F)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: Row(
-                children: [
-                  const CircleAvatar(
-                    backgroundImage: AssetImage('assets/me.png'),
-                    radius: 30,
+          drawer: Drawer(
+            child: Column(
+              children: [
+                DrawerHeader(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF002B5B), Color(0xFF1A4D8F)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
                   ),
-                  const SizedBox(width: 10),
-                  Flexible(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
+                  child: Row(
+                    children: [
+                      const CircleAvatar(
+                        backgroundImage: AssetImage('assets/me.png'),
+                        radius: 30,
+                      ),
+                      const SizedBox(width: 10),
+                      Flexible(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              _currentUserName,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            if (_currentUserData != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                _currentUserData!['role'] ?? '',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              Text(
+                                'BA: ${_currentUserData!['ba_no'] ?? ''}',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ListView(
+                    padding: EdgeInsets.zero,
+                    children: [
+                      _buildSidebarTile(
+                        icon: Icons.dashboard,
+                        title: AppLocalizations.of(context)!.home,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AdminHomeScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.people,
+                        title: AppLocalizations.of(context)!.users,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AdminUsersScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.pending,
+                        title: AppLocalizations.of(context)!.pendingIds,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const AdminPendingIdsScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.history,
+                        title: AppLocalizations.of(context)!.shoppingHistory,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const AdminShoppingHistoryScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.receipt,
+                        title: AppLocalizations.of(context)!.voucherList,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AdminVoucherScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.storage,
+                        title: AppLocalizations.of(context)!.inventory,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const AdminInventoryScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.food_bank,
+                        title: AppLocalizations.of(context)!.messing,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AdminMessingScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.menu_book,
+                        title: AppLocalizations.of(context)!.monthlyMenu,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const EditMenuScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.analytics,
+                        title: AppLocalizations.of(context)!.mealState,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const AdminMealStateScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.thumb_up,
+                        title: AppLocalizations.of(context)!.menuVote,
+                        onTap: () => Navigator.pop(context),
+                        selected: true,
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.receipt_long,
+                        title: AppLocalizations.of(context)!.bills,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AdminBillScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.payment,
+                        title: AppLocalizations.of(context)!.payments,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const PaymentsDashboard(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.people_alt,
+                        title: AppLocalizations.of(context)!.diningMemberState,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const DiningMemberStatePage(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildSidebarTile(
+                        icon: Icons.manage_accounts,
+                        title: AppLocalizations.of(context)!.staffState,
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const AdminStaffStateScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border(
+                      top: BorderSide(color: Colors.grey.shade300),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).padding.bottom + 8,
+                      top: 8,
+                    ),
+                    child: _buildSidebarTile(
+                      icon: Icons.logout,
+                      title: AppLocalizations.of(context)!.logout,
+                      onTap: _logout,
+                      color: Colors.red,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          appBar: AppBar(
+            backgroundColor: const Color(0xFF002B5B),
+            iconTheme: const IconThemeData(color: Colors.white),
+            centerTitle: true,
+            title: Text(
+              AppLocalizations.of(context)!.menuVote,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
+              ),
+            ),
+            actions: [
+              PopupMenuButton<Locale>(
+                icon: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CustomPaint(
+                      size: const Size(24, 16),
+                      painter:
+                          languageProvider.currentLocale.languageCode == 'en'
+                              ? _EnglandFlagPainter()
+                              : _BangladeshFlagPainter(),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.arrow_drop_down, color: Colors.white),
+                  ],
+                ),
+                onSelected: (Locale locale) {
+                  languageProvider.changeLanguage(locale);
+                },
+                itemBuilder: (BuildContext context) => [
+                  PopupMenuItem<Locale>(
+                    value: const Locale('en', ''),
+                    child: Row(
                       children: [
-                        Text(
-                          _currentUserName,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                        CustomPaint(
+                          size: const Size(20, 14),
+                          painter: _EnglandFlagPainter(),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(AppLocalizations.of(context)!.english),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem<Locale>(
+                    value: const Locale('bn', ''),
+                    child: Row(
+                      children: [
+                        CustomPaint(
+                          size: const Size(20, 14),
+                          painter: _BangladeshFlagPainter(),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(AppLocalizations.of(context)!.bangla),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          body: SingleChildScrollView(
+            // Changed to SingleChildScrollView
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Search and Add New Set Button
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: TextField(
+                          controller: _searchController,
+                          //onChanged: _filterRecords,
+                          decoration: InputDecoration(
+                            hintText:
+                                AppLocalizations.of(context)!.searchMealSets,
+                            prefixIcon: const Icon(Icons.search, size: 20),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 8,
+                            ),
                           ),
                         ),
-                        if (_currentUserData != null) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            _currentUserData!['role'] ?? '',
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        onPressed: _isLoading ? null : _getData,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        icon: _isLoading
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
+                                ),
+                              )
+                            : const Icon(Icons.refresh,
+                                color: Colors.white, size: 20),
+                        label: Text(
+                          'Refresh',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        onPressed: _debugFetchAllRecords,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        icon: const Icon(Icons.bug_report,
+                            color: Colors.white, size: 20),
+                        label: Text(
+                          'Debug',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  // Day selection dropdown
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'Select Day: ',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(width: 8),
+                        DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedDay,
+                            icon: const Icon(Icons.arrow_drop_down),
                             style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
+                                color: Colors.black, fontSize: 14),
+                            items: days.map((String day) {
+                              return DropdownMenuItem<String>(
+                                value: day,
+                                child: Text(getLocalizedDay(context, day)),
+                              );
+                            }).toList(),
+                            onChanged: (String? newValue) {
+                              if (newValue != null) {
+                                setState(() {
+                                  selectedDay = newValue;
+                                  // Re-apply filter based on the new day
+                                  //_filterRecords(_searchController.text);
+                                  _updateRemarks(
+                                      context); // Update remarks for the new day instantly
+                                  _getData(); // Fetch data for the selected day
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  // Meal Vote Statistics Section
+                  ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(AppLocalizations.of(context)!.mealVoteStatistics,
+                            style: const TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.bold)),
+                        if (_totalVoteCount > 0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade100,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Text(
+                              'Total Votes: $_totalVoteCount',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.blue.shade800,
+                              ),
                             ),
                           ),
-                          Text(
-                            'BA: ${_currentUserData!['ba_no'] ?? ''}',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    // Check if there's any voting data
+                    _isLoading
+                        ? const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(32.0),
+                              child: CircularProgressIndicator(),
                             ),
+                          )
+                        : _hasAnyVotes()
+                            ? Column(
+                                children: mealData.entries.map((entry) {
+                                  return Card(
+                                    margin:
+                                        const EdgeInsets.symmetric(vertical: 8),
+                                    elevation: 4,
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(10)),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          // Highlighted meal time (Breakfast, Lunch, Dinner)
+                                          Text(
+                                            getLocalizedMealType(
+                                                context, entry.key),
+                                            style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold),
+                                          ),
+                                          const SizedBox(height: 10),
+                                          _buildMealVoteList(entry.value),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              )
+                            : Card(
+                                margin: const EdgeInsets.symmetric(vertical: 8),
+                                elevation: 4,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10)),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(32),
+                                  child: Column(
+                                    children: [
+                                      Icon(
+                                        Icons.poll_outlined,
+                                        size: 64,
+                                        color: Colors.grey.shade400,
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        'No voting data available for ${getLocalizedDay(context, selectedDay)}',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: Colors.grey.shade600,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Users haven\'t voted for meals on this day yet.',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey.shade500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                  ],
+
+                  // --- Menu Set Configuration Section ---
+                  const SizedBox(height: 30),
+                  const Divider(thickness: 2),
+                  const SizedBox(height: 20),
+                  _buildMenuSetConfigurationSection(),
+
+                  // --- Horizontal Line before Remarks ---
+                  const SizedBox(height: 20),
+                  const Divider(), // Added a divider for visual separation
+                  const SizedBox(height: 20),
+                  // --- Remarks Section at the very end (scrollable into view) ---
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          AppLocalizations.of(context)!.insightsRemarks,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF002B5B),
                           ),
-                        ],
+                        ),
+                        const SizedBox(height: 10),
+                        // Display remarks content directly
+                        dynamicRemarks.isEmpty
+                            ? Text(
+                                AppLocalizations.of(context)!
+                                    .noRemarksAvailable,
+                                style: const TextStyle(
+                                    fontSize: 14,
+                                    fontStyle: FontStyle.italic,
+                                    color: Colors.grey),
+                              )
+                            : Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: dynamicRemarks
+                                    .map(
+                                      (remark) => Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 4),
+                                        child: Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            const Icon(Icons.info_outline,
+                                                size: 18,
+                                                color: Colors.blueGrey),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                remark,
+                                                style: const TextStyle(
+                                                    fontSize: 14),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
                       ],
                     ),
                   ),
                 ],
               ),
             ),
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  _buildSidebarTile(
-                    icon: Icons.dashboard,
-                    title: AppLocalizations.of(context)!.home,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminHomeScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.people,
-                    title: AppLocalizations.of(context)!.users,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminUsersScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.pending,
-                    title: AppLocalizations.of(context)!.pendingIds,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminPendingIdsScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.history,
-                    title: AppLocalizations.of(context)!.shoppingHistory,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              const AdminShoppingHistoryScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.receipt,
-                    title: AppLocalizations.of(context)!.voucherList,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminVoucherScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.storage,
-                    title: AppLocalizations.of(context)!.inventory,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminInventoryScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.food_bank,
-                    title: AppLocalizations.of(context)!.messing,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminMessingScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.menu_book,
-                    title: AppLocalizations.of(context)!.monthlyMenu,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const EditMenuScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.analytics,
-                    title: AppLocalizations.of(context)!.mealState,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminMealStateScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.thumb_up,
-                    title: AppLocalizations.of(context)!.menuVote,
-                    onTap: () => Navigator.pop(context),
-                    selected: true,
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.receipt_long,
-                    title: AppLocalizations.of(context)!.bills,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminBillScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.payment,
-                    title: AppLocalizations.of(context)!.payments,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const PaymentsDashboard(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.people_alt,
-                    title: AppLocalizations.of(context)!.diningMemberState,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const DiningMemberStatePage(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.manage_accounts,
-                    title: AppLocalizations.of(context)!.staffState,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminStaffStateScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: Colors.grey.shade300),
-                ),
-              ),
-              child: Padding(
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.of(context).padding.bottom + 8,
-                  top: 8,
-                ),
-                child: _buildSidebarTile(
-                  icon: Icons.logout,
-                  title: AppLocalizations.of(context)!.logout,
-                  onTap: _logout,
-                  color: Colors.red,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF002B5B),
-        iconTheme: const IconThemeData(color: Colors.white),
-        centerTitle: true,
-        title: Text(
-          AppLocalizations.of(context)!.menuVote,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
           ),
-        ),
-        actions: [
-          PopupMenuButton<Locale>(
-            icon: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CustomPaint(
-                  size: const Size(24, 16),
-                  painter: languageProvider.currentLocale.languageCode == 'en'
-                      ? _EnglandFlagPainter()
-                      : _BangladeshFlagPainter(),
-                ),
-                const SizedBox(width: 8),
-                const Icon(Icons.arrow_drop_down, color: Colors.white),
-              ],
-            ),
-            onSelected: (Locale locale) {
-              languageProvider.changeLanguage(locale);
-            },
-            itemBuilder: (BuildContext context) => [
-              PopupMenuItem<Locale>(
-                value: const Locale('en', ''),
-                child: Row(
-                  children: [
-                    CustomPaint(
-                      size: const Size(20, 14),
-                      painter: _EnglandFlagPainter(),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(AppLocalizations.of(context)!.english),
-                  ],
-                ),
-              ),
-              PopupMenuItem<Locale>(
-                value: const Locale('bn', ''),
-                child: Row(
-                  children: [
-                    CustomPaint(
-                      size: const Size(20, 14),
-                      painter: _BangladeshFlagPainter(),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(AppLocalizations.of(context)!.bangla),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        // Changed to SingleChildScrollView
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Search and Add New Set Button
-              Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: TextField(
-                      controller: _searchController,
-                      //onChanged: _filterRecords,
-                      decoration: InputDecoration(
-                        hintText: AppLocalizations.of(context)!.searchMealSets,
-                        prefixIcon: const Icon(Icons.search, size: 20),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 8,
-                        ),
-                      ),
-                    ),
-                  ),
-                  
-                  const SizedBox(width: 8),
-                  ElevatedButton.icon(
-                    onPressed: _isLoading ? null : _getData,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    icon: _isLoading 
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                        : const Icon(Icons.refresh, color: Colors.white, size: 20),
-                    label: Text(
-                      'Refresh',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  ElevatedButton.icon(
-                    onPressed: _debugFetchAllRecords,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    icon: const Icon(Icons.bug_report, color: Colors.white, size: 20),
-                    label: Text(
-                      'Debug',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              // Day selection dropdown
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      'Select Day: ',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(width: 8),
-                    DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: selectedDay,
-                        icon: const Icon(Icons.arrow_drop_down),
-                        style:
-                            const TextStyle(color: Colors.black, fontSize: 14),
-                        items: days.map((String day) {
-                          return DropdownMenuItem<String>(
-                            value: day,
-                            child: Text(getLocalizedDay(context, day)),
-                          );
-                        }).toList(),
-                        onChanged: (String? newValue) {
-                          if (newValue != null) {
-                            setState(() {
-                              selectedDay = newValue;
-                              // Re-apply filter based on the new day
-                              //_filterRecords(_searchController.text);
-                              _updateRemarks(context); // Update remarks for the new day instantly
-                              _getData(); // Fetch data for the selected day
-                            });
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              // Meal Vote Statistics Section
-               ...[
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(AppLocalizations.of(context)!.mealVoteStatistics,
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    if (_totalVoteCount > 0)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade100,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Text(
-                          'Total Votes: $_totalVoteCount',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.blue.shade800,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                // Check if there's any voting data
-                _isLoading 
-                  ? const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(32.0),
-                        child: CircularProgressIndicator(),
-                      ),
-                    )
-                  : _hasAnyVotes() 
-                    ? Column(
-                        children: mealData.entries.map((entry) {
-                          return Card(
-                            margin: const EdgeInsets.symmetric(vertical: 8),
-                            elevation: 4,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10)),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Highlighted meal time (Breakfast, Lunch, Dinner)
-                                  Text(
-                                    getLocalizedMealType(context, entry.key),
-                                    style: const TextStyle(
-                                        fontSize: 16, fontWeight: FontWeight.bold),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  _buildMealVoteList(entry.value),
-                                ],
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      )
-                    : Card(
-                        margin: const EdgeInsets.symmetric(vertical: 8),
-                        elevation: 4,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
-                        child: Padding(
-                          padding: const EdgeInsets.all(32),
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.poll_outlined,
-                                size: 64,
-                                color: Colors.grey.shade400,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'No voting data available for ${getLocalizedDay(context, selectedDay)}',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.grey.shade600,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Users haven\'t voted for meals on this day yet.',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey.shade500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-              ] ,
-              
-              // --- Menu Set Configuration Section ---
-              const SizedBox(height: 30),
-              const Divider(thickness: 2),
-              const SizedBox(height: 20),
-              _buildMenuSetConfigurationSection(),
-              
-              // --- Horizontal Line before Remarks ---
-              const SizedBox(height: 20),
-              const Divider(), // Added a divider for visual separation
-              const SizedBox(height: 20),
-              // --- Remarks Section at the very end (scrollable into view) ---
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.grey.shade300),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      AppLocalizations.of(context)!.insightsRemarks,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF002B5B),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    // Display remarks content directly
-                    dynamicRemarks.isEmpty
-                        ? Text(
-                            AppLocalizations.of(context)!.noRemarksAvailable,
-                            style: const TextStyle(
-                                fontSize: 14,
-                                fontStyle: FontStyle.italic,
-                                color: Colors.grey),
-                          )
-                        : Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: dynamicRemarks
-                                .map(
-                                  (remark) => Padding(
-                                    padding:
-                                        const EdgeInsets.symmetric(vertical: 4),
-                                    child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        const Icon(Icons.info_outline,
-                                            size: 18, color: Colors.blueGrey),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            remark,
-                                            style:
-                                                const TextStyle(fontSize: 14),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                          ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+        );
       },
     );
   }
@@ -2352,19 +2455,23 @@ class _EnglandFlagPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint();
-    
+
     // White background
     paint.color = Colors.white;
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
-    
+
     // Red cross
     paint.color = Colors.red;
     // Vertical line
-    canvas.drawRect(Rect.fromLTWH(size.width * 0.4, 0, size.width * 0.2, size.height), paint);
-    // Horizontal line  
-    canvas.drawRect(Rect.fromLTWH(0, size.height * 0.4, size.width, size.height * 0.2), paint);
+    canvas.drawRect(
+        Rect.fromLTWH(size.width * 0.4, 0, size.width * 0.2, size.height),
+        paint);
+    // Horizontal line
+    canvas.drawRect(
+        Rect.fromLTWH(0, size.height * 0.4, size.width, size.height * 0.2),
+        paint);
   }
-  
+
   @override
   bool shouldRepaint(CustomPainter oldDelegate) => false;
 }
@@ -2374,20 +2481,17 @@ class _BangladeshFlagPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint();
-    
+
     // Green background
     paint.color = const Color(0xFF006A4E);
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
-    
+
     // Red circle
     paint.color = const Color(0xFFF42A41);
     canvas.drawCircle(
-      Offset(size.width * 0.4, size.height * 0.5), 
-      size.height * 0.3, 
-      paint
-    );
+        Offset(size.width * 0.4, size.height * 0.5), size.height * 0.3, paint);
   }
-  
+
   @override
   bool shouldRepaint(CustomPainter oldDelegate) => false;
 }
