@@ -34,11 +34,178 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
     'dinner': [],
   };
   bool _isLoadingMenuSets = false;
+  bool _isVotingAllowed = false;
+  bool _isCheckingVotingStatus = true;
+  bool _hasVotedThisWeek = false;
+  String? _existingVoteChoice;
 
   @override
   void initState() {
     super.initState();
     _loadMenuSetsForDay();
+    _debugUserCollections(); // Add debug method to check user data
+    _checkVotingPermission(); // Check if voting is allowed
+  }
+
+  /// Check if voting is allowed (Saturday or admin override)
+  Future<void> _checkVotingPermission() async {
+    setState(() {
+      _isCheckingVotingStatus = true;
+    });
+
+    try {
+      final now = DateTime.now();
+      final isSaturday = now.weekday == DateTime.saturday;
+      
+      // Check if admin has enabled voting for this week
+      bool adminOverride = false;
+      try {
+        final adminSettingsDoc = await FirebaseFirestore.instance
+            .collection('admin_settings')
+            .doc('voting_control')
+            .get();
+            
+        if (adminSettingsDoc.exists) {
+          final data = adminSettingsDoc.data()!;
+          // Use same week calculation as in submit method
+          final monday = now.subtract(Duration(days: now.weekday - 1));
+          final weekIdentifier = "${monday.year}-W${_getWeekNumber(monday)}";
+          adminOverride = data['allowVoting'] == true && 
+                         data['weekIdentifier'] == weekIdentifier;
+          debugPrint("🔍 Admin override status: $adminOverride for week $weekIdentifier");
+        }
+      } catch (e) {
+        debugPrint("❌ Error checking admin override: $e");
+      }
+
+      // Check if user has already voted this week
+      bool hasVotedThisWeek = false;
+      String? existingVoteChoice = null;
+      try {
+        final currentUser = FirebaseAuth.instance.currentUser;
+        if (currentUser != null) {
+          // Use same week calculation as in submit method
+          final monday = now.subtract(Duration(days: now.weekday - 1));
+          final weekIdentifier = "${monday.year}-W${_getWeekNumber(monday)}";
+          final documentId = "${currentUser.uid}_$weekIdentifier";
+          
+          debugPrint("🔍 Checking for existing vote with document ID: $documentId");
+          
+          // Check for existing vote document
+          final existingVoteDoc = await FirebaseFirestore.instance
+              .collection('voting_records')
+              .doc(documentId)
+              .get();
+          
+          hasVotedThisWeek = existingVoteDoc.exists;
+          if (hasVotedThisWeek) {
+            final data = existingVoteDoc.data()!;
+            // Build existing vote choice summary
+            List<String> choices = [];
+            if (data['selectedBreakfast'] != null && data['selectedBreakfast'].toString().isNotEmpty) {
+              choices.add("Breakfast: ${data['selectedBreakfast']}");
+            }
+            if (data['selectedLunch'] != null && data['selectedLunch'].toString().isNotEmpty) {
+              choices.add("Lunch: ${data['selectedLunch']}");
+            }
+            if (data['selectedDinner'] != null && data['selectedDinner'].toString().isNotEmpty) {
+              choices.add("Dinner: ${data['selectedDinner']}");
+            }
+            existingVoteChoice = choices.isNotEmpty ? choices.join(", ") : "No meals selected";
+          }
+          debugPrint("🗳️ User has voted this week: $hasVotedThisWeek");
+          if (existingVoteChoice != null) {
+            debugPrint("🗳️ Previous vote: $existingVoteChoice");
+          }
+        }
+      } catch (e) {
+        debugPrint("❌ Error checking existing votes: $e");
+      }
+
+      setState(() {
+        // Allow voting if it's Saturday/admin override, regardless of previous votes
+        _isVotingAllowed = (isSaturday || adminOverride);
+        _hasVotedThisWeek = hasVotedThisWeek;
+        _existingVoteChoice = existingVoteChoice;
+        _isCheckingVotingStatus = false;
+      });
+
+      debugPrint("📅 Voting permission check:");
+      debugPrint("   Is Saturday: $isSaturday");
+      debugPrint("   Admin Override: $adminOverride");
+      debugPrint("   Has Voted This Week: $hasVotedThisWeek");
+      debugPrint("   Voting Allowed: $_isVotingAllowed");
+
+    } catch (e) {
+      debugPrint("❌ Error checking voting permission: $e");
+      setState(() {
+        _isVotingAllowed = false;
+        _isCheckingVotingStatus = false;
+      });
+    }
+  }
+
+  /// Debug method to check user data in Firestore collections
+  Future<void> _debugUserCollections() async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return;
+
+      debugPrint("🐛 DEBUG: Checking user data for ${currentUser.email}");
+      debugPrint("🐛 DEBUG: User UID: ${currentUser.uid}");
+      debugPrint("🐛 DEBUG: Display Name: ${currentUser.displayName}");
+
+      // Check users collection by UID
+      try {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(currentUser.uid)
+            .get();
+        
+        if (userDoc.exists) {
+          debugPrint("🐛 DEBUG: Found in 'users' collection by UID: ${userDoc.data()}");
+        } else {
+          debugPrint("🐛 DEBUG: NOT found in 'users' collection by UID");
+        }
+      } catch (e) {
+        debugPrint("🐛 DEBUG: Error checking users by UID: $e");
+      }
+
+      // Check users collection by email
+      try {
+        final userQuery = await FirebaseFirestore.instance
+            .collection('users')
+            .where('email', isEqualTo: currentUser.email)
+            .get();
+        
+        if (userQuery.docs.isNotEmpty) {
+          debugPrint("🐛 DEBUG: Found in 'users' collection by email: ${userQuery.docs.first.data()}");
+        } else {
+          debugPrint("🐛 DEBUG: NOT found in 'users' collection by email");
+        }
+      } catch (e) {
+        debugPrint("🐛 DEBUG: Error checking users by email: $e");
+      }
+
+      // Check staff_state collection
+      try {
+        final staffQuery = await FirebaseFirestore.instance
+            .collection('staff_state')
+            .where('email', isEqualTo: currentUser.email)
+            .get();
+        
+        if (staffQuery.docs.isNotEmpty) {
+          debugPrint("🐛 DEBUG: Found in 'staff_state' collection: ${staffQuery.docs.first.data()}");
+        } else {
+          debugPrint("🐛 DEBUG: NOT found in 'staff_state' collection");
+        }
+      } catch (e) {
+        debugPrint("🐛 DEBUG: Error checking staff_state: $e");
+      }
+
+    } catch (e) {
+      debugPrint("🐛 DEBUG: Error in debug method: $e");
+    }
   }
 
   /// Load menu sets for the currently selected day
@@ -136,6 +303,28 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
   }
 
   Future<void> _submitVote() async {
+    // Check if voting is allowed
+    if (!_isVotingAllowed) {
+      final now = DateTime.now();
+      final isSaturday = now.weekday == DateTime.saturday;
+      
+      String message;
+      if (!isSaturday) {
+        message = "Voting is only allowed on Saturdays. Please wait until Saturday to submit your vote.";
+      } else {
+        message = "Voting is not available at this time.";
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
     if (_selectedBreakfast == null &&
         _selectedLunch == null &&
         _selectedDinner == null) {
@@ -146,6 +335,88 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
         ),
       );
       return;
+    }
+
+    // Show warning dialog if user has already voted this week
+    debugPrint("🔍 Checking for warning dialog: _hasVotedThisWeek = $_hasVotedThisWeek");
+    if (_hasVotedThisWeek) {
+      debugPrint("🚨 Showing warning dialog for existing vote");
+      final bool? shouldProceed = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.warning_amber, color: Colors.orange, size: 28),
+                const SizedBox(width: 12),
+                const Text('Vote Already Submitted'),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'You have already voted this week.',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 8),
+                if (_existingVoteChoice != null)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.how_to_vote, color: Colors.blue.shade600, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Previous choice: $_existingVoteChoice',
+                            style: TextStyle(
+                              color: Colors.blue.shade700,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Do you want to change your vote? Your previous vote will be overwritten.',
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Change Vote'),
+              ),
+            ],
+          );
+        },
+      );
+
+      debugPrint("🔍 Warning dialog result: shouldProceed = $shouldProceed");
+      if (shouldProceed != true) {
+        debugPrint("❌ User cancelled vote change");
+        return; // User cancelled
+      }
+      debugPrint("✅ User confirmed vote change, proceeding...");
     }
 
     // Show loading dialog
@@ -170,13 +441,15 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
         throw Exception("User not authenticated");
       }
 
-      // Get user details from users collection or staff_state collection
+      // Get user details from multiple possible collections with enhanced logic
       String userName = "Unknown User";
       String userRole = "user";
       String baNo = "";
 
       try {
-        // First try to get from users collection
+        debugPrint("🔍 Fetching user details for: ${currentUser.email}");
+        
+        // Strategy 1: Try users collection by UID
         DocumentSnapshot userDoc = await FirebaseFirestore.instance
             .collection('users')
             .doc(currentUser.uid)
@@ -184,11 +457,21 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
         
         if (userDoc.exists) {
           final userData = userDoc.data() as Map<String, dynamic>;
-          userName = userData['name'] ?? currentUser.displayName ?? "Unknown User";
+          debugPrint("✅ Found user in 'users' collection: $userData");
+          
+          // Try multiple possible field names for user name
+          userName = userData['name'] ?? 
+                    userData['userName'] ?? 
+                    userData['fullName'] ?? 
+                    userData['displayName'] ?? 
+                    currentUser.displayName ?? 
+                    "Unknown User";
           userRole = userData['role'] ?? "user";
-          baNo = userData['ba_no'] ?? "";
+          baNo = userData['ba_no'] ?? userData['baNo'] ?? "";
         } else {
-          // Try staff_state collection if not found in users
+          debugPrint("❌ User not found in 'users' collection, trying 'staff_state'");
+          
+          // Strategy 2: Try staff_state collection by email
           final staffQuery = await FirebaseFirestore.instance
               .collection('staff_state')
               .where('email', isEqualTo: currentUser.email)
@@ -197,14 +480,53 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
           
           if (staffQuery.docs.isNotEmpty) {
             final staffData = staffQuery.docs.first.data();
-            userName = staffData['name'] ?? "Unknown User";
+            debugPrint("✅ Found user in 'staff_state' collection: $staffData");
+            
+            userName = staffData['name'] ?? 
+                      staffData['userName'] ?? 
+                      staffData['fullName'] ?? 
+                      "Unknown User";
             userRole = staffData['role'] ?? "staff";
-            baNo = staffData['ba_no'] ?? "";
+            baNo = staffData['ba_no'] ?? staffData['baNo'] ?? "";
+          } else {
+            debugPrint("❌ User not found in 'staff_state' collection, trying other collections");
+            
+            // Strategy 3: Try looking in 'users' collection by email (in case UID mapping is different)
+            final userByEmailQuery = await FirebaseFirestore.instance
+                .collection('users')
+                .where('email', isEqualTo: currentUser.email)
+                .limit(1)
+                .get();
+            
+            if (userByEmailQuery.docs.isNotEmpty) {
+              final userData = userByEmailQuery.docs.first.data();
+              debugPrint("✅ Found user in 'users' collection by email: $userData");
+              
+              userName = userData['name'] ?? 
+                        userData['userName'] ?? 
+                        userData['fullName'] ?? 
+                        userData['displayName'] ?? 
+                        currentUser.displayName ?? 
+                        "Unknown User";
+              userRole = userData['role'] ?? "user";
+              baNo = userData['ba_no'] ?? userData['baNo'] ?? "";
+            } else {
+              debugPrint("❌ User not found in any collection, using fallback");
+              // Use Firebase Auth displayName or email as fallback
+              userName = currentUser.displayName ?? 
+                        currentUser.email?.split('@')[0] ?? 
+                        "Unknown User";
+            }
           }
         }
+        
+        debugPrint("📋 Final user details: Name='$userName', Role='$userRole', BA='$baNo'");
+        
       } catch (e) {
-        debugPrint("Error fetching user details: $e");
-        userName = currentUser.displayName ?? currentUser.email ?? "Unknown User";
+        debugPrint("❌ Error fetching user details: $e");
+        userName = currentUser.displayName ?? 
+                  currentUser.email?.split('@')[0] ?? 
+                  "Unknown User";
       }
 
       // Generate week identifier for grouping votes
@@ -231,33 +553,42 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
         'status': 'submitted',
       };
 
-      // Store in voting_records collection
+      // Create unique document ID based on user and week to ensure one vote per user per week
+      final documentId = "${currentUser.uid}_$weekIdentifier";
+      
+      // Store in voting_records collection (overwrite if exists)
       await FirebaseFirestore.instance
           .collection('voting_records')
-          .add(votingData);
+          .doc(documentId)
+          .set(votingData);
 
-      debugPrint("✅ Voting record saved successfully");
+      debugPrint("✅ Voting record saved successfully with ID: $documentId");
       
       // Close loading dialog
       if (mounted) {
         Navigator.pop(context);
       }
 
+      // Refresh voting permission status after successful vote
+      _checkVotingPermission();
+
       // Show success dialog
       if (mounted) {
         showDialog(
           context: context,
           builder: (_) => AlertDialog(
-            title: const Text(
-              "Vote Submitted Successfully",
+            title: Text(
+              _hasVotedThisWeek ? "Vote Changed Successfully" : "Vote Submitted Successfully",
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  "Your menu preference has been recorded and will be considered for the next committee review. Thank you for your participation.",
+                Text(
+                  _hasVotedThisWeek 
+                    ? "Your vote has been updated successfully. Your new menu preference has been recorded and will be considered for the next committee review."
+                    : "Your menu preference has been recorded and will be considered for the next committee review. Thank you for your participation.",
                 ),
                 const SizedBox(height: 12),
                 Text(
@@ -325,6 +656,151 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
       _selectedDinner = null;
       _remarksController.clear();
     });
+    _checkVotingPermission(); // Recheck voting permission
+  }
+
+  /// Build voting status indicator card
+  Widget _buildVotingStatusCard() {
+    if (_isCheckingVotingStatus) {
+      return Card(
+        color: Colors.blue.shade50,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(width: 12),
+              const Text("Checking voting status..."),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return GestureDetector(
+      onTap: () {
+        // Allow manual refresh by tapping the status card
+        debugPrint("🔄 Manual refresh of voting status requested");
+        _checkVotingPermission();
+      },
+      child: _buildActualStatusCard(),
+    );
+  }
+
+  Widget _buildActualStatusCard() {
+
+    final now = DateTime.now();
+    final isSaturday = now.weekday == DateTime.saturday;
+    
+    if (_isVotingAllowed) {
+      return Card(
+        color: _hasVotedThisWeek ? Colors.blue.shade50 : Colors.green.shade50,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    _hasVotedThisWeek ? Icons.edit : Icons.check_circle, 
+                    color: _hasVotedThisWeek ? Colors.blue.shade600 : Colors.green.shade600, 
+                    size: 20
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _hasVotedThisWeek
+                        ? "🔄 You can change your vote if needed."
+                        : (isSaturday 
+                            ? "✅ Voting is open! You can submit your preferences."
+                            : "✅ Special voting session enabled by admin."),
+                      style: TextStyle(
+                        color: _hasVotedThisWeek ? Colors.blue.shade700 : Colors.green.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (_hasVotedThisWeek && _existingVoteChoice != null) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade100,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: Colors.blue.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.how_to_vote, color: Colors.blue.shade600, size: 16),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Current: $_existingVoteChoice',
+                          style: TextStyle(
+                            color: Colors.blue.shade700,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    } else {
+      String statusText;
+      IconData statusIcon;
+      MaterialColor statusColor;
+
+      if (!isSaturday) {
+        statusText = "⏰ Voting opens on Saturday. Current day: ${_getDayName(now.weekday)}";
+        statusIcon = Icons.schedule;
+        statusColor = Colors.orange;
+      } else {
+        statusText = "🗳️ You have already voted this week. Next voting: Next Saturday";
+        statusIcon = Icons.how_to_vote;
+        statusColor = Colors.blue;
+      }
+
+      return Card(
+        color: statusColor.shade50,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Icon(statusIcon, color: statusColor.shade600, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  statusText,
+                  style: TextStyle(
+                    color: statusColor.shade700,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+
+  /// Get day name from weekday number
+  String _getDayName(int weekday) {
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    return days[weekday - 1];
   }
 
   Widget _buildMealRow({
@@ -382,10 +858,10 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: mealSets.map((meal) {
-        final isSelected = selectedValue == meal['id'];
+        final isSelected = selectedValue == meal['title']; // Use meal title for comparison
         return Expanded(
           child: GestureDetector(
-            onTap: () => onChanged(meal['id']),
+            onTap: () => onChanged(meal['title']), // Store the actual menu name (e.g., 'parata', 'bread', 'muri')
             child: Card(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -479,6 +955,11 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
                   ),
                 ],
               ),
+              const SizedBox(height: 8),
+              
+              // Voting Status Indicator
+              _buildVotingStatusCard(),
+              
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: _selectedDay,
@@ -543,20 +1024,29 @@ class _MenuSetScreenState extends State<MenuSetScreen> {
               ElevatedButton(
                 onPressed: _submitVote,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF002B5B),
+                  backgroundColor: _hasVotedThisWeek ? Colors.orange : const Color(0xFF002B5B),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: const Text(
-                  "SUBMIT PREFERENCE",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                  ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (_hasVotedThisWeek) ...[
+                      Icon(Icons.edit, color: Colors.white, size: 18),
+                      SizedBox(width: 8),
+                    ],
+                    Text(
+                      _hasVotedThisWeek ? "CHANGE VOTE" : "SUBMIT PREFERENCE",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

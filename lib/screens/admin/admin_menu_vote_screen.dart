@@ -19,6 +19,7 @@ import 'admin_bill_screen.dart';
 import 'admin_login_screen.dart';
 import '../../services/admin_auth_service.dart';
 import '../../services/menu_set_service.dart';
+import '../../services/voting_statistics_service.dart';
 
 class MenuVoteScreen extends StatefulWidget {
   const MenuVoteScreen({super.key});
@@ -35,6 +36,10 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
       "Admin User"; // This is just a fallback, will be updated from Firebase
   Map<String, dynamic>? _currentUserData;
   int _totalVoteCount = 0; // Store total vote count
+
+  // Admin voting control state
+  bool _isVotingEnabled = false;
+  bool _isLoadingVotingStatus = true;
 
   final TextEditingController _searchController = TextEditingController();
   String selectedDay = 'Sunday';
@@ -61,7 +66,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
     _getData();
     _debugFetchAllRecords(); // Debug: Check available data
     _loadMenuSets(); // Load menu sets
-    // _updateRemarks will be called in build method when context is available
+    _loadVotingStatus(); // Load admin voting control status
   }
 
   @override
@@ -321,16 +326,34 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
       print(
           'Total votes counted: Breakfast: ${breakfastCounts.values.reduce((a, b) => a + b)}, Lunch: ${lunchCounts.values.reduce((a, b) => a + b)}, Dinner: ${dinnerCounts.values.reduce((a, b) => a + b)}');
 
+      debugPrint("🔍 Fetching dynamic voting data for day: $selectedDay");
+      
+      // Get voting statistics using the new service
+      final votingStats = await VotingStatisticsService.getVotingStatisticsForDay(selectedDay);
+      final totalVoteCount = await VotingStatisticsService.getTotalVoteCountForDay(selectedDay);
+      
+      // Convert the statistics to the format expected by the UI
+      Map<String, Map<String, double>> formattedMealData = {};
+      
+      for (String mealType in ['breakfast', 'lunch', 'dinner']) {
+        final percentages = votingStats[mealType]!['percentages'] as Map<String, double>;
+        formattedMealData[mealType] = percentages;
+      }
+
+      debugPrint("✅ Dynamic voting data loaded successfully");
+      debugPrint("   Total votes: $totalVoteCount");
+      debugPrint("   Meal data: $formattedMealData");
+      
       // Check if widget is still mounted before calling setState
       if (mounted) {
         setState(() {
           _isLoading = false;
-          mealData = vote;
-          _totalVoteCount = totalvote; // Store the total vote count
+          mealData = formattedMealData;
+          _totalVoteCount = totalVoteCount;
         });
       }
     } catch (e) {
-      print('Error fetching voting data: $e');
+      debugPrint("❌ Error fetching dynamic voting data: $e");
       // Check if widget is still mounted before calling setState
       if (mounted) {
         setState(() {
@@ -348,6 +371,9 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
               'dinner_set2': 0.0,
               'dinner_set3': 0.0
             },
+            'breakfast': {},
+            'lunch': {},
+            'dinner': {},
           };
           _totalVoteCount = 0;
         });
@@ -855,6 +881,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
   }
 
   // Data structure for meal votes
+  // Data structure for meal votes - now dynamic based on admin configurations
   Map<String, Map<String, double>> mealData = {
     'breakfast': {
       'breakfast_set1': 0.0,
@@ -863,6 +890,9 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
     },
     'lunch': {'lunch_set1': 0.0, 'lunch_set2': 0.0, 'lunch_set3': 0.0},
     'dinner': {'dinner_set1': 0.0, 'dinner_set2': 0.0, 'dinner_set3': 0.0}
+    'breakfast': {},
+    'lunch': {},
+    'dinner': {},
   };
 
   final List<String> days = [
@@ -938,9 +968,6 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
     }
   }
 
-  // Remarks data - this will be dynamically populated
-  List<String> dynamicRemarks = [];
-
   // Search functionality implementation
 
   // Method to update dynamic remarks instantly
@@ -1002,6 +1029,7 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
       }
     });
   }
+  
 
   // Helper method to check if there are any votes
   bool _hasAnyVotes() {
@@ -1061,6 +1089,40 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
 
   // Helper widget to build meal vote list with progress indicators
   Widget _buildMealVoteList(Map<String, double> meals) {
+    if (meals.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Center(
+          child: Column(
+            children: [
+              Icon(Icons.ballot_outlined, color: Colors.grey.shade400, size: 40),
+              const SizedBox(height: 8),
+              Text(
+                'No votes submitted yet',
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Users haven\'t voted for this meal type',
+                style: TextStyle(
+                  color: Colors.grey.shade500,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     // Sort meals by percentage in descending order
     final sortedMeals = meals.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
@@ -1069,6 +1131,9 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
       children: sortedMeals.map((meal) {
         final double percent = meal.value /
             100; // Convert percentage to 0-1 range for progress indicator
+        final double percent = meal.value / 100; // Convert percentage to 0-1 range for progress indicator
+        final bool isWinning = meal.value == sortedMeals.first.value && meal.value > 0;
+        
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 6.0),
           child: Column(
@@ -1092,6 +1157,64 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
                 ),
               ),
             ],
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isWinning ? Colors.green.shade50 : Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: isWinning ? Colors.green.shade300 : Colors.grey.shade300,
+                width: isWinning ? 2 : 1,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        meal.key, // Now showing actual menu title from admin config (e.g., 'bread', 'parata', 'muri')
+                        style: TextStyle(
+                          fontSize: 14, 
+                          fontWeight: isWinning ? FontWeight.bold : FontWeight.w600,
+                          color: isWinning ? Colors.green.shade800 : Colors.black87,
+                        ),
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        if (isWinning) ...[
+                          Icon(Icons.emoji_events, color: Colors.green.shade600, size: 16),
+                          const SizedBox(width: 4),
+                        ],
+                        Text(
+                          '${meal.value.toStringAsFixed(1)}%',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: isWinning ? Colors.green.shade700 : Colors.grey.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: LinearProgressIndicator(
+                    value: percent.clamp(0.0, 1.0), // Ensure value is between 0 and 1
+                    minHeight: 12,
+                    backgroundColor: Colors.grey.shade300,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      isWinning ? Colors.green.shade600 : Theme.of(context).primaryColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       }).toList(),
@@ -1274,6 +1397,70 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error loading existing options: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // Admin voting control methods
+  Future<void> _loadVotingStatus() async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('admin_settings')
+          .doc('voting_control')
+          .get();
+      
+      if (mounted) {
+        setState(() {
+          _isVotingEnabled = doc.exists ? (doc.data()?['enabled'] ?? false) : false;
+          _isLoadingVotingStatus = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("❌ Error loading voting status: $e");
+      if (mounted) {
+        setState(() {
+          _isLoadingVotingStatus = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _toggleVotingStatus() async {
+    try {
+      final newStatus = !_isVotingEnabled;
+      
+      await FirebaseFirestore.instance
+          .collection('admin_settings')
+          .doc('voting_control')
+          .set({
+        'enabled': newStatus,
+        'lastUpdated': FieldValue.serverTimestamp(),
+        'updatedBy': _currentUserName,
+      });
+      
+      if (mounted) {
+        setState(() {
+          _isVotingEnabled = newStatus;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(newStatus 
+                ? '✅ Voting enabled for all users' 
+                : '❌ Voting disabled (Saturday-only mode)'),
+            backgroundColor: newStatus ? Colors.green : Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint("❌ Error toggling voting status: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating voting status: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -2445,6 +2632,577 @@ class _MenuVoteScreenState extends State<MenuVoteScreen> {
             ),
           ),
         );
+      drawer: Drawer(
+        child: Column(
+          children: [
+            DrawerHeader(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF002B5B), Color(0xFF1A4D8F)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: Row(
+                children: [
+                  const CircleAvatar(
+                    backgroundImage: AssetImage('assets/me.png'),
+                    radius: 30,
+                  ),
+                  const SizedBox(width: 10),
+                  Flexible(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          _currentUserName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (_currentUserData != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            _currentUserData!['role'] ?? '',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                          Text(
+                            'BA: ${_currentUserData!['ba_no'] ?? ''}',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  _buildSidebarTile(
+                    icon: Icons.dashboard,
+                    title: AppLocalizations.of(context)!.home,
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AdminHomeScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildSidebarTile(
+                    icon: Icons.people,
+                    title: AppLocalizations.of(context)!.users,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AdminUsersScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildSidebarTile(
+                    icon: Icons.pending,
+                    title: AppLocalizations.of(context)!.pendingIds,
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AdminPendingIdsScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildSidebarTile(
+                    icon: Icons.history,
+                    title: AppLocalizations.of(context)!.shoppingHistory,
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const AdminShoppingHistoryScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildSidebarTile(
+                    icon: Icons.receipt,
+                    title: AppLocalizations.of(context)!.voucherList,
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AdminVoucherScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildSidebarTile(
+                    icon: Icons.storage,
+                    title: AppLocalizations.of(context)!.inventory,
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AdminInventoryScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildSidebarTile(
+                    icon: Icons.food_bank,
+                    title: AppLocalizations.of(context)!.messing,
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AdminMessingScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildSidebarTile(
+                    icon: Icons.menu_book,
+                    title: AppLocalizations.of(context)!.monthlyMenu,
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const EditMenuScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildSidebarTile(
+                    icon: Icons.analytics,
+                    title: AppLocalizations.of(context)!.mealState,
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AdminMealStateScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildSidebarTile(
+                    icon: Icons.thumb_up,
+                    title: AppLocalizations.of(context)!.menuVote,
+                    onTap: () => Navigator.pop(context),
+                    selected: true,
+                  ),
+                  _buildSidebarTile(
+                    icon: Icons.receipt_long,
+                    title: AppLocalizations.of(context)!.bills,
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AdminBillScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildSidebarTile(
+                    icon: Icons.payment,
+                    title: AppLocalizations.of(context)!.payments,
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const PaymentsDashboard(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildSidebarTile(
+                    icon: Icons.people_alt,
+                    title: AppLocalizations.of(context)!.diningMemberState,
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const DiningMemberStatePage(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildSidebarTile(
+                    icon: Icons.manage_accounts,
+                    title: AppLocalizations.of(context)!.staffState,
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AdminStaffStateScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: Colors.grey.shade300),
+                ),
+              ),
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).padding.bottom + 8,
+                  top: 8,
+                ),
+                child: _buildSidebarTile(
+                  icon: Icons.logout,
+                  title: AppLocalizations.of(context)!.logout,
+                  onTap: _logout,
+                  color: Colors.red,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF002B5B),
+        iconTheme: const IconThemeData(color: Colors.white),
+        centerTitle: true,
+        title: Text(
+          AppLocalizations.of(context)!.menuVote,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+          ),
+        ),
+        actions: [
+          // Voting control toggle button
+          if (!_isLoadingVotingStatus)
+            IconButton(
+              onPressed: _toggleVotingStatus,
+              icon: Icon(
+                _isVotingEnabled ? Icons.how_to_vote : Icons.block,
+                color: _isVotingEnabled ? Colors.green : Colors.orange,
+              ),
+              tooltip: _isVotingEnabled 
+                  ? 'Voting Enabled (Click to disable)' 
+                  : 'Saturday-only voting (Click to enable anytime)',
+            ),
+          PopupMenuButton<Locale>(
+            icon: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CustomPaint(
+                  size: const Size(24, 16),
+                  painter: languageProvider.currentLocale.languageCode == 'en'
+                      ? _EnglandFlagPainter()
+                      : _BangladeshFlagPainter(),
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.arrow_drop_down, color: Colors.white),
+              ],
+            ),
+            onSelected: (Locale locale) {
+              languageProvider.changeLanguage(locale);
+            },
+            itemBuilder: (BuildContext context) => [
+              PopupMenuItem<Locale>(
+                value: const Locale('en', ''),
+                child: Row(
+                  children: [
+                    CustomPaint(
+                      size: const Size(20, 14),
+                      painter: _EnglandFlagPainter(),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(AppLocalizations.of(context)!.english),
+                  ],
+                ),
+              ),
+              PopupMenuItem<Locale>(
+                value: const Locale('bn', ''),
+                child: Row(
+                  children: [
+                    CustomPaint(
+                      size: const Size(20, 14),
+                      painter: _BangladeshFlagPainter(),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(AppLocalizations.of(context)!.bangla),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        // Changed to SingleChildScrollView
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Search and Add New Set Button
+              Row(
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: TextField(
+                      controller: _searchController,
+                      //onChanged: _filterRecords,
+                      decoration: InputDecoration(
+                        hintText: AppLocalizations.of(context)!.searchMealSets,
+                        prefixIcon: const Icon(Icons.search, size: 20),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 8,
+                        ),
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(width: 8),
+                  ElevatedButton.icon(
+                    onPressed: _isLoading ? null : _getData,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    icon: _isLoading 
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Icon(Icons.refresh, color: Colors.white, size: 20),
+                    label: Text(
+                      'Refresh',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton.icon(
+                    onPressed: _debugFetchAllRecords,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    icon: const Icon(Icons.bug_report, color: Colors.white, size: 20),
+                    label: Text(
+                      'Debug',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              // Day selection dropdown
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Select Day: ',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(width: 8),
+                    DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: selectedDay,
+                        icon: const Icon(Icons.arrow_drop_down),
+                        style:
+                            const TextStyle(color: Colors.black, fontSize: 14),
+                        items: days.map((String day) {
+                          return DropdownMenuItem<String>(
+                            value: day,
+                            child: Text(getLocalizedDay(context, day)),
+                          );
+                        }).toList(),
+                        onChanged: (String? newValue) {
+                          if (newValue != null) {
+                            setState(() {
+                              selectedDay = newValue;
+                              // Re-apply filter based on the new day
+                              //_filterRecords(_searchController.text);
+                              _getData(); // Fetch data for the selected day
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Meal Vote Statistics Section
+               ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          AppLocalizations.of(context)!.mealVoteStatistics,
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          'Dynamic voting results for ${getLocalizedDay(context, selectedDay)}',
+                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                        ),
+                      ],
+                    ),
+                    if (_totalVoteCount > 0)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade100,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          'Total Votes: $_totalVoteCount',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.blue.shade800,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                // Check if there's any voting data
+                _isLoading 
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(32.0),
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
+                  : _hasAnyVotes() 
+                    ? Column(
+                        children: mealData.entries.map((entry) {
+                          return Card(
+                            margin: const EdgeInsets.symmetric(vertical: 8),
+                            elevation: 4,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10)),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Highlighted meal time (Breakfast, Lunch, Dinner)
+                                  Text(
+                                    getLocalizedMealType(context, entry.key),
+                                    style: const TextStyle(
+                                        fontSize: 16, fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  _buildMealVoteList(entry.value),
+                                ],
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      )
+                    : Card(
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                        child: Padding(
+                          padding: const EdgeInsets.all(32),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.poll_outlined,
+                                size: 64,
+                                color: Colors.grey.shade400,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No voting data available for ${getLocalizedDay(context, selectedDay)}',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey.shade600,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Users haven\'t voted for meals on this day yet.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey.shade500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+              ] ,
+              
+              // --- Menu Set Configuration Section ---
+              const SizedBox(height: 30),
+              const Divider(thickness: 2),
+              const SizedBox(height: 20),
+              _buildMenuSetConfigurationSection(),
+            ],
+          ),
+        ),
+      ),
+    );
       },
     );
   }
