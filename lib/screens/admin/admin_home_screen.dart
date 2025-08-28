@@ -16,6 +16,7 @@ import 'admin_meal_state_screen.dart';
 import 'admin_bill_screen.dart';
 import 'admin_monthly_menu_screen.dart';
 import 'admin_menu_vote_screen.dart';
+import '../../role_screen_access.dart';
 import 'admin_notification_screen.dart';
 import 'admin_notification_history_screen.dart';
 import 'admin_staff_login_sessions_screen.dart';
@@ -32,6 +33,210 @@ class AdminHomeScreen extends StatefulWidget {
 }
 
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
+  List<Widget> _buildRoleBasedSidebarTiles(BuildContext context) {
+    final role = _currentUserData?['role'] ?? '';
+    final allowedScreens = getAllowedAdminScreensForRole(role);
+    final List<Widget> tiles = [];
+    for (final screenId in allowedScreens) {
+      switch (screenId) {
+        case AdminScreenIds.home:
+          tiles.add(_buildSidebarTile(
+            icon: Icons.dashboard,
+            title: AppLocalizations.of(context)!.home,
+            onTap: () => Navigator.pop(context),
+            selected: true,
+          ));
+          break;
+        case AdminScreenIds.users:
+          tiles.add(_buildSidebarTile(
+            icon: Icons.people,
+            title: AppLocalizations.of(context)!.users,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AdminUsersScreen(),
+                ),
+              );
+            },
+          ));
+          break;
+        case AdminScreenIds.pendingIds:
+          tiles.add(_buildSidebarTile(
+            icon: Icons.pending,
+            title: AppLocalizations.of(context)!.pendingIds,
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AdminPendingIdsScreen(),
+                ),
+              );
+            },
+          ));
+          break;
+        case AdminScreenIds.shoppingHistory:
+          tiles.add(_buildSidebarTile(
+            icon: Icons.history,
+            title: AppLocalizations.of(context)!.shoppingHistory,
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AdminShoppingHistoryScreen(),
+                ),
+              );
+            },
+          ));
+          break;
+        case AdminScreenIds.voucher:
+          tiles.add(_buildSidebarTile(
+            icon: Icons.receipt,
+            title: AppLocalizations.of(context)!.voucherList,
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AdminVoucherScreen(),
+                ),
+              );
+            },
+          ));
+          break;
+        case AdminScreenIds.inventory:
+          tiles.add(_buildSidebarTile(
+            icon: Icons.storage,
+            title: AppLocalizations.of(context)!.inventory,
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AdminInventoryScreen(),
+                ),
+              );
+            },
+          ));
+          break;
+        case AdminScreenIds.messing:
+          tiles.add(_buildSidebarTile(
+            icon: Icons.food_bank,
+            title: AppLocalizations.of(context)!.messing,
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AdminMessingScreen(),
+                ),
+              );
+            },
+          ));
+          break;
+        case AdminScreenIds.monthlyMenu:
+          tiles.add(_buildSidebarTile(
+            icon: Icons.menu_book,
+            title: AppLocalizations.of(context)!.monthlyMenu,
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const EditMenuScreen(),
+                ),
+              );
+            },
+          ));
+          break;
+        case AdminScreenIds.mealState:
+          tiles.add(_buildSidebarTile(
+            icon: Icons.analytics,
+            title: AppLocalizations.of(context)!.mealState,
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AdminMealStateScreen(),
+                ),
+              );
+            },
+          ));
+          break;
+        case AdminScreenIds.menuVote:
+          tiles.add(_buildSidebarTile(
+            icon: Icons.thumb_up,
+            title: AppLocalizations.of(context)!.menuVote,
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const MenuVoteScreen(),
+                ),
+              );
+            },
+          ));
+          break;
+        case AdminScreenIds.bills:
+          tiles.add(_buildSidebarTile(
+            icon: Icons.receipt_long,
+            title: AppLocalizations.of(context)!.bills,
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AdminBillScreen(),
+                ),
+              );
+            },
+          ));
+          break;
+        case AdminScreenIds.payments:
+          tiles.add(_buildSidebarTile(
+            icon: Icons.payment,
+            title: AppLocalizations.of(context)!.payments,
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PaymentsDashboard(),
+                ),
+              );
+            },
+          ));
+          break;
+        case AdminScreenIds.diningMember:
+          tiles.add(_buildSidebarTile(
+            icon: Icons.people_alt,
+            title: AppLocalizations.of(context)!.diningMemberState,
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const DiningMemberStatePage(),
+                ),
+              );
+            },
+          ));
+          break;
+        case AdminScreenIds.staffState:
+          tiles.add(_buildSidebarTile(
+            icon: Icons.manage_accounts,
+            title: AppLocalizations.of(context)!.staffState,
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AdminStaffStateScreen(),
+                ),
+              );
+            },
+          ));
+          break;
+        // Add more cases as needed for other screens
+        default:
+          break;
+      }
+    }
+    return tiles;
+  }
+
   Widget _buildOwnActivityLogButton(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -645,169 +850,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
-                  _buildSidebarTile(
-                    icon: Icons.dashboard,
-                    title: AppLocalizations.of(context)!.home,
-                    onTap: () => Navigator.pop(context),
-                    selected: true,
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.people,
-                    title: AppLocalizations.of(context)!.users,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminUsersScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.pending,
-                    title: AppLocalizations.of(context)!.pendingIds,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminPendingIdsScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.history,
-                    title: AppLocalizations.of(context)!.shoppingHistory,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              const AdminShoppingHistoryScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.receipt,
-                    title: AppLocalizations.of(context)!.voucherList,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminVoucherScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.storage,
-                    title: AppLocalizations.of(context)!.inventory,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminInventoryScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.food_bank,
-                    title: AppLocalizations.of(context)!.messing,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminMessingScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.menu_book,
-                    title: AppLocalizations.of(context)!.monthlyMenu,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const EditMenuScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.analytics,
-                    title: AppLocalizations.of(context)!.mealState,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminMealStateScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.thumb_up,
-                    title: AppLocalizations.of(context)!.menuVote,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const MenuVoteScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.receipt_long,
-                    title: AppLocalizations.of(context)!.bills,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminBillScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.payment,
-                    title: AppLocalizations.of(context)!.payments,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const PaymentsDashboard(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.people_alt,
-                    title: AppLocalizations.of(context)!.diningMemberState,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const DiningMemberStatePage(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildSidebarTile(
-                    icon: Icons.manage_accounts,
-                    title: AppLocalizations.of(context)!.staffState,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AdminStaffStateScreen(),
-                        ),
-                      );
-                    },
-                  ),
+                  ..._buildRoleBasedSidebarTiles(context),
                 ],
               ),
             ),

@@ -1,3 +1,4 @@
+import '../../role_screen_access.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -29,6 +30,120 @@ class PaymentsDashboard extends StatefulWidget {
 }
 
 class _PaymentsDashboardState extends State<PaymentsDashboard> {
+  // Sidebar builder (matches admin_home_screen.dart)
+  List<Widget> _buildRoleBasedSidebarTiles(BuildContext context) {
+    final role = _currentUserData?['role'] ?? '';
+    final allowedScreens = getAllowedAdminScreensForRole(role);
+    final List<Widget> tiles = [];
+    for (final screenId in allowedScreens) {
+      switch (screenId) {
+        case AdminScreenIds.home:
+          tiles.add(_buildSidebarTile(
+            icon: Icons.dashboard,
+            title: AppLocalizations.of(context)!.home,
+            onTap: () => _navigate(const AdminHomeScreen()),
+          ));
+          break;
+        case AdminScreenIds.users:
+          tiles.add(_buildSidebarTile(
+            icon: Icons.people,
+            title: AppLocalizations.of(context)!.users,
+            onTap: () => _navigate(const AdminUsersScreen()),
+          ));
+          break;
+        case AdminScreenIds.pendingIds:
+          tiles.add(_buildSidebarTile(
+            icon: Icons.pending,
+            title: AppLocalizations.of(context)!.pendingIds,
+            onTap: () => _navigate(const AdminPendingIdsScreen()),
+          ));
+          break;
+        case AdminScreenIds.shoppingHistory:
+          tiles.add(_buildSidebarTile(
+            icon: Icons.history,
+            title: AppLocalizations.of(context)!.shoppingHistory,
+            onTap: () => _navigate(const AdminShoppingHistoryScreen()),
+          ));
+          break;
+        case AdminScreenIds.voucher:
+          tiles.add(_buildSidebarTile(
+            icon: Icons.receipt,
+            title: AppLocalizations.of(context)!.voucherList,
+            onTap: () => _navigate(const AdminVoucherScreen()),
+          ));
+          break;
+        case AdminScreenIds.inventory:
+          tiles.add(_buildSidebarTile(
+            icon: Icons.storage,
+            title: AppLocalizations.of(context)!.inventory,
+            onTap: () => _navigate(const AdminInventoryScreen()),
+          ));
+          break;
+        case AdminScreenIds.messing:
+          tiles.add(_buildSidebarTile(
+            icon: Icons.food_bank,
+            title: AppLocalizations.of(context)!.messing,
+            onTap: () => _navigate(const AdminMessingScreen()),
+          ));
+          break;
+        case AdminScreenIds.monthlyMenu:
+          tiles.add(_buildSidebarTile(
+            icon: Icons.menu_book,
+            title: AppLocalizations.of(context)!.monthlyMenu,
+            onTap: () => _navigate(const EditMenuScreen()),
+          ));
+          break;
+        case AdminScreenIds.mealState:
+          tiles.add(_buildSidebarTile(
+            icon: Icons.analytics,
+            title: AppLocalizations.of(context)!.mealState,
+            onTap: () => _navigate(const AdminMealStateScreen()),
+          ));
+          break;
+        case AdminScreenIds.menuVote:
+          tiles.add(_buildSidebarTile(
+            icon: Icons.thumb_up,
+            title: AppLocalizations.of(context)!.menuVote,
+            onTap: () => _navigate(const MenuVoteScreen()),
+          ));
+          break;
+        case AdminScreenIds.bills:
+          tiles.add(_buildSidebarTile(
+            icon: Icons.receipt_long,
+            title: AppLocalizations.of(context)!.bills,
+            onTap: () => _navigate(const AdminBillScreen()),
+          ));
+          break;
+        case AdminScreenIds.payments:
+          tiles.add(_buildSidebarTile(
+            icon: Icons.payment,
+            title: AppLocalizations.of(context)!.payments,
+            onTap: () => Navigator.pop(context),
+            selected: true,
+          ));
+          break;
+        case AdminScreenIds.diningMember:
+          tiles.add(_buildSidebarTile(
+            icon: Icons.people_alt,
+            title: AppLocalizations.of(context)!.diningMemberState,
+            onTap: () => _navigate(const DiningMemberStatePage()),
+          ));
+          break;
+        case AdminScreenIds.staffState:
+          tiles.add(_buildSidebarTile(
+            icon: Icons.manage_accounts,
+            title: AppLocalizations.of(context)!.staffState,
+            onTap: () => _navigate(const AdminStaffStateScreen()),
+          ));
+          break;
+        // Add more cases as needed for other screens
+        default:
+          break;
+      }
+    }
+    return tiles;
+  }
+
   DateTime? _startDate;
   DateTime? _endDate;
   final AdminAuthService _adminAuthService = AdminAuthService();
@@ -498,78 +613,7 @@ class _PaymentsDashboardState extends State<PaymentsDashboard> {
                   child: ListView(
                     padding: EdgeInsets.zero,
                     children: [
-                      _buildSidebarTile(
-                        icon: Icons.dashboard,
-                        title: AppLocalizations.of(context)!.home,
-                        onTap: () => _navigate(const AdminHomeScreen()),
-                      ),
-                      _buildSidebarTile(
-                        icon: Icons.people,
-                        title: AppLocalizations.of(context)!.users,
-                        onTap: () => _navigate(const AdminUsersScreen()),
-                      ),
-                      _buildSidebarTile(
-                        icon: Icons.pending,
-                        title: AppLocalizations.of(context)!.pendingIds,
-                        onTap: () => _navigate(const AdminPendingIdsScreen()),
-                      ),
-                      _buildSidebarTile(
-                        icon: Icons.history,
-                        title: AppLocalizations.of(context)!.shoppingHistory,
-                        onTap: () =>
-                            _navigate(const AdminShoppingHistoryScreen()),
-                      ),
-                      _buildSidebarTile(
-                        icon: Icons.receipt,
-                        title: AppLocalizations.of(context)!.voucherList,
-                        onTap: () => _navigate(const AdminVoucherScreen()),
-                      ),
-                      _buildSidebarTile(
-                        icon: Icons.storage,
-                        title: AppLocalizations.of(context)!.inventory,
-                        onTap: () => _navigate(const AdminInventoryScreen()),
-                      ),
-                      _buildSidebarTile(
-                        icon: Icons.food_bank,
-                        title: AppLocalizations.of(context)!.messing,
-                        onTap: () => _navigate(const AdminMessingScreen()),
-                      ),
-                      _buildSidebarTile(
-                        icon: Icons.menu_book,
-                        title: AppLocalizations.of(context)!.monthlyMenu,
-                        onTap: () => _navigate(const EditMenuScreen()),
-                      ),
-                      _buildSidebarTile(
-                        icon: Icons.analytics,
-                        title: AppLocalizations.of(context)!.mealState,
-                        onTap: () => _navigate(const AdminMealStateScreen()),
-                      ),
-                      _buildSidebarTile(
-                        icon: Icons.thumb_up,
-                        title: AppLocalizations.of(context)!.menuVote,
-                        onTap: () => _navigate(const MenuVoteScreen()),
-                      ),
-                      _buildSidebarTile(
-                        icon: Icons.receipt_long,
-                        title: AppLocalizations.of(context)!.bills,
-                        onTap: () => _navigate(const AdminBillScreen()),
-                      ),
-                      _buildSidebarTile(
-                        icon: Icons.payment,
-                        title: AppLocalizations.of(context)!.payments,
-                        selected: true,
-                        onTap: () => Navigator.pop(context),
-                      ),
-                      _buildSidebarTile(
-                        icon: Icons.people_alt,
-                        title: AppLocalizations.of(context)!.diningMemberState,
-                        onTap: () => _navigate(const DiningMemberStatePage()),
-                      ),
-                      _buildSidebarTile(
-                        icon: Icons.manage_accounts,
-                        title: AppLocalizations.of(context)!.staffState,
-                        onTap: () => _navigate(const AdminStaffStateScreen()),
-                      ),
+                      ..._buildRoleBasedSidebarTiles(context),
                     ],
                   ),
                 ),

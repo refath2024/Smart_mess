@@ -28,7 +28,8 @@ android {
         applicationId = "com.example.smart_mess"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-    minSdkVersion(21)  // Updated to support Firebase Auth 23.2.1
+        minSdkVersion(flutter.minSdkVersion)
+  // Updated to support Flutter's minimum required version
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
