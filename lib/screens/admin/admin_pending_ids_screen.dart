@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/foundation.dart';
 
 import 'admin_home_screen.dart';
 import 'admin_users_screen.dart';
@@ -18,6 +19,7 @@ import '../../role_screen_access.dart';
 import 'admin_meal_state_screen.dart';
 import 'admin_login_screen.dart';
 import '../../services/admin_auth_service.dart';
+import '../../services/emailjs_service.dart';
 import '../../providers/language_provider.dart';
 import '../../l10n/app_localizations.dart';
 
@@ -379,9 +381,26 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
         'approved_by': _currentUserData?['name'] ?? 'Admin',
       });
 
+      // Get user data for email
+      final userData = userDoc.data()!;
+      final userEmail = userData['email'] ?? '';
+      final userRank = userData['rank'] ?? '';
+      final baNumber = userData['ba_no'] ?? userData['no'] ?? '';
+
+      // Send acceptance email
+      bool emailSent = false;
+      if (userEmail.isNotEmpty) {
+        emailSent = await EmailJSService.sendAcceptanceEmail(
+          userEmail: userEmail,
+          userName: userData['name'] ?? '',
+          userRank: userRank,
+          baNumber: baNumber,
+        );
+      }
+
       // Log activity
       final adminName = _currentUserData?['name'] ?? 'Admin';
-      final userName = userDoc.data()?['name'] ?? '';
+      final userName = userData['name'] ?? '';
       final baNo = _currentUserData?['ba_no'] ?? '';
       if (baNo.isNotEmpty) {
         await FirebaseFirestore.instance
@@ -391,15 +410,21 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
             .add({
           'timestamp': FieldValue.serverTimestamp(),
           'actionType': 'Accept User',
-          'message': '$adminName accepted $userName.',
+          'message': '$adminName accepted $userName. Email notification: ${emailSent ? "Sent" : "Failed"}',
           'name': adminName,
         });
       }
 
+      // Show success message with email status
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context)!.userAccepted),
-          duration: Duration(seconds: 4),
+          content: Text(
+            emailSent 
+              ? '${AppLocalizations.of(context)!.userAccepted} 📧 Email sent!'
+              : '${AppLocalizations.of(context)!.userAccepted} ⚠️ Email failed to send.'
+          ),
+          duration: Duration(seconds: 6),
+          backgroundColor: emailSent ? Colors.green : Colors.orange,
         ),
       );
       await _fetchPendingUsers();
@@ -439,17 +464,34 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
     if (confirm != true) return;
 
     try {
-      // Get user name for log
+      // Get user data for email and log
       final userDoc = await FirebaseFirestore.instance
           .collection('user_requests')
           .doc(docId)
           .get();
-      final userName = userDoc.data()?['name'] ?? '';
+      
+      final userData = userDoc.data() ?? {};
+      final userName = userData['name'] ?? '';
+      final userEmail = userData['email'] ?? '';
+      final userRank = userData['rank'] ?? '';
+      final baNumber = userData['ba_no'] ?? userData['no'] ?? '';
 
       await FirebaseFirestore.instance
           .collection('user_requests')
           .doc(docId)
           .update({'rejected': true, 'status': "rejected"});
+
+      // Send rejection email
+      bool emailSent = false;
+      if (userEmail.isNotEmpty) {
+        emailSent = await EmailJSService.sendRejectionEmail(
+          userEmail: userEmail,
+          userName: userName,
+          userRank: userRank,
+          baNumber: baNumber,
+          rejectionReason: 'Your application did not meet the current requirements.',
+        );
+      }
 
       // Log activity
       final adminName = _currentUserData?['name'] ?? 'Admin';
@@ -462,13 +504,22 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
             .add({
           'timestamp': FieldValue.serverTimestamp(),
           'actionType': 'Reject User',
-          'message': '$adminName rejected $userName.',
+          'message': '$adminName rejected $userName. Email notification: ${emailSent ? "Sent" : "Failed"}',
           'name': adminName,
         });
       }
 
+      // Show success message with email status
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.userRejected)),
+        SnackBar(
+          content: Text(
+            emailSent 
+              ? '${AppLocalizations.of(context)!.userRejected} 📧 Email sent!'
+              : '${AppLocalizations.of(context)!.userRejected} ⚠️ Email failed to send.'
+          ),
+          duration: Duration(seconds: 6),
+          backgroundColor: emailSent ? Colors.orange : Colors.red,
+        ),
       );
       await _fetchPendingUsers();
     } catch (e) {
@@ -521,6 +572,62 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
           SnackBar(content: Text('Logout failed: $e')),
         );
       }
+    }
+  }
+
+  // Debug method to test EmailJS configuration
+  Future<void> _testEmailJS() async {
+    try {
+      // Show debug information
+      await EmailJSService.debugEmailService();
+      
+      // Test with a sample email
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Test EmailJS'),
+          content: const Text('This will send a test email. Check the debug console for detailed logs.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                
+                // Test with sample data
+                final success = await EmailJSService.sendAcceptanceEmail(
+                  userEmail: 'test@example.com', // Change this to your test email
+                  userName: 'Test User',
+                  userRank: 'Captain',
+                  baNumber: 'TEST123',
+                );
+                
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      success 
+                        ? '✅ Test email sent successfully! Check the debug console for details.'
+                        : '❌ Test email failed. Check the debug console for error details.',
+                    ),
+                    backgroundColor: success ? Colors.green : Colors.red,
+                    duration: const Duration(seconds: 5),
+                  ),
+                );
+              },
+              child: const Text('Send Test Email'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error testing EmailJS: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -634,6 +741,13 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
               ),
             ),
             actions: [
+              // Debug EmailJS button (only shown in debug mode)
+              if (kDebugMode)
+                IconButton(
+                  icon: const Icon(Icons.email_outlined, color: Colors.white),
+                  tooltip: 'Test EmailJS',
+                  onPressed: _testEmailJS,
+                ),
               PopupMenuButton<String>(
                 icon: const Icon(Icons.language, color: Colors.white),
                 onSelected: (String value) {
