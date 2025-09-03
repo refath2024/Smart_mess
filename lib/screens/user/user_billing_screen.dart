@@ -3,6 +3,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'user_payment_history_screen.dart';
 import '../../services/activity_log_service.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:pdf/pdf.dart';
+import 'package:printing/printing.dart';
+import 'package:intl/intl.dart';
 
 class BillingScreen extends StatefulWidget {
   const BillingScreen({super.key});
@@ -12,6 +16,530 @@ class BillingScreen extends StatefulWidget {
 }
 
 class _BillingScreenState extends State<BillingScreen> {
+  Future<void> _exportBillPdf() async {
+    if (_selectedMonth == null || _selectedYear == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select both month and year')),
+      );
+      return;
+    }
+    // Show loading dialog with cancel
+    bool isCancelled = false;
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => Dialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 18),
+                Text('Generating your bill PDF...',
+                    style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        color: Colors.blue[900])),
+                const SizedBox(height: 6),
+                const Text('This may take a few seconds.',
+                    style: TextStyle(fontSize: 13, color: Colors.black54)),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.cancel, color: Colors.red),
+                  label:
+                      const Text('Cancel', style: TextStyle(color: Colors.red)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    side: const BorderSide(color: Colors.red),
+                  ),
+                  onPressed: () {
+                    isCancelled = true;
+                    Navigator.of(context, rootNavigator: true).pop('cancelled');
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    if (isCancelled) return;
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null || _userData == null) {
+        Navigator.of(context, rootNavigator: true).pop();
+        return;
+      }
+      final baNo = _userData!['ba_no']?.toString();
+      final name = _userData!['name'] ?? '';
+      final rank = _userData!['rank'] ?? '';
+      final monthYear = '${_selectedMonth!} ${_selectedYear!}';
+
+      // --- Fetch all detailed data for the selected month/year (like user messing screen) ---
+      // 1. Messing, extra chit, bar chit, daily breakdown
+      double totalMonthlyMessing = 0.0,
+          totalExtraChitMessing = 0.0,
+          totalExtraChitBar = 0.0;
+      List<Map<String, dynamic>> dailyMessingData = [];
+      final months = [
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December'
+      ];
+      final selectedMonthIndex = months.indexOf(_selectedMonth!) + 1;
+      final startDate = DateTime(_selectedYear!, selectedMonthIndex, 1);
+      final endDate = DateTime(_selectedYear!, selectedMonthIndex + 1, 0);
+      // Daily Messing
+      if (baNo != null) {
+        for (DateTime date = startDate;
+            date.isBefore(endDate.add(const Duration(days: 1)));
+            date = date.add(const Duration(days: 1))) {
+          final dateStr =
+              "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+          final dailyDoc = await FirebaseFirestore.instance
+              .collection('daily_messing')
+              .doc(dateStr)
+              .get();
+          Map<String, dynamic>? userDayData;
+          if (dailyDoc.exists && dailyDoc.data() != null) {
+            final data = dailyDoc.data()!;
+            userDayData = data[baNo] as Map<String, dynamic>?;
+          }
+          if (userDayData == null) {
+            userDayData = {
+              'breakfast': 0.0,
+              'lunch': 0.0,
+              'dinner': 0.0,
+              'extra_chit': 0.0,
+              'bar': 0.0,
+            };
+          }
+          final breakfastPrice = userDayData['breakfast']?.toDouble() ?? 0.0;
+          final lunchPrice = userDayData['lunch']?.toDouble() ?? 0.0;
+          final dinnerPrice = userDayData['dinner']?.toDouble() ?? 0.0;
+          final extraChit = userDayData['extra_chit']?.toDouble() ?? 0.0;
+          final barChit = userDayData['bar']?.toDouble() ?? 0.0;
+          totalMonthlyMessing += breakfastPrice + lunchPrice + dinnerPrice;
+          totalExtraChitMessing += extraChit;
+          totalExtraChitBar += barChit;
+          dailyMessingData.add({
+            'date': date,
+            'breakfast': breakfastPrice,
+            'lunch': lunchPrice,
+            'dinner': dinnerPrice,
+            'extra_chit': extraChit,
+            'bar_chit': barChit,
+            'total':
+                breakfastPrice + lunchPrice + dinnerPrice + extraChit + barChit,
+          });
+        }
+      }
+      // 2. Subscriptions, Regimental Cuttings, Miscellaneous
+      Map<String, double> subscriptionsData = {},
+          regimentalCuttingsData = {},
+          miscellaneousData = {};
+      double totalSubscriptions = 0.0, totalCuttings = 0.0, totalMisc = 0.0;
+      // Subscriptions
+      final subscriptionsDoc = await FirebaseFirestore.instance
+          .collection('misc_entry')
+          .doc('Subscriptions')
+          .get();
+      if (subscriptionsDoc.exists) {
+        final data = subscriptionsDoc.data()!;
+        subscriptionsData = {
+          'Orderly Pay': (data['orderly_pay'] as num?)?.toDouble() ?? 0.0,
+          'Mess Maintenance':
+              (data['mess_maintenance'] as num?)?.toDouble() ?? 0.0,
+          'Garden': (data['garden'] as num?)?.toDouble() ?? 0.0,
+          'Newspaper': (data['newspaper'] as num?)?.toDouble() ?? 0.0,
+          'Silver': (data['silver'] as num?)?.toDouble() ?? 0.0,
+          'Dish Antenna': (data['dish_antenna'] as num?)?.toDouble() ?? 0.0,
+          'Sports': (data['sports'] as num?)?.toDouble() ?? 0.0,
+          'Breakage Charge':
+              (data['breakage_charge'] as num?)?.toDouble() ?? 0.0,
+          'Internet Bill': (data['internet_bill'] as num?)?.toDouble() ?? 0.0,
+          'Washerman Bill': (data['washerman_bill'] as num?)?.toDouble() ?? 0.0,
+        };
+        totalSubscriptions = subscriptionsData.values.reduce((a, b) => a + b);
+      }
+      // Regimental Cuttings
+      final regimentalDoc = await FirebaseFirestore.instance
+          .collection('misc_entry')
+          .doc('Regimental Cuttings')
+          .get();
+      if (regimentalDoc.exists) {
+        final data = regimentalDoc.data()!;
+        regimentalCuttingsData = {
+          'Regimental Cuttings':
+              (data['regimental_cuttings'] as num?)?.toDouble() ?? 0.0,
+          'Cantt Sta Sports':
+              (data['cantt_sta_sports'] as num?)?.toDouble() ?? 0.0,
+          'Mosque': (data['mosque'] as num?)?.toDouble() ?? 0.0,
+          'Reunion': (data['reunion'] as num?)?.toDouble() ?? 0.0,
+          'Band': (data['band'] as num?)?.toDouble() ?? 0.0,
+        };
+        totalCuttings = regimentalCuttingsData.values.reduce((a, b) => a + b);
+      }
+      // Miscellaneous
+      final miscDoc = await FirebaseFirestore.instance
+          .collection('misc_entry')
+          .doc('Miscellaneous')
+          .get();
+      if (miscDoc.exists) {
+        final data = miscDoc.data()!;
+        miscellaneousData = {
+          'Misc Bills': (data['miscellaneous'] as num?)?.toDouble() ?? 0.0,
+          'Crest': (data['crest'] as num?)?.toDouble() ?? 0.0,
+          'Cleaners Bill': (data['cleaners_bill'] as num?)?.toDouble() ?? 0.0,
+        };
+        totalMisc = miscellaneousData.values.reduce((a, b) => a + b);
+      }
+      // 3. Arrears
+      double arrears = 0.0;
+      final now = DateTime(_selectedYear!, selectedMonthIndex);
+      final lastMonth = DateTime(now.year, now.month - 1);
+      final lastMonthYear = '${months[lastMonth.month - 1]} ${lastMonth.year}';
+      final lastMonthDoc = await FirebaseFirestore.instance
+          .collection('Bills')
+          .doc(lastMonthYear)
+          .get();
+      if (lastMonthDoc.exists && baNo != null) {
+        final lastMonthData = lastMonthDoc.data() as Map<String, dynamic>;
+        if (lastMonthData.containsKey(baNo)) {
+          final lastBillData = lastMonthData[baNo] as Map<String, dynamic>;
+          if (lastBillData['bill_status'] == 'Unpaid') {
+            arrears = lastBillData['total_due']?.toDouble() ?? 0.0;
+          }
+        }
+      }
+      // 4. Calculate totals
+      double messingBill =
+          totalMonthlyMessing + totalExtraChitMessing + totalExtraChitBar;
+      double currentMessBill =
+          messingBill + totalSubscriptions + totalCuttings + totalMisc;
+      double totalPayable = currentMessBill + arrears;
+
+      // --- Build PDF ---
+      final pdf = pw.Document();
+      pdf.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4,
+          build: (pw.Context context) {
+            return pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text('Mess Bill for $monthYear',
+                    style: pw.TextStyle(
+                        fontSize: 22, fontWeight: pw.FontWeight.bold)),
+                pw.SizedBox(height: 4),
+                pw.Text('Name: $name   |   Rank: $rank   |   BA No: $baNo'),
+                pw.SizedBox(height: 12),
+                pw.Row(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Expanded(
+                      flex: 4,
+                      child: pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          _buildOverviewTablePdf(
+                              totalMonthlyMessing,
+                              totalExtraChitMessing,
+                              totalExtraChitBar,
+                              totalSubscriptions,
+                              subscriptionsData,
+                              totalCuttings,
+                              regimentalCuttingsData,
+                              totalMisc,
+                              miscellaneousData,
+                              currentMessBill,
+                              arrears,
+                              totalPayable),
+                          pw.SizedBox(height: 18),
+                          pw.Text('Notes:',
+                              style: pw.TextStyle(
+                                  fontWeight: pw.FontWeight.bold, fontSize: 9)),
+                          pw.Bullet(
+                              text:
+                                  'Please pay your bill within 7th of the month.',
+                              style: pw.TextStyle(fontSize: 8)),
+                          pw.Bullet(
+                              text: 'Contact: 01616859503',
+                              style: pw.TextStyle(fontSize: 8)),
+                          pw.Bullet(
+                              text: 'Maintain a healthy diet and lifestyle.',
+                              style: pw.TextStyle(fontSize: 8)),
+                        ],
+                      ),
+                    ),
+                    pw.SizedBox(width: 16),
+                    pw.Expanded(
+                      flex: 6,
+                      child: _buildDetailTablePdf(dailyMessingData),
+                    ),
+                  ],
+                ),
+                pw.Spacer(),
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.end,
+                  crossAxisAlignment: pw.CrossAxisAlignment.end,
+                  children: [
+                    pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.center,
+                      children: [
+                        pw.Text('User Signature',
+                            style: pw.TextStyle(fontSize: 9)),
+                        pw.SizedBox(height: 24),
+                        pw.Container(
+                            width: 80, height: 0.5, color: PdfColors.black),
+                      ],
+                    ),
+                    pw.SizedBox(width: 40),
+                    pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.center,
+                      children: [
+                        pw.Text('Mess Secretary',
+                            style: pw.TextStyle(fontSize: 9)),
+                        pw.SizedBox(height: 24),
+                        pw.Container(
+                            width: 80, height: 0.5, color: PdfColors.black),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
+        ),
+      );
+      await Printing.layoutPdf(onLayout: (format) async => pdf.save());
+    } finally {
+      Navigator.of(context, rootNavigator: true).pop();
+    }
+  }
+
+  pw.Widget _buildOverviewTablePdf(
+    double totalMonthlyMessing,
+    double totalExtraChitMessing,
+    double totalExtraChitBar,
+    double totalSubscriptions,
+    Map<String, double> subscriptionsData,
+    double totalCuttings,
+    Map<String, double> regimentalCuttingsData,
+    double totalMisc,
+    Map<String, double> miscellaneousData,
+    double currentMessBill,
+    double arrears,
+    double totalPayable,
+  ) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Table(
+          border: pw.TableBorder.all(),
+          children: [
+            pw.TableRow(children: [
+              pw.Padding(
+                  padding: const pw.EdgeInsets.all(4),
+                  child: pw.Text('Messing',
+                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
+              pw.Container()
+            ]),
+            pw.TableRow(children: [
+              pw.Text('Monthly Messing Total'),
+              pw.Text(totalMonthlyMessing.toStringAsFixed(2))
+            ]),
+            pw.TableRow(children: [
+              pw.Text('Extra Chit (Messing)'),
+              pw.Text(totalExtraChitMessing.toStringAsFixed(2))
+            ]),
+            pw.TableRow(children: [
+              pw.Text('Extra Chit (Bar)'),
+              pw.Text(totalExtraChitBar.toStringAsFixed(2))
+            ]),
+            pw.TableRow(children: [
+              pw.Text('Total Bill',
+                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+              pw.Text(
+                  (totalMonthlyMessing +
+                          totalExtraChitMessing +
+                          totalExtraChitBar)
+                      .toStringAsFixed(2),
+                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold))
+            ]),
+          ],
+        ),
+        pw.SizedBox(height: 4),
+        pw.Table(
+          border: pw.TableBorder.all(),
+          children: [
+            pw.TableRow(children: [
+              pw.Padding(
+                  padding: const pw.EdgeInsets.all(4),
+                  child: pw.Text('Subscriptions',
+                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
+              pw.Container()
+            ]),
+            ...subscriptionsData.entries
+                .map((e) => pw.TableRow(children: [
+                      pw.Text(e.key),
+                      pw.Text(e.value.toStringAsFixed(2))
+                    ]))
+                .toList(),
+            pw.TableRow(children: [
+              pw.Text('Total Subscription',
+                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+              pw.Text(totalSubscriptions.toStringAsFixed(2),
+                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold))
+            ]),
+          ],
+        ),
+        pw.SizedBox(height: 4),
+        pw.Table(
+          border: pw.TableBorder.all(),
+          children: [
+            pw.TableRow(children: [
+              pw.Padding(
+                  padding: const pw.EdgeInsets.all(4),
+                  child: pw.Text('Regimental Cuttings',
+                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
+              pw.Container()
+            ]),
+            ...regimentalCuttingsData.entries
+                .map((e) => pw.TableRow(children: [
+                      pw.Text(e.key),
+                      pw.Text(e.value.toStringAsFixed(2))
+                    ]))
+                .toList(),
+            pw.TableRow(children: [
+              pw.Text('Total Regimental Cuttings',
+                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+              pw.Text(totalCuttings.toStringAsFixed(2),
+                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold))
+            ]),
+          ],
+        ),
+        pw.SizedBox(height: 4),
+        pw.Table(
+          border: pw.TableBorder.all(),
+          children: [
+            pw.TableRow(children: [
+              pw.Padding(
+                  padding: const pw.EdgeInsets.all(4),
+                  child: pw.Text('Miscellaneous',
+                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
+              pw.Container()
+            ]),
+            ...miscellaneousData.entries
+                .map((e) => pw.TableRow(children: [
+                      pw.Text(e.key),
+                      pw.Text(e.value.toStringAsFixed(2))
+                    ]))
+                .toList(),
+            pw.TableRow(children: [
+              pw.Text('Total Miscellaneous',
+                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+              pw.Text(totalMisc.toStringAsFixed(2),
+                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold))
+            ]),
+          ],
+        ),
+        pw.SizedBox(height: 4),
+        pw.Table(
+          border: pw.TableBorder.all(),
+          children: [
+            pw.TableRow(children: [
+              pw.Padding(
+                  padding: const pw.EdgeInsets.all(4),
+                  child: pw.Text('Bill Payable',
+                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
+              pw.Container()
+            ]),
+            pw.TableRow(children: [
+              pw.Text('Current Mess Bill'),
+              pw.Text(currentMessBill.toStringAsFixed(2))
+            ]),
+            pw.TableRow(children: [
+              pw.Text('Arrears till now'),
+              pw.Text(arrears.toStringAsFixed(2))
+            ]),
+            pw.TableRow(children: [
+              pw.Text('Total Payable',
+                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+              pw.Text(totalPayable.toStringAsFixed(2),
+                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold))
+            ]),
+          ],
+        ),
+      ],
+    );
+  }
+
+  pw.Widget _buildDetailTablePdf(List<Map<String, dynamic>> dailyMessingData) {
+    final dataRows = dailyMessingData
+        .map((day) => [
+              DateFormat('dd MMM').format(day['date'] as DateTime),
+              (day['breakfast'] as double).toStringAsFixed(2),
+              (day['lunch'] as double).toStringAsFixed(2),
+              (day['dinner'] as double).toStringAsFixed(2),
+              (day['extra_chit'] as double).toStringAsFixed(2),
+              (day['bar_chit'] as double).toStringAsFixed(2),
+              (day['total'] as double).toStringAsFixed(2),
+            ])
+        .toList();
+    // Calculate totals
+    double totalBreakfast = 0,
+        totalLunch = 0,
+        totalDinner = 0,
+        totalExtras = 0,
+        totalBar = 0;
+    for (var day in dailyMessingData) {
+      totalBreakfast += (day['breakfast'] as double);
+      totalLunch += (day['lunch'] as double);
+      totalDinner += (day['dinner'] as double);
+      totalExtras += (day['extra_chit'] as double);
+      totalBar += (day['bar_chit'] as double);
+    }
+    dataRows.add([
+      'Total',
+      totalBreakfast.toStringAsFixed(2),
+      totalLunch.toStringAsFixed(2),
+      totalDinner.toStringAsFixed(2),
+      totalExtras.toStringAsFixed(2),
+      totalBar.toStringAsFixed(2),
+      '',
+    ]);
+    return pw.Table.fromTextArray(
+      headers: [
+        'Date',
+        'Breakfast',
+        'Lunch',
+        'Dinner',
+        'Extras',
+        'Bar',
+        'Total'
+      ],
+      data: dataRows,
+      headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+      cellStyle: const pw.TextStyle(fontSize: 8),
+      cellAlignment: pw.Alignment.center,
+      border: pw.TableBorder.all(),
+    );
+  }
+
   String? _selectedMonth;
   int? _selectedYear;
   bool _paymentSuccess = false;
@@ -520,34 +1048,19 @@ class _BillingScreenState extends State<BillingScreen> {
               ),
               const SizedBox(height: 16),
               InkWell(
-                onTap: () {
-                  if (_selectedMonth != null && _selectedYear != null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                            "Viewing bill for $_selectedMonth $_selectedYear"),
-                      ),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Please select both month and year"),
-                      ),
-                    );
-                  }
-                },
+                onTap: _exportBillPdf,
                 borderRadius: BorderRadius.circular(10),
                 splashColor: Colors.blue.shade100,
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF002B5B),
+                    color: Colors.red.shade700,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   alignment: Alignment.center,
                   child: const Text(
-                    "View Bill",
+                    "Export PDF",
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.white,
