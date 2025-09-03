@@ -598,7 +598,7 @@ class _AdminPendingIdsScreenState extends State<AdminPendingIdsScreen> {
                 
                 // Test with sample data
                 final success = await EmailJSService.sendAcceptanceEmail(
-                  userEmail: 'test@example.com', // Change this to your test email
+                  userEmail: 'smartmess2025@gmail.com', // Change this to your test email
                   userName: 'Test User',
                   userRank: 'Captain',
                   baNumber: 'TEST123',

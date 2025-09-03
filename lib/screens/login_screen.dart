@@ -338,32 +338,10 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: const Text("Login"),
                             ),
                     ),
-ElevatedButton(
-                              onPressed: () async{
-   
-        await EmailJSService.sendAcceptanceEmail(
-          userEmail: 'smartmess2025@gmail.com',
-          userName: 'Refath',
-          userRank: 'Lt',
-          baNumber: '12012',
-        );
-      },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue.shade900,
-                                foregroundColor: Colors.white,
-                                textStyle: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                              child: const Text("ontest"),
-                            ),
+                    
 
-                    const SizedBox(height: 16),
-                    TextButton(
+                     const SizedBox(height: 16),
+                      TextButton(
                       onPressed: () {
                         Navigator.push(
                           context,
