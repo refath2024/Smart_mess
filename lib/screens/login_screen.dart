@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:smart_mess/services/emailjs_service.dart';
-
 import 'admin/admin_login_screen.dart';
 import 'forgot_password_screen.dart';
 import 'register_screen.dart';
@@ -338,10 +336,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: const Text("Login"),
                             ),
                     ),
-                    
 
-                     const SizedBox(height: 16),
-                      TextButton(
+                    const SizedBox(height: 16),
+                    TextButton(
                       onPressed: () {
                         Navigator.push(
                           context,

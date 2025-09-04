@@ -23,55 +23,70 @@ class _BillingScreenState extends State<BillingScreen> {
       );
       return;
     }
-    // Show loading dialog with cancel
+
+    // Show loading dialog with cancel functionality
     bool isCancelled = false;
-    await showDialog(
+    late BuildContext dialogContext;
+
+    // Show the loading dialog
+    showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => Dialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CircularProgressIndicator(),
-                const SizedBox(height: 18),
-                Text('Generating your bill PDF...',
-                    style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                        color: Colors.blue[900])),
-                const SizedBox(height: 6),
-                const Text('This may take a few seconds.',
-                    style: TextStyle(fontSize: 13, color: Colors.black54)),
-                const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.cancel, color: Colors.red),
-                  label:
-                      const Text('Cancel', style: TextStyle(color: Colors.red)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    side: const BorderSide(color: Colors.red),
+      builder: (context) {
+        dialogContext = context;
+        return StatefulBuilder(
+          builder: (context, setState) => Dialog(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 18),
+                  Text('Generating your bill PDF...',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                          color: Colors.blue[900])),
+                  const SizedBox(height: 6),
+                  const Text('This may take a few seconds.',
+                      style: TextStyle(fontSize: 13, color: Colors.black54)),
+                  const SizedBox(height: 12),
+                  LinearProgressIndicator(
+                    backgroundColor: Colors.grey,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
                   ),
-                  onPressed: () {
-                    isCancelled = true;
-                    Navigator.of(context, rootNavigator: true).pop('cancelled');
-                  },
-                ),
-              ],
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.cancel, color: Colors.red),
+                    label: const Text('Cancel',
+                        style: TextStyle(color: Colors.red)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      side: const BorderSide(color: Colors.red),
+                    ),
+                    onPressed: () {
+                      isCancelled = true;
+                      Navigator.of(context, rootNavigator: true)
+                          .pop('cancelled');
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
-    if (isCancelled) return;
+
+    // Run PDF generation asynchronously
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null || _userData == null) {
-        Navigator.of(context, rootNavigator: true).pop();
+        if (!isCancelled)
+          Navigator.of(dialogContext, rootNavigator: true).pop();
         return;
       }
       final baNo = _userData!['ba_no']?.toString();
@@ -79,12 +94,54 @@ class _BillingScreenState extends State<BillingScreen> {
       final rank = _userData!['rank'] ?? '';
       final monthYear = '${_selectedMonth!} ${_selectedYear!}';
 
-      // --- Fetch all detailed data for the selected month/year (like user messing screen) ---
-      // 1. Messing, extra chit, bar chit, daily breakdown
+      // DEBUG: Initial parameters
+      print('🔄 PDF GENERATION START');
+      print('📅 Month: $_selectedMonth, Year: $_selectedYear');
+      print('👤 User - BA No: $baNo, Name: $name, Rank: $rank');
+      print('📊 Current Total Due: $_totalDue');
+      print('═══════════════════════════════════════');
+
+      // --- OPTIMIZED: Get Bills collection data first (fast), then fetch real daily data ---
+
+      double currentMessBill = 0.0;
+      double arrears = 0.0;
+      double totalPayable = _totalDue; // Use already-loaded total
+
+      // Get the summarized bill data from Bills collection (FAST - 1 query)
+      print('🔍 FETCHING BILLS COLLECTION DATA...');
+      final billDoc = await FirebaseFirestore.instance
+          .collection('Bills')
+          .doc(monthYear)
+          .get();
+
+      if (billDoc.exists && baNo != null) {
+        final billData = billDoc.data() as Map<String, dynamic>;
+        final userBill = billData[baNo] as Map<String, dynamic>?;
+
+        if (userBill != null) {
+          currentMessBill = userBill['current_bill']?.toDouble() ?? 0.0;
+          arrears = userBill['arrears']?.toDouble() ?? 0.0;
+          totalPayable = userBill['total_due']?.toDouble() ?? _totalDue;
+
+          print('✅ Bills Collection Data Found:');
+          print('   💰 Current Mess Bill: $currentMessBill');
+          print('   🔄 Arrears: $arrears');
+          print('   💳 Total Payable: $totalPayable');
+        } else {
+          print('❌ No user bill data found in Bills collection for BA: $baNo');
+        }
+      } else {
+        print('❌ Bills document not found for month: $monthYear');
+      }
+
+      // Now fetch REAL daily messing data (same as user messing screen)
+      print('═══════════════════════════════════════');
+      print('🔍 FETCHING DAILY MESSING DATA...');
       double totalMonthlyMessing = 0.0,
           totalExtraChitMessing = 0.0,
           totalExtraChitBar = 0.0;
       List<Map<String, dynamic>> dailyMessingData = [];
+
       final months = [
         'January',
         'February',
@@ -102,22 +159,44 @@ class _BillingScreenState extends State<BillingScreen> {
       final selectedMonthIndex = months.indexOf(_selectedMonth!) + 1;
       final startDate = DateTime(_selectedYear!, selectedMonthIndex, 1);
       final endDate = DateTime(_selectedYear!, selectedMonthIndex + 1, 0);
-      // Daily Messing
+      final today = DateTime.now();
+      final actualEndDate =
+          (selectedMonthIndex == today.month && _selectedYear == today.year)
+              ? today
+              : endDate;
+
+      print(
+          '📅 Date Range: ${startDate.toString().split(' ')[0]} to ${actualEndDate.toString().split(' ')[0]}');
+      print(
+          '📊 Expected days to fetch: ${actualEndDate.difference(startDate).inDays + 1}');
+
+      // Fetch real daily data (same logic as user messing screen)
       if (baNo != null) {
+        int dayCount = 0;
         for (DateTime date = startDate;
-            date.isBefore(endDate.add(const Duration(days: 1)));
+            date.isBefore(actualEndDate.add(const Duration(days: 1)));
             date = date.add(const Duration(days: 1))) {
+          // Check for cancellation periodically
+          if (isCancelled) {
+            print('🚫 PDF generation cancelled by user');
+            return;
+          }
+
+          dayCount++;
           final dateStr =
               "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+
           final dailyDoc = await FirebaseFirestore.instance
               .collection('daily_messing')
               .doc(dateStr)
               .get();
+
           Map<String, dynamic>? userDayData;
           if (dailyDoc.exists && dailyDoc.data() != null) {
             final data = dailyDoc.data()!;
             userDayData = data[baNo] as Map<String, dynamic>?;
           }
+
           if (userDayData == null) {
             userDayData = {
               'breakfast': 0.0,
@@ -126,15 +205,30 @@ class _BillingScreenState extends State<BillingScreen> {
               'extra_chit': 0.0,
               'bar': 0.0,
             };
+            print(
+                '⚠️  Day $dayCount ($dateStr): No data found - using defaults');
+          } else {
+            print('✅ Day $dayCount ($dateStr): Data found');
           }
+
           final breakfastPrice = userDayData['breakfast']?.toDouble() ?? 0.0;
           final lunchPrice = userDayData['lunch']?.toDouble() ?? 0.0;
           final dinnerPrice = userDayData['dinner']?.toDouble() ?? 0.0;
           final extraChit = userDayData['extra_chit']?.toDouble() ?? 0.0;
           final barChit = userDayData['bar']?.toDouble() ?? 0.0;
+
+          final dayTotal =
+              breakfastPrice + lunchPrice + dinnerPrice + extraChit + barChit;
+
+          if (dayTotal > 0) {
+            print(
+                '   🍽️  B: $breakfastPrice, L: $lunchPrice, D: $dinnerPrice, EC: $extraChit, Bar: $barChit = Total: $dayTotal');
+          }
+
           totalMonthlyMessing += breakfastPrice + lunchPrice + dinnerPrice;
           totalExtraChitMessing += extraChit;
           totalExtraChitBar += barChit;
+
           dailyMessingData.add({
             'date': date,
             'breakfast': breakfastPrice,
@@ -146,13 +240,26 @@ class _BillingScreenState extends State<BillingScreen> {
                 breakfastPrice + lunchPrice + dinnerPrice + extraChit + barChit,
           });
         }
+
+        print('📊 DAILY DATA SUMMARY:');
+        print('   🍽️  Total Monthly Messing: $totalMonthlyMessing');
+        print('   💰 Total Extra Chit Messing: $totalExtraChitMessing');
+        print('   🍺 Total Bar Chit: $totalExtraChitBar');
+        print('   📝 Total Days Processed: $dayCount');
       }
-      // 2. Subscriptions, Regimental Cuttings, Miscellaneous
-      Map<String, double> subscriptionsData = {},
-          regimentalCuttingsData = {},
-          miscellaneousData = {};
-      double totalSubscriptions = 0.0, totalCuttings = 0.0, totalMisc = 0.0;
+
+      // 2. Get misc charges efficiently from misc_entry collection
+      print('═══════════════════════════════════════');
+      print('🔍 FETCHING MISCELLANEOUS CHARGES...');
+      Map<String, double> subscriptionsData = {};
+      Map<String, double> regimentalCuttingsData = {};
+      Map<String, double> miscellaneousData = {};
+      double totalSubscriptions = 0.0;
+      double totalCuttings = 0.0;
+      double totalMisc = 0.0;
+
       // Subscriptions
+      print('📋 Fetching Subscriptions...');
       final subscriptionsDoc = await FirebaseFirestore.instance
           .collection('misc_entry')
           .doc('Subscriptions')
@@ -174,8 +281,16 @@ class _BillingScreenState extends State<BillingScreen> {
           'Washerman Bill': (data['washerman_bill'] as num?)?.toDouble() ?? 0.0,
         };
         totalSubscriptions = subscriptionsData.values.reduce((a, b) => a + b);
+        print('✅ Subscriptions loaded: Total = $totalSubscriptions');
+        subscriptionsData.forEach((key, value) {
+          if (value > 0) print('   💰 $key: $value');
+        });
+      } else {
+        print('❌ Subscriptions document not found');
       }
+
       // Regimental Cuttings
+      print('📋 Fetching Regimental Cuttings...');
       final regimentalDoc = await FirebaseFirestore.instance
           .collection('misc_entry')
           .doc('Regimental Cuttings')
@@ -192,8 +307,16 @@ class _BillingScreenState extends State<BillingScreen> {
           'Band': (data['band'] as num?)?.toDouble() ?? 0.0,
         };
         totalCuttings = regimentalCuttingsData.values.reduce((a, b) => a + b);
+        print('✅ Regimental Cuttings loaded: Total = $totalCuttings');
+        regimentalCuttingsData.forEach((key, value) {
+          if (value > 0) print('   💰 $key: $value');
+        });
+      } else {
+        print('❌ Regimental Cuttings document not found');
       }
+
       // Miscellaneous
+      print('📋 Fetching Miscellaneous charges...');
       final miscDoc = await FirebaseFirestore.instance
           .collection('misc_entry')
           .doc('Miscellaneous')
@@ -206,33 +329,36 @@ class _BillingScreenState extends State<BillingScreen> {
           'Cleaners Bill': (data['cleaners_bill'] as num?)?.toDouble() ?? 0.0,
         };
         totalMisc = miscellaneousData.values.reduce((a, b) => a + b);
+        print('✅ Miscellaneous charges loaded: Total = $totalMisc');
+        miscellaneousData.forEach((key, value) {
+          if (value > 0) print('   💰 $key: $value');
+        });
+      } else {
+        print('❌ Miscellaneous document not found');
       }
-      // 3. Arrears
-      double arrears = 0.0;
-      final now = DateTime(_selectedYear!, selectedMonthIndex);
-      final lastMonth = DateTime(now.year, now.month - 1);
-      final lastMonthYear = '${months[lastMonth.month - 1]} ${lastMonth.year}';
-      final lastMonthDoc = await FirebaseFirestore.instance
-          .collection('Bills')
-          .doc(lastMonthYear)
-          .get();
-      if (lastMonthDoc.exists && baNo != null) {
-        final lastMonthData = lastMonthDoc.data() as Map<String, dynamic>;
-        if (lastMonthData.containsKey(baNo)) {
-          final lastBillData = lastMonthData[baNo] as Map<String, dynamic>;
-          if (lastBillData['bill_status'] == 'Unpaid') {
-            arrears = lastBillData['total_due']?.toDouble() ?? 0.0;
-          }
-        }
+
+      // 4. Calculate final totals for PDF (use optimized data)
+      print('═══════════════════════════════════════');
+      print('📊 FINAL CALCULATIONS FOR PDF:');
+      print('🍽️  Monthly Messing: $totalMonthlyMessing');
+      print('💰 Extra Chit Messing: $totalExtraChitMessing');
+      print('🍺 Bar Chit: $totalExtraChitBar');
+      print('📋 Subscriptions Total: $totalSubscriptions');
+      print('🏛️  Regimental Cuttings Total: $totalCuttings');
+      print('📄 Miscellaneous Total: $totalMisc');
+      print('💳 Current Mess Bill: $currentMessBill');
+      print('🔄 Arrears: $arrears');
+      print('💰 Total Payable: $totalPayable');
+      print('═══════════════════════════════════════');
+
+      // Check for cancellation before building PDF
+      if (isCancelled) {
+        print('🚫 PDF generation cancelled before building PDF');
+        return;
       }
-      // 4. Calculate totals
-      double messingBill =
-          totalMonthlyMessing + totalExtraChitMessing + totalExtraChitBar;
-      double currentMessBill =
-          messingBill + totalSubscriptions + totalCuttings + totalMisc;
-      double totalPayable = currentMessBill + arrears;
 
       // --- Build PDF ---
+      print('🔧 BUILDING PDF DOCUMENT...');
       final pdf = pw.Document();
       pdf.addPage(
         pw.Page(
@@ -326,8 +452,26 @@ class _BillingScreenState extends State<BillingScreen> {
         ),
       );
       await Printing.layoutPdf(onLayout: (format) async => pdf.save());
+
+      print('✅ PDF GENERATION COMPLETED SUCCESSFULLY!');
+      print('═══════════════════════════════════════');
+    } catch (e) {
+      print('❌ PDF GENERATION ERROR: $e');
+      if (!isCancelled) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error generating PDF: $e')),
+        );
+      }
     } finally {
-      Navigator.of(context, rootNavigator: true).pop();
+      // Close the dialog if it's still open and not cancelled
+      if (!isCancelled) {
+        try {
+          Navigator.of(dialogContext, rootNavigator: true).pop();
+        } catch (e) {
+          // Dialog might already be closed
+          print('Dialog already closed or error closing: $e');
+        }
+      }
     }
   }
 
@@ -345,6 +489,14 @@ class _BillingScreenState extends State<BillingScreen> {
     double arrears,
     double totalPayable,
   ) {
+    print('🔧 Building Overview Table PDF with data:');
+    print('   🍽️  Monthly Messing: $totalMonthlyMessing');
+    print('   💰 Extra Chit Messing: $totalExtraChitMessing');
+    print('   🍺 Bar Chit: $totalExtraChitBar');
+    print('   📋 Subscriptions entries: ${subscriptionsData.length}');
+    print('   🏛️  Regimental entries: ${regimentalCuttingsData.length}');
+    print('   📄 Misc entries: ${miscellaneousData.length}');
+
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
@@ -489,6 +641,21 @@ class _BillingScreenState extends State<BillingScreen> {
   }
 
   pw.Widget _buildDetailTablePdf(List<Map<String, dynamic>> dailyMessingData) {
+    print(
+        '🔧 Building Detail Table PDF with ${dailyMessingData.length} days of data');
+
+    // Calculate and log summary statistics
+    double totalDays = dailyMessingData.length.toDouble();
+    double daysWithData = dailyMessingData
+        .where((day) => (day['total'] as double) > 0)
+        .length
+        .toDouble();
+    double totalAmount = dailyMessingData.fold(
+        0.0, (sum, day) => sum + (day['total'] as double));
+
+    print('   📊 Days with data: $daysWithData / $totalDays');
+    print('   💰 Total amount in detail table: $totalAmount');
+
     final dataRows = dailyMessingData
         .map((day) => [
               DateFormat('dd MMM').format(day['date'] as DateTime),
@@ -1055,7 +1222,7 @@ class _BillingScreenState extends State<BillingScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
-                    color: Colors.red.shade700,
+                    color: Colors.blue.shade700,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   alignment: Alignment.center,
