@@ -705,10 +705,8 @@ class _MessingScreenState extends State<MessingScreen> {
                   decoration: isHighlightedRow
                       ? BoxDecoration(
                           color: isBillPayableTable
-                              ? Colors.green
-                                  .shade50 // Light green for Bill Payable table
-                              : Colors.amber
-                                  .shade50, // Light amber for Total Bill rows
+                              ? const Color.fromARGB(105, 60, 60, 60) // Light green for Bill Payable table
+                              : const Color.fromARGB(170, 254, 252, 252), // Light amber for Total Bill rows
                         )
                       : null,
                   children: [

@@ -1101,13 +1101,15 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
                                 size: 24,
                               ),
                               const SizedBox(width: 12),
-                              const Expanded(
+                              Expanded(
                                 child: Text(
                                   'Auto Loop Mode',
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
-                                    color: Color(0xFF002B5B),
+                                    color: Theme.of(context).brightness == Brightness.dark 
+                                        ? Colors.white 
+                                        : const Color(0xFF002B5B),
                                   ),
                                 ),
                               ),
@@ -1176,14 +1178,14 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Colors.blue.shade50,
+                                color: const Color.fromARGB(255, 196, 194, 194),
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.blue.shade200),
+                                border: Border.all(color: const Color.fromARGB(255, 95, 95, 96)),
                               ),
                               child: Row(
                                 children: [
                                   Icon(Icons.info_outline,
-                                      color: Colors.blue.shade700, size: 16),
+                                      color: const Color.fromARGB(148, 222, 111, 14), size: 16),
                                   const SizedBox(width: 8),
                                   const Expanded(
                                     child: Text(
@@ -1200,15 +1202,15 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: Colors.orange.shade50,
+                                  color: const Color.fromARGB(255, 204, 200, 200),
                                   borderRadius: BorderRadius.circular(8),
                                   border:
-                                      Border.all(color: Colors.orange.shade200),
+                                      Border.all(color: const Color.fromARGB(255, 91, 90, 90)),
                                 ),
                                 child: Row(
                                   children: [
                                     Icon(Icons.warning_amber,
-                                        color: Colors.orange.shade700,
+                                        color: const Color.fromARGB(255, 255, 70, 70),
                                         size: 16),
                                     const SizedBox(width: 8),
                                     const Expanded(
@@ -1297,10 +1299,12 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
                                     children: [
                                       Text(
                                         meal['displayName'] as String,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 18,
                                           fontWeight: FontWeight.bold,
-                                          color: Color(0xFF002B5B),
+                                          color: Theme.of(context).brightness == Brightness.dark 
+                                              ? Colors.white 
+                                              : const Color(0xFF002B5B),
                                         ),
                                       ),
                                       const SizedBox(height: 4),
@@ -1308,7 +1312,9 @@ class _MealInOutScreenState extends State<MealInOutScreen> {
                                         meal['item'] as String,
                                         style: TextStyle(
                                           fontSize: 14,
-                                          color: Colors.grey.shade700,
+                                          color: Theme.of(context).brightness == Brightness.dark 
+                                              ? Colors.grey.shade300 
+                                              : Colors.grey.shade700,
                                         ),
                                       ),
                                     ],

@@ -405,16 +405,20 @@ class _HomeContentState extends State<HomeContent> {
           children: [
             Icon(
               isToday ? Icons.today : Icons.event,
-              color: const Color(0xFF002B5B),
+              color: Theme.of(context).brightness == Brightness.dark 
+                  ? Colors.white 
+                  : const Color(0xFF002B5B),
               size: 24,
             ),
             const SizedBox(width: 8),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF002B5B),
+                color: Theme.of(context).brightness == Brightness.dark 
+                    ? Colors.white 
+                    : const Color(0xFF002B5B),
               ),
             ),
           ],
@@ -712,10 +716,12 @@ class _HomeContentState extends State<HomeContent> {
                 const SizedBox(height: 8),
                 Text(
                   _capitalizeMealType(mealType),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
-                    color: Color(0xFF002B5B),
+                    color: Theme.of(context).brightness == Brightness.dark 
+                        ? Colors.white 
+                        : const Color(0xFF002B5B),
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 1,
@@ -728,7 +734,9 @@ class _HomeContentState extends State<HomeContent> {
                     mealData['item'] ?? 'Not Available',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey.shade700,
+                      color: Theme.of(context).brightness == Brightness.dark 
+                          ? Colors.grey.shade300 
+                          : Colors.grey.shade700,
                       fontWeight: FontWeight.w500,
                     ),
                     textAlign: TextAlign.center,
@@ -810,7 +818,9 @@ class _HomeContentState extends State<HomeContent> {
 
           // Bill Payment Card
           Card(
-            color: Colors.red.shade50,
+            color: Theme.of(context).brightness == Brightness.dark 
+                ? Colors.red.shade900.withOpacity(0.3)
+                : Colors.red.shade50,
             elevation: 2,
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12)),
@@ -841,7 +851,10 @@ class _HomeContentState extends State<HomeContent> {
                                 )
                               : Text("৳ ${_totalDue.toStringAsFixed(0)}",
                                   style: TextStyle(
-                                      fontSize: 16, color: Colors.black87)),
+                                      fontSize: 16, 
+                                      color: Theme.of(context).brightness == Brightness.dark 
+                                          ? Colors.white 
+                                          : Colors.black87)),
                         ],
                       ),
                     ),
