@@ -236,7 +236,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
         decoration: InputDecoration(
           labelText: label,
           filled: true,
-          fillColor: enabled ? Colors.white : Colors.grey.shade200,
+          fillColor: enabled ? const Color.fromARGB(255, 255, 255, 255) : const Color.fromARGB(255, 255, 252, 252),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         ),
       ),
@@ -303,7 +303,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
                               ? NetworkImage(_imageUrl!)
                               : const AssetImage('assets/pro.png')
                                   as ImageProvider,
-                      backgroundColor: Colors.grey.shade300,
+                      backgroundColor: const Color.fromARGB(255, 205, 205, 205),
                     ),
                     if (_isEditing)
                       Positioned(
@@ -311,7 +311,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
                         right: 0,
                         child: CircleAvatar(
                           radius: 18,
-                          backgroundColor: Colors.white,
+                          backgroundColor: const Color.fromARGB(255, 82, 69, 69),
                           child: IconButton(
                             icon: const Icon(Icons.camera_alt, size: 20),
                             onPressed: _pickImage,

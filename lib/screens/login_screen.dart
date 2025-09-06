@@ -172,15 +172,30 @@ class _LoginScreenState extends State<LoginScreen> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: Colors.blue.shade900,
-        body: SafeArea(
-          child: Center(
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.blue.shade800,
+                Colors.blue.shade900,
+                Colors.blue.shade900,
+                Colors.indigo.shade900,
+              ],
+              stops: const [0.0, 0.3, 0.7, 1.0],
+            ),
+          ),
+          child: SafeArea(
+            child: Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               child: Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).brightness == Brightness.dark 
+                      ? const Color(0xFF2D2D2D) 
+                      : Colors.white,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: const [
                     BoxShadow(color: Colors.black26, blurRadius: 10),
@@ -191,12 +206,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     Image.asset('assets/army.png', height: 60),
                     const SizedBox(height: 12),
-                    const Text(
+                    Text(
                       "Smart Mess – Officer Login",
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w600,
-                        color: Colors.blue,
+                        color: Theme.of(context).brightness == Brightness.dark 
+                            ? Colors.white 
+                            : Colors.blue,
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -232,7 +249,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             decoration: BoxDecoration(
                               border: Border.all(color: Colors.grey.shade300),
                               borderRadius: BorderRadius.circular(8),
-                              color: Colors.white,
+                              color: Theme.of(context).brightness == Brightness.dark 
+                                  ? const Color(0xFF3D3D3D) 
+                                  : Colors.white,
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.black.withOpacity(0.1),
@@ -347,7 +366,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                   const ForgotPasswordScreen()),
                         );
                       },
-                      child: const Text("Forgot Password?"),
+                      child: Text(
+                        "Forgot Password?",
+                        style: TextStyle(
+                          color: Theme.of(context).brightness == Brightness.dark 
+                              ? Colors.blue.shade300 
+                              : Colors.blue,
+                        ),
+                      ),
                     ),
                     TextButton(
                       onPressed: () {
@@ -357,7 +383,14 @@ class _LoginScreenState extends State<LoginScreen> {
                               builder: (context) => const AdminLoginScreen()),
                         );
                       },
-                      child: const Text("← Go to Admin Portal"),
+                      child: Text(
+                        "← Go to Admin Portal",
+                        style: TextStyle(
+                          color: Theme.of(context).brightness == Brightness.dark 
+                              ? Colors.blue.shade300 
+                              : Colors.blue,
+                        ),
+                      ),
                     ),
                     TextButton(
                       onPressed: () {
@@ -367,11 +400,19 @@ class _LoginScreenState extends State<LoginScreen> {
                               builder: (context) => const RegisterScreen()),
                         );
                       },
-                      child: const Text("Don't have an account? Register here"),
+                      child: Text(
+                        "Don't have an account? Register here",
+                        style: TextStyle(
+                          color: Theme.of(context).brightness == Brightness.dark 
+                              ? Colors.blue.shade300 
+                              : Colors.blue,
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ),
+            ),
             ),
           ),
         ),
