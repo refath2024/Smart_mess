@@ -884,8 +884,15 @@ class _BillingScreenState extends State<BillingScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: Colors.white,
-        title: Text('Enter $method Payment Details'),
+        backgroundColor: const Color.fromARGB(255, 216, 216, 216),
+        title: Text(
+          'Enter $method Payment Details',
+          style: TextStyle(
+            color: Theme.of(context).brightness == Brightness.dark 
+                ? Colors.white 
+                : Colors.black,
+          ),
+        ),
         content: SingleChildScrollView(
           child: Column(
             children: [
@@ -1064,9 +1071,43 @@ class _BillingScreenState extends State<BillingScreen> {
                 ? TextEditingController(text: initialValue)
                 : null),
         keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+        style: TextStyle(
+          color: Theme.of(context).brightness == Brightness.dark 
+              ? Colors.white 
+              : Colors.black,
+        ),
         decoration: InputDecoration(
           labelText: label,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          labelStyle: TextStyle(
+            color: Theme.of(context).brightness == Brightness.dark 
+                ? Colors.white70 
+                : Colors.black54,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(
+              color: Theme.of(context).brightness == Brightness.dark 
+                  ? Colors.white54 
+                  : Colors.black54,
+            ),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(
+              color: Theme.of(context).brightness == Brightness.dark 
+                  ? Colors.white54 
+                  : Colors.black54,
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(
+              color: Theme.of(context).brightness == Brightness.dark 
+                  ? Colors.white 
+                  : Colors.blue,
+              width: 2,
+            ),
+          ),
         ),
       ),
     );
@@ -1089,7 +1130,7 @@ class _BillingScreenState extends State<BillingScreen> {
                     label: const Text('Payment History',
                         style: TextStyle(fontSize: 14)),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF002B5B),
+                      foregroundColor: const Color.fromARGB(255, 128, 142, 107),
                       side: const BorderSide(color: Color(0xFF002B5B)),
                       padding: const EdgeInsets.symmetric(
                           horizontal: 14, vertical: 8),
@@ -1252,7 +1293,7 @@ class _BillingScreenState extends State<BillingScreen> {
         margin: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFFf0f2f5), Color(0xFFE8EEF5)],
+            colors: [Color.fromARGB(255, 131, 144, 162), Color(0xFFE8EEF5)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),

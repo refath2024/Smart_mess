@@ -62,7 +62,9 @@ class UserLoginSessionsScreen extends StatelessWidget {
         return Scaffold(
           appBar: AppBar(
             title: const Text('Login Sessions'),
-            backgroundColor: const Color(0xFF002B5B),
+            backgroundColor: Theme.of(context).brightness == Brightness.dark 
+                ? const Color(0xFF1A1A1A) 
+                : const Color(0xFF002B5B),
             foregroundColor: Colors.white,
             actions: [
               IconButton(

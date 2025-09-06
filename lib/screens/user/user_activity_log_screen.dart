@@ -176,7 +176,7 @@ class UserActivityLogScreen extends StatelessWidget {
                               Text(
                                 '${ts.year}-${ts.month.toString().padLeft(2, '0')}-${ts.day.toString().padLeft(2, '0')}  ${ts.hour.toString().padLeft(2, '0')}:${ts.minute.toString().padLeft(2, '0')}',
                                 style: const TextStyle(
-                                    fontSize: 13, color: Colors.black54),
+                                    fontSize: 13, color: Color.fromARGB(218, 47, 46, 46)),
                               ),
                             if (log['details'] != null &&
                                 (log['details'] as Map).isNotEmpty)
@@ -205,7 +205,7 @@ class UserActivityLogScreen extends StatelessWidget {
                                   child: const Text(
                                     'View Details',
                                     style: TextStyle(
-                                      color: Color(0xFF002B5B),
+                                      color: Color.fromARGB(255, 68, 68, 68),
                                       fontWeight: FontWeight.w500,
                                       decoration: TextDecoration.underline,
                                     ),
