@@ -28,7 +28,7 @@ android {
         applicationId = "com.example.smart_mess"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdkVersion(23)  // Updated to support Firebase Auth (requires API 23+)
+    minSdkVersion(24)  // Updated to support geolocator_android (requires API 24+)
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
