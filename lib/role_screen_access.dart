@@ -61,6 +61,7 @@ class AdminScreenIds {
         addStaff,
         addTransaction,
         addVoucher,
+        premiumRequests,
       ];
   static const login = 'admin_login_screen';
   static const home = 'admin_home_screen';
@@ -99,6 +100,7 @@ class AdminScreenIds {
   static const addStaff = 'add_staff';
   static const addTransaction = 'add_transaction';
   static const addVoucher = 'add_voucher';
+  static const premiumRequests = 'admin_premium_requests_screen';
 }
 
 final Map<String, List<String>> roleScreenAccess = {
@@ -116,6 +118,7 @@ final Map<String, List<String>> roleScreenAccess = {
     AdminScreenIds.mealState,
     AdminScreenIds.mealStateRecord,
     AdminScreenIds.autoLoopUsers,
+    AdminScreenIds.premiumRequests,
     // All add_xxx forms related to above
     AdminScreenIds.addMessing,
     AdminScreenIds.addInventory,
@@ -163,6 +166,7 @@ final Map<String, List<String>> roleScreenAccess = {
     AdminScreenIds.bills,
     AdminScreenIds.payments,
     AdminScreenIds.diningMember,
+    AdminScreenIds.premiumRequests,
     // All add_xxx forms related to above
     AdminScreenIds.addShopping,
     AdminScreenIds.addVoucher,
@@ -188,6 +192,7 @@ final Map<String, List<String>> roleScreenAccess = {
     AdminScreenIds.bills,
     AdminScreenIds.payments,
     AdminScreenIds.diningMember,
+    AdminScreenIds.premiumRequests,
     // All add_xxx forms related to above
     AdminScreenIds.addShopping,
     AdminScreenIds.addVoucher,

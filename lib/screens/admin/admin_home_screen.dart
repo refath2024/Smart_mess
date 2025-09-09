@@ -16,6 +16,7 @@ import 'admin_meal_state_screen.dart';
 import 'admin_bill_screen.dart';
 import 'admin_monthly_menu_screen.dart';
 import 'admin_menu_vote_screen.dart';
+import 'admin_premium_requests_screen.dart';
 import '../../role_screen_access.dart';
 import 'admin_notification_screen.dart';
 import 'admin_notification_history_screen.dart';
@@ -168,6 +169,20 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => const MenuVoteScreen(),
+                ),
+              );
+            },
+          ));
+          break;
+        case AdminScreenIds.premiumRequests:
+          tiles.add(_buildSidebarTile(
+            icon: Icons.restaurant_menu,
+            title: 'Premium Requests',
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AdminPremiumRequestsScreen(),
                 ),
               );
             },
