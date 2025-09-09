@@ -15,6 +15,7 @@ import 'help_screen.dart';
 import 'change_password_screen.dart';
 import 'user_activity_log_screen.dart';
 import 'user_login_sessions_screen.dart';
+import 'premium_request_screen.dart';
 
 class UserHomeScreen extends StatefulWidget {
   const UserHomeScreen({super.key});
@@ -287,6 +288,17 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (_) => const HelpScreen()),
+                      );
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.restaurant_menu, color: Colors.orange),
+                    title: const Text('Premium Requests'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const PremiumRequestScreen()),
                       );
                     },
                   ),
