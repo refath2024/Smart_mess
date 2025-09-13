@@ -11,7 +11,8 @@ plugins {
 android {
     namespace = "com.smartmess.smart_mess"
     compileSdk = flutter.compileSdkVersion
-   ndkVersion = "27.2.12479018"
+    // Remove problematic NDK version to use Flutter's default
+    // ndkVersion = "27.2.12479018"
 
 
     compileOptions {
